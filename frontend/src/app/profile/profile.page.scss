@@ -1,0 +1,153 @@
+// FONDO PRINCIPAL DEL CONTENIDO ENLAZADO A LA VARIABLE DE TEMA
+.profile-content { --background: var(--color-bg); }
+
+// HERO SUPERIOR CON GRADIENTE DE MARCA Y BORDES INFERIORES REDONDEADOS
+.profile-hero {
+  padding: 32px 24px 28px; display: flex; flex-direction: column;
+  align-items: center; gap: 6px;
+  border-radius: 0 0 32px 32px;
+  // FORZAMOS EL GRADIENTE DE MARCA AUNQUE OTRA REGLA INTENTE PISARLO
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)) !important;
+}
+// CONTENEDOR DEL AVATAR — TAMAÑO FIJO PARA POSICIONAR EL BADGE SIN CLIPPING
+.profile-avatar-wrap {
+  position: relative;
+  width: 88px; height: 88px;
+  margin: 0 auto 8px;
+  cursor: pointer;
+}
+// AVATAR CIRCULAR DEL USUARIO CON BORDE BLANCO TRANSLUCIDO
+.profile-avatar {
+  width: 100%; height: 100%; border-radius: 50%;
+  background: rgba(255,255,255,0.25); color: white;
+  font-size: 2.2rem; font-weight: 900;
+  display: flex; align-items: center; justify-content: center;
+  border: 4px solid rgba(255,255,255,0.4);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  position: relative;
+  overflow: hidden;
+}
+// IMAGEN INTERIOR DEL AVATAR — OCUPA TODO Y SE RECORTA EN CIRCULO
+.profile-avatar img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+// BADGE CIRCULAR CON ICONO DE CAMARA — HERMANO DEL AVATAR PARA NO QUEDAR CLIPPEADO
+.avatar-edit-badge {
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
+  display: flex; align-items: center; justify-content: center;
+  border: 3px solid white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  transition: transform 0.2s ease;
+  pointer-events: none;
+  z-index: 2;
+}
+// FORZAR QUE EL ICONO PHOSPHOR OCUPE TODO EL ESPACIO INTERIOR DEL BADGE
+.avatar-edit-badge ph-camera,
+.avatar-edit-badge ph-camera svg {
+  display: block;
+  line-height: 0;
+}
+// FEEDBACK TACTIL DEL BADGE AL PULSAR EL AVATAR
+.profile-avatar-wrap:active .avatar-edit-badge {
+  transform: scale(0.85);
+}
+// NOMBRE DEL USUARIO EN BLANCO Y NEGRITA EXTREMA
+.profile-name { font-size: 1.3rem; font-weight: 900; color: white; }
+// EMAIL DEL USUARIO ATENUADO BAJO EL NOMBRE
+.profile-email { font-size: 0.82rem; font-weight: 600; color: rgba(255,255,255,0.8); }
+// PILDORA DE NIVEL CON FONDO TRANSLUCIDO
+.profile-level-badge {
+  margin-top: 6px; padding: 6px 16px; border-radius: 999px;
+  background: rgba(255,255,255,0.2); color: white;
+  font-size: 0.8rem; font-weight: 800; letter-spacing: 0.02em;
+}
+
+// GRID DE 4 COLUMNAS PARA LAS TARJETAS DE ESTADISTICA
+.profile-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 8px; padding: 16px; margin-bottom: 4px;
+}
+// TARJETA INDIVIDUAL DE ESTADISTICA CON BORDE Y FONDO DE SUPERFICIE
+.profile-stat {
+  background: var(--color-surface); border-radius: 14px;
+  padding: 12px 8px; display: flex; flex-direction: column;
+  align-items: center; gap: 4px; opacity: 0;
+  border: 1px solid var(--color-surface-2);
+}
+// ICONO EMOJI DE LA ESTADISTICA
+.profile-stat-icon { font-size: 1.2rem; }
+// VALOR PRINCIPAL DE LA ESTADISTICA EN NEGRITA
+.profile-stat-val { font-size: 0.95rem; font-weight: 900; color: var(--color-text); }
+// ETIQUETA INFERIOR DE LA ESTADISTICA EN VERSALITAS
+.profile-stat-lbl {
+  font-size: 0.6rem; font-weight: 800; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--color-text-muted); text-align: center;
+}
+
+// TARJETA DEDICADA AL TOGGLE DE TEMA CLARO/OSCURO
+.theme-card {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--color-surface); border-radius: 16px;
+  padding: 16px; margin: 0 16px 12px;
+  border: 1px solid var(--color-surface-2);
+}
+// BLOQUE IZQUIERDO DE LA TARJETA DE TEMA — ICONO Y TEXTOS
+.theme-card-left { display: flex; align-items: center; gap: 12px; }
+// EMOJI ASOCIADO AL TEMA ACTUAL
+.theme-icon { font-size: 1.5rem; }
+// ETIQUETA PRINCIPAL DEL TEMA
+.theme-label { display: block; font-size: 0.95rem; font-weight: 800; color: var(--color-text); }
+// SUBTITULO ATENUADO DE LA TARJETA DE TEMA
+.theme-sub { display: block; font-size: 0.75rem; font-weight: 600; color: var(--color-text-muted); }
+// PERSONALIZACION DEL TOGGLE DE IONIC
+.argos-toggle { --track-background: var(--color-surface-2); --handle-background: white; }
+
+// CONTENEDOR AGRUPADO DE LAS OPCIONES DEL MENU
+.menu-list {
+  margin: 0 16px; background: var(--color-surface);
+  border-radius: 16px; overflow: hidden;
+  border: 1px solid var(--color-surface-2);
+}
+// FILA INDIVIDUAL DEL MENU
+.menu-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px; opacity: 0;
+  border-bottom: 1px solid var(--color-surface-2);
+  cursor: pointer; transition: background 0.15s ease;
+  // ULTIMO ITEM SIN BORDE INFERIOR PARA CIERRE LIMPIO
+  &:last-child { border-bottom: none; }
+  // FEEDBACK TACTIL DE PULSACION SOBRE LA FILA
+  &:active { background: var(--color-surface-2); }
+  // VARIANTE PELIGROSA — ETIQUETA EN ROJO
+  &.danger .menu-label { color: var(--color-danger); }
+}
+// CUADRADO REDONDEADO DEL ICONO DE CADA OPCION
+.menu-icon-wrap {
+  width: 40px; height: 40px; border-radius: 12px;
+  background: var(--color-surface-2); font-size: 1.1rem;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  // VARIANTE PELIGROSA — FONDO ATENUADO EN ROJO
+  &.danger { background: color-mix(in srgb, var(--color-danger) 15%, transparent); }
+}
+// BLOQUE CENTRAL CON ETIQUETA Y DESCRIPCION DE LA OPCION
+.menu-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+// ETIQUETA PRINCIPAL DE LA OPCION DEL MENU
+.menu-label { font-size: 0.92rem; font-weight: 800; color: var(--color-text); }
+// DESCRIPCION SECUNDARIA DE LA OPCION DEL MENU
+.menu-desc { font-size: 0.74rem; font-weight: 600; color: var(--color-text-muted); }
+// FLECHA DE NAVEGACION DERECHA
+.menu-arrow { font-size: 1.3rem; color: var(--color-text-muted); }
+
+// PIE DE PAGINA CON LA VERSION DE LA APP
+.app-version {
+  text-align: center; padding: 20px;
+  font-size: 0.75rem; font-weight: 700; color: var(--color-text-muted);
+}

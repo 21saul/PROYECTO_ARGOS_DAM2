@@ -1,0 +1,222 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/dashboard" text="">
+        <ph-arrow-left weight="bold" size="22" slot="icon-only"></ph-arrow-left>
+      </ion-back-button>
+    </ion-buttons>
+    <ion-title>Centro de Alertas</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="refreshNews()">
+        <ph-arrows-clockwise weight="bold" size="22"
+          slot="icon-only" class="refresh-icon"></ph-arrows-clockwise>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="news-content">
+  <div class="news-scroll scroll-clean">
+
+    <!-- BANNER STATS EN VIVO -->
+    <div class="stats-banner">
+      <div class="stats-banner-bg"></div>
+      <div class="stats-banner-content">
+        <div class="banner-stat">
+          <div class="banner-stat-num number-display">{{cveCount}}</div>
+          <div class="banner-stat-lbl">CVE hoy</div>
+        </div>
+        <div class="banner-divider"></div>
+        <div class="banner-stat">
+          <div class="banner-stat-num number-display"
+            [style.color]="getCvssColor(avgCvss)">{{avgCvss}}</div>
+          <div class="banner-stat-lbl">CVSS medio</div>
+        </div>
+        <div class="banner-divider"></div>
+        <div class="banner-stat">
+          <div class="banner-stat-num number-display">{{activeFeeds}}</div>
+          <div class="banner-stat-lbl">Fuentes</div>
+        </div>
+        <div class="banner-divider"></div>
+        <div class="banner-stat">
+          <div class="banner-stat-num banner-status">
+            <span class="live-dot"></span>LIVE
+          </div>
+          <div class="banner-stat-lbl">Hace {{lastUpdate}}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARRUSEL DE FUENTES -->
+    <div class="sources-section">
+      <div class="sources-header">
+        <div class="sources-title">Fuentes activas</div>
+        <span class="sources-count">{{sources.length}} feeds</span>
+      </div>
+      <div class="sources-scroll">
+        <div *ngFor="let s of sources" class="source-chip"
+          [class.inactive]="!s.active">
+          <div class="source-logo" [style.background]="s.color">
+            {{s.logo}}
+          </div>
+          <div class="source-info">
+            <div class="source-name">{{s.name}}</div>
+            <div class="source-count">{{s.count}} hoy</div>
+          </div>
+          <span class="source-pulse"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="filters-scroll">
+      <div class="filters-inner">
+        <button *ngFor="let f of filters"
+          class="filter-pill"
+          [class.active]="activeFilter === f.value"
+          (click)="setFilter(f.value)">
+          <ph-list-bullets *ngIf="f.icon === 'list-bullets'"
+            weight="bold" size="14"></ph-list-bullets>
+          <ph-bug *ngIf="f.icon === 'bug'" weight="fill" size="14"></ph-bug>
+          <ph-fish-simple *ngIf="f.icon === 'fish-simple'"
+            weight="fill" size="14"></ph-fish-simple>
+          <ph-warning-octagon *ngIf="f.icon === 'warning-octagon'"
+            weight="fill" size="14"></ph-warning-octagon>
+          <ph-lightbulb *ngIf="f.icon === 'lightbulb'"
+            weight="fill" size="14"></ph-lightbulb>
+          <span>{{f.label}}</span>
+          <span class="filter-count">{{f.count}}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- HERO NOTICIA DESTACADA -->
+    <div *ngIf="featuredNews && activeFilter === 'all'"
+      class="featured-card">
+      <div class="featured-image-wrap">
+        <img [src]="getNewsImage(featuredNews)"
+          [alt]="featuredNews.title" class="featured-image">
+        <div class="featured-overlay"></div>
+        <div class="featured-badge-top">
+          <span class="breaking-tag">
+            <span class="breaking-dot"></span>BREAKING
+          </span>
+        </div>
+        <button class="image-edit-btn"
+          (click)="openImagePicker(featuredNews, $event)">
+          <ph-pencil-simple weight="fill" size="14"></ph-pencil-simple>
+        </button>
+        <button *ngIf="featuredNews.customImage"
+          class="image-reset-btn"
+          (click)="resetImage(featuredNews, $event)">
+          <ph-x weight="bold" size="12"></ph-x>
+        </button>
+      </div>
+      <div class="featured-body">
+        <div class="featured-meta">
+          <div class="featured-source">
+            <div class="source-mini-logo"
+              [style.background]="featuredNews.sourceColor">
+              {{featuredNews.sourceLogo}}
+            </div>
+            <span>{{featuredNews.source}}</span>
+          </div>
+          <span class="featured-time">{{featuredNews.timeAgo}}</span>
+        </div>
+        <div class="featured-title">{{featuredNews.title}}</div>
+        <div class="featured-desc">{{featuredNews.desc}}</div>
+        <div *ngIf="featuredNews.cvssScore" class="cvss-row">
+          <div class="cvss-block">
+            <div class="cvss-label">CVSS</div>
+            <div class="cvss-score"
+              [style.background]="getCvssColor(featuredNews.cvssScore)">
+              {{featuredNews.cvssScore}}
+            </div>
+            <div class="cvss-text">{{getCvssLabel(featuredNews.cvssScore)}}</div>
+          </div>
+          <div class="cve-block">
+            <div class="cve-label">{{featuredNews.cve}}</div>
+            <div class="cve-product">
+              <ph-cpu weight="fill" size="14"></ph-cpu>
+              {{featuredNews.affectedProduct}}
+            </div>
+          </div>
+        </div>
+        <div *ngIf="featuredNews.action" class="featured-action">
+          <ph-shield-check weight="fill" size="16"
+            style="color:var(--color-success)"></ph-shield-check>
+          <span>{{featuredNews.action}}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- LISTA NOTICIAS REGULARES -->
+    <div class="news-section-header">
+      <span class="section-title">Últimas alertas</span>
+      <span class="section-count">{{filteredNews.length}} resultados</span>
+    </div>
+
+    <div class="news-list">
+      <div *ngFor="let item of filteredNews" class="news-card">
+
+        <!-- IMAGEN CON CONTROLES DE EDICIÓN -->
+        <div class="news-image-wrap">
+          <img [src]="getNewsImage(item)" [alt]="item.title"
+            class="news-image" loading="lazy">
+          <div class="news-image-gradient"></div>
+
+          <span class="news-severity-badge"
+            [style.background]="getSeverityColor(item.severity)">
+            {{getSeverityLabel(item.severity)}}
+          </span>
+
+          <button class="image-edit-btn"
+            (click)="openImagePicker(item, $event)">
+            <ph-pencil-simple weight="fill" size="14"></ph-pencil-simple>
+          </button>
+          <button *ngIf="item.customImage"
+            class="image-reset-btn"
+            (click)="resetImage(item, $event)">
+            <ph-x weight="bold" size="12"></ph-x>
+          </button>
+        </div>
+
+        <div class="news-card-body">
+          <div class="news-meta-row">
+            <div class="news-source-mini">
+              <div class="source-mini-logo" [style.background]="item.sourceColor">
+                {{item.sourceLogo}}
+              </div>
+              <span>{{item.source}}</span>
+            </div>
+            <span class="news-time">{{item.timeAgo}}</span>
+          </div>
+
+          <div class="news-title">{{item.title}}</div>
+          <div class="news-desc">{{item.desc}}</div>
+
+          <div *ngIf="item.cvssScore" class="news-cvss-mini">
+            <span class="news-cve-tag">{{item.cve}}</span>
+            <span class="news-cvss-pill"
+              [style.background]="getCvssColor(item.cvssScore)">
+              CVSS {{item.cvssScore}}
+            </span>
+            <span class="news-product-tag">{{item.affectedProduct}}</span>
+          </div>
+
+          <div *ngIf="item.action" class="news-action-pill">
+            <ph-arrow-right weight="bold" size="13"
+              style="color:var(--color-primary)"></ph-arrow-right>
+            <span>{{item.action}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INPUT FILE OCULTO -->
+    <input #imageInput type="file" accept="image/*"
+      style="display:none" (change)="onImageSelected($event)">
+
+    <div style="height:40px"></div>
+  </div>
+</ion-content>

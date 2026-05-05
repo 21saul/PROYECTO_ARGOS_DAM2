@@ -1,0 +1,132 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/onboarding" text=""></ion-back-button>
+    </ion-buttons>
+    <ion-title>Crear cuenta</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="register-content">
+  <div class="register-scroll">
+
+    <div class="register-card">
+      <div class="register-title">Crea tu cuenta gratuita</div>
+      <div class="register-sub">Empieza a protegerte en menos de 2 minutos</div>
+
+      <!-- NOMBRE -->
+      <div class="input-group">
+        <div class="input-label">Nombre</div>
+        <div class="input-wrap" [class.filled]="name">
+          <ph-user weight="bold" size="20" class="input-icon"></ph-user>
+          <input class="form-input" type="text"
+            placeholder="Tu nombre"
+            [(ngModel)]="name">
+        </div>
+      </div>
+
+      <!-- EMAIL -->
+      <div class="input-group">
+        <div class="input-label">Email</div>
+        <div class="input-wrap" [class.filled]="email">
+          <ph-envelope weight="bold" size="20" class="input-icon"></ph-envelope>
+          <input class="form-input" type="email"
+            placeholder="tu@email.com"
+            [(ngModel)]="email">
+        </div>
+      </div>
+
+      <!-- CONTRASEÑA MAESTRA -->
+      <div class="input-group">
+        <div class="input-label">
+          Contraseña maestra
+          <span class="label-hint">— La única que necesitarás recordar</span>
+        </div>
+        <div class="input-wrap" [class.filled]="password">
+          <ph-lock weight="bold" size="20" class="input-icon"></ph-lock>
+          <input class="form-input"
+            [type]="showPassword ? 'text' : 'password'"
+            placeholder="Mínimo 12 caracteres"
+            [(ngModel)]="password">
+          <button class="toggle-pass"
+            (click)="showPassword = !showPassword">
+            <ph-eye weight="bold" size="20" *ngIf="!showPassword"></ph-eye>
+            <ph-eye-slash weight="bold" size="20" *ngIf="showPassword"></ph-eye-slash>
+          </button>
+        </div>
+
+        <!-- MEDIDOR DE FORTALEZA -->
+        <div *ngIf="password" class="strength-meter">
+          <div class="strength-bars">
+            <div *ngFor="let i of [1,2,3,4,5]"
+              class="strength-bar"
+              [style.background]="i <= passwordStrength ?
+                passwordStrengthColor : 'var(--color-surface-2)'">
+            </div>
+          </div>
+          <span class="strength-label"
+            [style.color]="passwordStrengthColor">
+            {{passwordStrengthLabel}}
+          </span>
+        </div>
+      </div>
+
+      <!-- CONFIRMAR CONTRASEÑA -->
+      <div class="input-group">
+        <div class="input-label">Confirmar contraseña</div>
+        <div class="input-wrap"
+          [class.filled]="confirmPassword"
+          [class.match]="passwordsMatch"
+          [class.no-match]="confirmPassword && !passwordsMatch">
+          <ph-lock-key weight="bold" size="20" class="input-icon"></ph-lock-key>
+          <input class="form-input"
+            type="password"
+            placeholder="Repite tu contraseña"
+            [(ngModel)]="confirmPassword">
+          <ph-check-circle weight="fill" size="20"
+            *ngIf="passwordsMatch"
+            style="color:var(--color-success); flex-shrink:0">
+          </ph-check-circle>
+        </div>
+      </div>
+
+      <!-- TÉRMINOS -->
+      <div class="terms-row">
+        <div class="custom-checkbox"
+          [class.checked]="acceptTerms"
+          (click)="acceptTerms = !acceptTerms">
+          <ph-check weight="bold" size="14" *ngIf="acceptTerms"></ph-check>
+        </div>
+        <span class="terms-text">
+          Acepto los <strong>Términos de uso</strong> y la
+          <strong>Política de privacidad</strong>
+        </span>
+      </div>
+
+      <!-- ZERO KNOWLEDGE INFO -->
+      <div class="zk-info">
+        <ph-shield-check weight="fill" size="20"
+          style="color:var(--color-success); flex-shrink:0">
+        </ph-shield-check>
+        <span>Tu contraseña maestra <strong>nunca sale de tu dispositivo</strong>. Ni nosotros podemos verla.</span>
+      </div>
+
+      <!-- BOTÓN REGISTRO -->
+      <button class="register-submit-btn"
+        [disabled]="!name || !email || !password ||
+          !passwordsMatch || !acceptTerms || isLoading"
+        (click)="register()">
+        <ph-spinner weight="bold" size="20"
+          *ngIf="isLoading" class="spin">
+        </ph-spinner>
+        <span *ngIf="!isLoading">Crear mi cuenta gratis</span>
+      </button>
+
+      <button class="back-login-btn" (click)="goToLogin()">
+        ¿Ya tienes cuenta? <strong>Inicia sesión</strong>
+      </button>
+    </div>
+
+    <div style="height: 40px"></div>
+  </div>
+</ion-content>

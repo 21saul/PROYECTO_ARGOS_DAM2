@@ -1,0 +1,67 @@
+# DEPENDENCIAS
+node_modules/
+**/node_modules/
+vendor/
+**/vendor/
+
+# BUILD ARTIFACTS
+www/
+dist/
+**/www/
+**/dist/
+build/
+**/build/
+
+# TAILWIND GENERADO
+**/generated-tailwind.css
+
+# VARIABLES DE ENTORNO
+.env
+.env.local
+**/.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# SISTEMA OPERATIVO
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# LOGS
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# DDEV
+.ddev/.dbimageBuild/
+.ddev/db_snapshots/
+.ddev/import.yaml
+.ddev/import-db/
+.ddev/.global_commands/
+
+# CI4 / PHP
+**/writable/cache/*
+**/writable/logs/*
+**/writable/session/*
+**/writable/uploads/*
+**/writable/debugbar/*
+!**/writable/cache/index.html
+!**/writable/logs/index.html
+!**/writable/session/index.html
+!**/writable/uploads/index.html
+
+# CAPACITOR
+**/android/.gradle/
+**/android/app/build/
+**/android/build/
+**/ios/App/Pods/
+**/ios/App/build/
+
+# CLAUDE Y README EXCLUIDOS DEL PRIMER COMMIT
+**/[Cc][Ll][Aa][Uu][Dd][Ee].md
+**/.claude/
+README.md

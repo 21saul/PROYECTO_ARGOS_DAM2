@@ -1,0 +1,208 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/dashboard" text="">
+        <ph-arrow-left weight="bold" size="22" slot="icon-only"></ph-arrow-left>
+      </ion-back-button>
+    </ion-buttons>
+    <ion-title>Auditor Digital</ion-title>
+    <ion-buttons slot="end">
+      <ion-button>
+        <ph-export weight="bold" size="22" slot="icon-only"></ph-export>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="auditor-content">
+  <div class="auditor-scroll scroll-clean">
+
+    <div class="score-hero">
+      <app-particle-network
+        class="auditor-particles"
+        [particleColor]="'#7C3AED'"
+        [lineColor]="'#A78BFA'"
+        [particleCount]="25"
+        [maxDistance]="90"
+        [speed]="0.25">
+      </app-particle-network>
+      <div class="score-arc-wrap">
+        <svg width="200" height="200" viewBox="0 0 200 200" class="score-svg">
+          <circle cx="100" cy="100" r="80"
+            fill="none" stroke="var(--color-surface-2)" stroke-width="12"/>
+          <circle class="score-arc" cx="100" cy="100" r="80"
+            fill="none" stroke="url(#scoreGrad)" stroke-width="12"
+            stroke-linecap="round"
+            stroke-dasharray="502"
+            stroke-dashoffset="502"
+            transform="rotate(-90 100 100)"/>
+          <defs>
+            <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="var(--color-primary)"/>
+              <stop offset="100%" stop-color="var(--color-secondary)"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="score-center">
+          <div class="score-big-num">0</div>
+          <div class="score-max-text">/100</div>
+          <div class="score-status-pill" [style.background]="getScoreColor() + '22'"
+            [style.color]="getScoreColor()">
+            {{getScoreLabel()}}
+          </div>
+        </div>
+      </div>
+
+      <div class="comparison-row">
+        <div class="comparison-item">
+          <ph-trend-up weight="fill" size="18"
+            style="color:var(--color-success)"></ph-trend-up>
+          <span>+{{getDelta()}} este mes</span>
+        </div>
+        <div class="comparison-item">
+          <ph-users-three weight="fill" size="18"
+            style="color:var(--color-primary)"></ph-users-three>
+          <span>Mejor que el {{percentileRank}}%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="value-stats">
+      <div class="stat-mini">
+        <ph-shield-check weight="fill" size="22"
+          style="color:var(--color-success)"></ph-shield-check>
+        <div class="stat-mini-num">{{protectionValue}}€</div>
+        <div class="stat-mini-lbl">Daño evitado</div>
+      </div>
+      <div class="stat-mini">
+        <ph-clock weight="fill" size="22"
+          style="color:var(--color-secondary)"></ph-clock>
+        <div class="stat-mini-num">{{hoursSaved}}h</div>
+        <div class="stat-mini-lbl">Tiempo ahorrado</div>
+      </div>
+      <div class="stat-mini">
+        <ph-radar weight="fill" size="22"
+          style="color:var(--color-accent)"></ph-radar>
+        <div class="stat-mini-num">{{scansThisMonth}}</div>
+        <div class="stat-mini-lbl">Escaneos/mes</div>
+      </div>
+    </div>
+
+    <div class="action-hero">
+      <div class="action-hero-tag">
+        <ph-lightning weight="fill" size="14"></ph-lightning>
+        <span>RECOMENDADO</span>
+      </div>
+      <div class="action-hero-title">{{topAction.title}}</div>
+      <div class="action-hero-sub">{{topAction.subtitle}}</div>
+      <div class="action-hero-stats">
+        <div class="action-stat">
+          <ph-trend-up weight="fill" size="16"></ph-trend-up>
+          <span>+{{topAction.points}} puntos</span>
+        </div>
+        <div class="action-stat">
+          <ph-clock weight="fill" size="16"></ph-clock>
+          <span>{{topAction.minutes}} min</span>
+        </div>
+      </div>
+      <button class="action-hero-btn">
+        Empezar ahora
+        <ph-arrow-right weight="bold" size="18"></ph-arrow-right>
+      </button>
+    </div>
+
+    <div class="section-header">
+      <div>
+        <div class="section-title">Tu evolución</div>
+        <div class="section-sub">Últimas 8 semanas</div>
+      </div>
+      <div class="trend-badge">
+        <ph-trend-up weight="fill" size="14"></ph-trend-up>
+        +{{getDelta()}}
+      </div>
+    </div>
+
+    <div class="trend-wrap">
+      <canvas #trendCanvas></canvas>
+    </div>
+
+    <div class="section-header">
+      <div>
+        <div class="section-title">Los 3 Pilares</div>
+        <div class="section-sub">Toca cualquiera para mejorarlo</div>
+      </div>
+    </div>
+
+    <div class="pillars-list">
+      <div *ngFor="let p of pillars" class="pillar-card interactive">
+        <div class="pillar-icon-wrap" [style.background]="p.color + '22'">
+          <ph-identification-card *ngIf="p.icon === 'identification-card'"
+            weight="fill" size="22" [style.color]="p.color"></ph-identification-card>
+          <ph-key *ngIf="p.icon === 'key'"
+            weight="fill" size="22" [style.color]="p.color"></ph-key>
+          <ph-device-mobile *ngIf="p.icon === 'device-mobile'"
+            weight="fill" size="22" [style.color]="p.color"></ph-device-mobile>
+        </div>
+        <div class="pillar-info">
+          <div class="pillar-top-row">
+            <span class="pillar-label">{{p.label}}</span>
+            <span class="pillar-score">{{p.score}}<span class="pillar-max">/100</span></span>
+          </div>
+          <div class="pillar-bar-track">
+            <div class="pillar-bar-fill"
+              [style.width]="getBarWidth(p.score, p.max)"
+              [style.background]="p.color"></div>
+          </div>
+          <div class="pillar-bottom-row">
+            <span class="pillar-desc">{{p.desc}}</span>
+            <span class="pillar-improve" *ngIf="p.improvement > 0">
+              +{{p.improvement}}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <div>
+        <div class="section-title">Amenazas activas</div>
+        <div class="section-sub">{{threats.length}} filtraciones que te afectan</div>
+      </div>
+    </div>
+
+    <div class="threats-list">
+      <div *ngFor="let t of threats" class="threat-card interactive"
+        [style.border-left-color]="getThreatColor(t.severity)">
+        <div class="threat-top">
+          <div class="threat-service">
+            <ph-warning-circle weight="fill" size="18"
+              [style.color]="getThreatColor(t.severity)"></ph-warning-circle>
+            <span>{{t.service}}</span>
+          </div>
+          <span class="threat-date">{{t.date}}</span>
+        </div>
+        <div class="threat-exposed">
+          <span class="threat-exposed-label">Expuestos:</span>
+          <span class="threat-tag" *ngFor="let e of t.exposed">{{e}}</span>
+        </div>
+        <div class="threat-recommendation">
+          <ph-arrow-right weight="bold" size="14"
+            style="color:var(--color-primary)"></ph-arrow-right>
+          <span>{{t.recommendation}}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <div>
+        <div class="section-title">Mapa de habilidades</div>
+        <div class="section-sub">Basado en tu progreso del Roadmap</div>
+      </div>
+    </div>
+    <div class="radar-wrap">
+      <canvas #radarCanvas width="280" height="280"></canvas>
+    </div>
+
+    <div style="height:80px"></div>
+  </div>
+</ion-content>

@@ -1,0 +1,260 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/dashboard" text="">
+        <ph-arrow-left weight="bold" size="22" slot="icon-only"></ph-arrow-left>
+      </ion-back-button>
+    </ion-buttons>
+    <ion-title>Anti-Phishing</ion-title>
+    <ion-buttons slot="end">
+      <ion-button>
+        <ph-clock-counter-clockwise weight="bold" size="22" slot="icon-only"></ph-clock-counter-clockwise>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="phish-content">
+  <div class="phish-scroll scroll-clean">
+
+    <!-- BANNER STATS GLOBAL -->
+    <div class="phish-stats-banner">
+      <div class="phish-banner-bg"></div>
+      <div class="phish-banner-content">
+        <div class="phish-banner-icon">
+          <ph-fish-simple weight="fill" size="36"></ph-fish-simple>
+        </div>
+        <div class="phish-banner-text">
+          <div class="phish-banner-title">{{detectionRate}}%</div>
+          <div class="phish-banner-sub">Tasa de detección</div>
+        </div>
+        <div class="phish-banner-meta">
+          <div class="banner-meta-num">{{avgResponseTime}}s</div>
+          <div class="banner-meta-lbl">Respuesta media</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS PEQUEÑAS -->
+    <div class="phish-stats-row">
+      <div class="stat-mini">
+        <ph-magnifying-glass weight="fill" size="20"
+          style="color:var(--color-secondary)"></ph-magnifying-glass>
+        <div class="stat-mini-num">{{todayAnalyses}}</div>
+        <div class="stat-mini-lbl">Análisis hoy</div>
+      </div>
+      <div class="stat-mini">
+        <ph-warning weight="fill" size="20"
+          style="color:var(--color-danger)"></ph-warning>
+        <div class="stat-mini-num">{{threatsDetected}}</div>
+        <div class="stat-mini-lbl">Bloqueadas</div>
+      </div>
+      <div class="stat-mini">
+        <ph-pulse weight="fill" size="20"
+          style="color:var(--color-success)"></ph-pulse>
+        <div class="stat-mini-num live">
+          <span class="status-dot"></span>LIVE
+        </div>
+        <div class="stat-mini-lbl">Pipeline</div>
+      </div>
+    </div>
+
+    <!-- INPUT HERO ANALIZADOR -->
+    <div *ngIf="status === 'idle'" class="input-hero">
+      <div class="input-hero-decoration"></div>
+      <div class="input-hero-icon">
+        <svg width="60" height="60" viewBox="0 0 60 60" class="scan-ring">
+          <circle cx="30" cy="30" r="26" fill="none"
+            stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+          <circle cx="30" cy="30" r="26" fill="none"
+            stroke="white" stroke-width="2.5"
+            stroke-dasharray="40 120"
+            stroke-linecap="round"/>
+        </svg>
+        <ph-magnifying-glass weight="fill" size="28"
+          class="scan-icon"></ph-magnifying-glass>
+      </div>
+      <div class="input-hero-title">Analiza cualquier URL</div>
+      <div class="input-hero-sub">
+        4 motores · Heurística avanzada · Veredicto en segundos
+      </div>
+      <div class="input-row">
+        <div class="input-wrap">
+          <ph-link weight="bold" size="18" class="input-prefix-icon"></ph-link>
+          <input #urlInputEl class="url-input"
+            type="url"
+            placeholder="https://ejemplo-sospechoso.com"
+            [(ngModel)]="urlInput"
+            (keyup.enter)="analyzeUrl()">
+        </div>
+        <button class="analyze-btn"
+          [disabled]="!urlInput.trim()"
+          (click)="analyzeUrl()">
+          <ph-magnifying-glass weight="bold" size="22"></ph-magnifying-glass>
+        </button>
+      </div>
+    </div>
+
+    <!-- LOADING / VERDICT -->
+    <div *ngIf="status === 'loading'" class="pipeline-card">
+      <div class="pipeline-header">
+        <div class="pipeline-title">Analizando pipeline</div>
+        <div class="pipeline-pct">{{analysisProgress}}%</div>
+      </div>
+      <div class="pipeline-bar">
+        <div class="pipeline-bar-fill" [style.width]="analysisProgress + '%'"></div>
+      </div>
+      <div class="pipeline-checks">
+        <div *ngFor="let c of checks" class="check-row"
+          [class]="'check-' + c.status">
+          <div class="check-icon-wrap">
+            <ph-circle-notch *ngIf="c.status === 'checking'"
+              weight="bold" size="18" class="spin"></ph-circle-notch>
+            <ph-check-circle *ngIf="c.status === 'ok'"
+              weight="fill" size="18"></ph-check-circle>
+            <ph-warning *ngIf="c.status === 'warn'"
+              weight="fill" size="18"></ph-warning>
+            <ph-x-circle *ngIf="c.status === 'bad'"
+              weight="fill" size="18"></ph-x-circle>
+            <ph-clock *ngIf="c.status === 'pending'"
+              weight="bold" size="18"></ph-clock>
+          </div>
+          <div class="check-info">
+            <div class="check-top">
+              <span class="check-label">{{c.label}}</span>
+              <span class="check-source">{{c.source}}</span>
+            </div>
+            <span class="check-detail">{{c.detail}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="status === 'safe' || status === 'suspicious' || status === 'danger'"
+      class="verdict-card" [class]="'verdict-' + status">
+      <div class="verdict-icon-big" [style.background]="getVerdictColor() + '22'"
+        [style.color]="getVerdictColor()">
+        <ph-check-circle *ngIf="status === 'safe'" weight="fill" size="40"></ph-check-circle>
+        <ph-warning *ngIf="status === 'suspicious'" weight="fill" size="40"></ph-warning>
+        <ph-x-circle *ngIf="status === 'danger'" weight="fill" size="40"></ph-x-circle>
+      </div>
+      <div class="verdict-title" [style.color]="getVerdictColor()">
+        {{getVerdictTitle()}}
+      </div>
+      <div class="verdict-url">{{urlInput}}</div>
+      <div class="verdict-desc">{{getVerdictDesc()}}</div>
+      <div class="verdict-checks">
+        <div *ngFor="let c of checks" class="check-row mini">
+          <ph-check-circle *ngIf="c.status === 'ok'" weight="fill" size="16"
+            style="color:var(--color-success)"></ph-check-circle>
+          <ph-warning *ngIf="c.status === 'warn'" weight="fill" size="16"
+            style="color:var(--color-warning)"></ph-warning>
+          <ph-x-circle *ngIf="c.status === 'bad'" weight="fill" size="16"
+            style="color:var(--color-danger)"></ph-x-circle>
+          <span>{{c.label}}</span>
+        </div>
+      </div>
+      <button class="reset-btn" (click)="resetAnalysis()">
+        <ph-arrow-counter-clockwise weight="bold" size="16"></ph-arrow-counter-clockwise>
+        Analizar otra URL
+      </button>
+    </div>
+
+    <!-- HEATMAP DE OBJETIVOS -->
+    <div *ngIf="status === 'idle'" class="phish-section">
+      <div class="phish-section-header">
+        <div>
+          <div class="section-title">Objetivos más atacados</div>
+          <div class="section-sub">Últimos 30 días en España</div>
+        </div>
+        <span class="section-badge">247 totales</span>
+      </div>
+      <div class="threat-bars">
+        <div *ngFor="let t of threatTargets" class="threat-bar-row">
+          <div class="threat-bar-info">
+            <div class="threat-bar-icon" [style.background]="t.color + '22'"
+              [style.color]="t.color">
+              <ph-bank *ngIf="t.icon === 'bank'" weight="fill" size="18"></ph-bank>
+              <ph-package *ngIf="t.icon === 'package'" weight="fill" size="18"></ph-package>
+              <ph-share-network *ngIf="t.icon === 'share-network'" weight="fill" size="18"></ph-share-network>
+              <ph-television *ngIf="t.icon === 'television'" weight="fill" size="18"></ph-television>
+              <ph-envelope *ngIf="t.icon === 'envelope'" weight="fill" size="18"></ph-envelope>
+            </div>
+            <span class="threat-bar-label">{{t.category}}</span>
+            <span class="threat-bar-count">{{t.count}}</span>
+          </div>
+          <div class="threat-bar-track">
+            <div class="threat-bar-fill"
+              [style.background]="t.color"
+              [attr.data-target]="t.percentage"></div>
+          </div>
+          <span class="threat-bar-pct" [style.color]="t.color">{{t.percentage}}%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANÁLISIS RECIENTES -->
+    <div *ngIf="status === 'idle'" class="phish-section">
+      <div class="phish-section-header">
+        <div>
+          <div class="section-title">Tus análisis</div>
+          <div class="section-sub">Historial reciente</div>
+        </div>
+      </div>
+      <div class="recent-list">
+        <div *ngFor="let r of recent" class="recent-card">
+          <div class="recent-favicon" [style.background]="r.color">
+            {{r.initial}}
+          </div>
+          <div class="recent-info">
+            <div class="recent-domain">{{r.domain}}</div>
+            <div class="recent-time">{{r.date}}</div>
+          </div>
+          <span class="recent-pill"
+            [style.background]="getRecentColor(r.verdict) + '22'"
+            [style.color]="getRecentColor(r.verdict)">
+            <ph-check *ngIf="r.verdict === 'safe'" weight="bold" size="12"></ph-check>
+            <ph-warning *ngIf="r.verdict === 'suspicious'" weight="fill" size="12"></ph-warning>
+            <ph-x *ngIf="r.verdict === 'danger'" weight="bold" size="12"></ph-x>
+            {{getRecentLabel(r.verdict)}}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- EJEMPLOS COMPARATIVOS -->
+    <div *ngIf="status === 'idle'" class="phish-section">
+      <div class="phish-section-header">
+        <div>
+          <div class="section-title">Aprende a detectarlas</div>
+          <div class="section-sub">URL real vs URL falsa</div>
+        </div>
+      </div>
+      <div class="examples-list">
+        <div *ngFor="let e of urlExamples" class="example-card">
+          <div class="example-row">
+            <div class="example-side example-fake">
+              <ph-x-circle weight="fill" size="14"
+                style="color:var(--color-danger)"></ph-x-circle>
+              <span class="example-url">{{e.fake}}</span>
+            </div>
+            <div class="example-side example-real">
+              <ph-check-circle weight="fill" size="14"
+                style="color:var(--color-success)"></ph-check-circle>
+              <span class="example-url">{{e.real}}</span>
+            </div>
+          </div>
+          <div class="example-trick">
+            <ph-magnifying-glass *ngIf="e.tipIcon === 'magnifying-glass'"
+              weight="bold" size="13"></ph-magnifying-glass>
+            <ph-translate *ngIf="e.tipIcon === 'translate'"
+              weight="bold" size="13"></ph-translate>
+            <span>{{e.trick}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:40px"></div>
+  </div>
+</ion-content>

@@ -1,0 +1,99 @@
+<ion-content class="login-content" fullscreen="true">
+  <div class="login-scroll">
+
+    <!-- LOGO -->
+    <div class="login-logo">
+      <div class="logo-icon-wrap">
+        <ph-shield-check weight="fill" size="64"
+          style="color: var(--color-primary)">
+        </ph-shield-check>
+      </div>
+      <div class="logo-title">ARGOS</div>
+      <div class="logo-sub">Tu entrenador de ciberseguridad</div>
+    </div>
+
+    <!-- FORMULARIO -->
+    <div class="login-form-wrap">
+
+      <div class="form-title">Iniciar sesión</div>
+
+      <!-- EMAIL -->
+      <div class="input-group">
+        <div class="input-label">Email</div>
+        <div class="input-wrap" [class.filled]="email">
+          <ph-envelope weight="bold" size="20"
+            class="input-icon">
+          </ph-envelope>
+          <input
+            class="form-input"
+            type="email"
+            placeholder="tu@email.com"
+            [(ngModel)]="email"
+            autocomplete="email">
+        </div>
+      </div>
+
+      <!-- CONTRASEÑA -->
+      <div class="input-group">
+        <div class="input-label">Contraseña</div>
+        <div class="input-wrap" [class.filled]="password">
+          <ph-lock weight="bold" size="20"
+            class="input-icon">
+          </ph-lock>
+          <input
+            class="form-input"
+            [type]="showPassword ? 'text' : 'password'"
+            placeholder="Tu contraseña maestra"
+            [(ngModel)]="password"
+            autocomplete="current-password">
+          <button class="toggle-pass"
+            (click)="showPassword = !showPassword">
+            <ph-eye weight="bold" size="20"
+              *ngIf="!showPassword">
+            </ph-eye>
+            <ph-eye-slash weight="bold" size="20"
+              *ngIf="showPassword">
+            </ph-eye-slash>
+          </button>
+        </div>
+      </div>
+
+      <!-- OLVIDÉ CONTRASEÑA -->
+      <div class="forgot-row">
+        <button class="forgot-btn">¿Olvidaste tu contraseña?</button>
+      </div>
+
+      <!-- BOTÓN LOGIN -->
+      <button class="login-btn"
+        [disabled]="!email || !password || isLoading"
+        (click)="login()">
+        <ph-spinner weight="bold" size="20"
+          *ngIf="isLoading" class="spin">
+        </ph-spinner>
+        <span *ngIf="!isLoading">Entrar</span>
+      </button>
+
+      <!-- DIVIDER -->
+      <div class="divider">
+        <div class="divider-line"></div>
+        <span class="divider-text">o</span>
+        <div class="divider-line"></div>
+      </div>
+
+      <!-- REGISTRO -->
+      <button class="register-btn" (click)="goToRegister()">
+        ¿No tienes cuenta? <strong>Regístrate gratis</strong>
+      </button>
+
+    </div>
+
+    <!-- SEGURIDAD BADGE -->
+    <div class="security-badge">
+      <ph-shield-check weight="fill" size="16"
+        style="color:var(--color-success)">
+      </ph-shield-check>
+      <span>Zero-Knowledge · Tus datos nunca salen de tu dispositivo</span>
+    </div>
+
+  </div>
+</ion-content>

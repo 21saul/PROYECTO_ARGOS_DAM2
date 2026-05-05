@@ -1,0 +1,120 @@
+<!-- HEADER PRINCIPAL DE LA PAGINA DE PERFIL -->
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/dashboard" text="">
+        <ph-arrow-left weight="bold" size="22" slot="icon-only"></ph-arrow-left>
+      </ion-back-button>
+    </ion-buttons>
+    <ion-title>Mi Perfil</ion-title>
+    <ion-buttons slot="end">
+      <ion-button>
+        <ph-gear-six weight="fill" size="22" slot="icon-only"></ph-gear-six>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<!-- CONTENIDO PRINCIPAL CON HERO, ESTADISTICAS, TOGGLE Y MENU -->
+<ion-content class="profile-content">
+
+  <!-- HERO SUPERIOR CON GRADIENTE DE MARCA Y AVATAR DEL USUARIO -->
+  <div class="profile-hero gradient-primary">
+    <!-- ENVOLTORIO DEL AVATAR CON BADGE DE EDICION SUPERPUESTO -->
+    <div class="profile-avatar-wrap" (click)="openAvatarPicker()">
+      <!-- AVATAR CIRCULAR — MUESTRA IMAGEN SUBIDA O LA INICIAL DEL USUARIO -->
+      <div class="profile-avatar interactive">
+        <img *ngIf="avatar" [src]="avatar" alt="Avatar">
+        <span *ngIf="!avatar">{{getInitial()}}</span>
+      </div>
+      <!-- BADGE FLOTANTE FUERA DEL AVATAR PARA QUE NO LO RECORTE EL OVERFLOW -->
+      <div class="avatar-edit-badge">
+        <ph-camera weight="fill" size="16"></ph-camera>
+      </div>
+      <!-- INPUT FILE OCULTO QUE SE DISPARA AL TOCAR EL AVATAR -->
+      <input #avatarInput
+        type="file"
+        accept="image/*"
+        style="display:none"
+        (change)="onAvatarSelected($event)">
+    </div>
+    <!-- NOMBRE DEL USUARIO MOSTRADO EN GRANDE -->
+    <div class="profile-name">{{displayName}}</div>
+    <!-- EMAIL DEL USUARIO ATENUADO BAJO EL NOMBRE -->
+    <div class="profile-email">usuario@argos.app</div>
+    <!-- PILDORA INFORMATIVA CON EL NIVEL Y RANGO DEL USUARIO -->
+    <div class="profile-level-badge">
+      <ph-star weight="fill"></ph-star>
+      Nivel 5 · Guardián Digital
+    </div>
+  </div>
+
+  <!-- GRID DE ESTADISTICAS DE GAMIFICACION DE 4 COLUMNAS -->
+  <div class="profile-stats">
+    <!-- TARJETA INDIVIDUAL POR CADA ESTADISTICA CONFIGURADA -->
+    <div *ngFor="let s of stats" class="profile-stat">
+      <span class="profile-stat-icon">
+        <ng-container [ngSwitch]="s.iconKey">
+          <ph-star         *ngSwitchCase="'star'"         weight="fill"></ph-star>
+          <ph-fire         *ngSwitchCase="'fire'"         weight="fill"></ph-fire>
+          <ph-medal        *ngSwitchCase="'medal'"        weight="fill"></ph-medal>
+          <ph-map-trifold  *ngSwitchCase="'map-trifold'"  weight="fill"></ph-map-trifold>
+        </ng-container>
+      </span>
+      <span class="profile-stat-val">{{s.value}}</span>
+      <span class="profile-stat-lbl">{{s.label}}</span>
+    </div>
+  </div>
+
+  <!-- TARJETA DE TOGGLE DE TEMA CLARO/OSCURO -->
+  <div class="theme-card">
+    <!-- BLOQUE IZQUIERDO CON ICONO Y DESCRIPCION DEL TEMA -->
+    <div class="theme-card-left">
+      <ph-moon *ngIf="isDark"  weight="fill" size="24" class="theme-icon"></ph-moon>
+      <ph-sun  *ngIf="!isDark" weight="fill" size="24" class="theme-icon"></ph-sun>
+      <div class="theme-info">
+        <span class="theme-label">Tema {{isDark ? 'Oscuro' : 'Claro'}}</span>
+        <span class="theme-sub">Cambiar apariencia de la app</span>
+      </div>
+    </div>
+    <!-- TOGGLE DE IONIC SINCRONIZADO CON EL ESTADO DEL TEMA -->
+    <ion-toggle
+      [checked]="isDark"
+      (ionChange)="toggleTheme()"
+      class="argos-toggle">
+    </ion-toggle>
+  </div>
+
+  <!-- LISTA AGRUPADA DE OPCIONES DEL MENU -->
+  <div class="menu-list">
+    <!-- OPCION INDIVIDUAL POR CADA ENTRADA DEL MENU -->
+    <div *ngFor="let item of menuItems"
+      class="menu-item"
+      [class.danger]="item.danger">
+      <!-- ICONO DE LA OPCION CON FONDO RESALTADO PARA ACCIONES PELIGROSAS -->
+      <div class="menu-icon-wrap" [class.danger]="item.danger">
+        <ng-container [ngSwitch]="item.iconKey">
+          <ph-bell         *ngSwitchCase="'bell'"         weight="fill" size="22"></ph-bell>
+          <ph-shield-check *ngSwitchCase="'shield-check'" weight="fill" size="22"></ph-shield-check>
+          <ph-palette      *ngSwitchCase="'palette'"      weight="fill" size="22"></ph-palette>
+          <ph-export       *ngSwitchCase="'export'"       weight="fill" size="22"></ph-export>
+          <ph-question     *ngSwitchCase="'question'"     weight="fill" size="22"></ph-question>
+          <ph-sign-out     *ngSwitchCase="'sign-out'"     weight="fill" size="22"></ph-sign-out>
+        </ng-container>
+      </div>
+      <!-- BLOQUE CENTRAL CON ETIQUETA Y DESCRIPCION SECUNDARIA -->
+      <div class="menu-info">
+        <span class="menu-label" [class.danger-text]="item.danger">{{item.label}}</span>
+        <span class="menu-desc">{{item.desc}}</span>
+      </div>
+      <!-- INDICADOR DE NAVEGACION HACIA LA DERECHA -->
+      <ph-caret-right weight="bold" size="18" class="menu-arrow"></ph-caret-right>
+    </div>
+  </div>
+
+  <!-- VERSION DE LA APP MOSTRADA AL FINAL DE LA PANTALLA -->
+  <div class="app-version">ARGOS v1.0.0 · Hecho con 🛡️ en España</div>
+
+  <!-- ESPACIADOR INFERIOR PARA RESPIRACION VISUAL -->
+  <div style="height: 40px"></div>
+</ion-content>

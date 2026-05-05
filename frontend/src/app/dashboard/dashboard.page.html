@@ -1,0 +1,142 @@
+<ion-header class="dash-header">
+  <ion-toolbar>
+    <div class="dash-header-inner">
+      <div class="dash-greet">
+        <button class="avatar-btn interactive" (click)="goTo('/profile')">
+          <img *ngIf="avatar" [src]="avatar" alt="Avatar">
+          <span *ngIf="!avatar">{{getInitial()}}</span>
+        </button>
+        <div class="dash-greet-text">
+          <div class="dash-name">
+            Hola, Usuario
+            <span class="wave-emoji">👋</span>
+          </div>
+          <div class="dash-meta">
+            <span class="online-dot"></span>
+            <span class="dash-meta-text">Protección activa · Nivel 5</span>
+          </div>
+        </div>
+      </div>
+      <button class="icon-btn interactive" (click)="goTo('/profile')">
+        <ph-gear-six weight="fill" size="20"></ph-gear-six>
+      </button>
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="dash-content">
+  <div class="dash-scroll scroll-clean">
+
+    <!-- HERO SCORE CARD -->
+    <div class="score-card">
+      <app-particle-network
+        particleColor="#A78BFA"
+        lineColor="#FFFFFF"
+        [particleCount]="35"
+        [maxDistance]="100"
+        [speed]="0.3">
+      </app-particle-network>
+      <div class="score-bg-decoration"></div>
+      <div class="score-card-grid">
+        <div class="score-info">
+          <div class="label-caps" style="color:rgba(255,255,255,0.7)">PRIVACY SCORE</div>
+          <div class="score-num number-display">0</div>
+          <div class="score-pill">
+            <span class="status-dot" [style.background]="scoreStatusColor" [style.box-shadow]="'0 0 8px ' + scoreStatusColor"></span>
+            <span>{{ scoreLabel }}</span>
+          </div>
+          <div class="score-bar">
+            <div class="score-bar-fill"></div>
+          </div>
+        </div>
+        <div class="score-mascot">
+          <app-argus [size]="86" mood="happy"></app-argus>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS GRID -->
+    <div class="stats-grid">
+      <div class="stat-card surface interactive">
+        <div class="stat-icon stat-icon-fire">
+          <ph-fire weight="fill" size="22" class="streak-fire"></ph-fire>
+        </div>
+        <div class="stat-num number-display">{{streak}}</div>
+        <div class="label-caps">Racha</div>
+      </div>
+      <div class="stat-card surface interactive">
+        <div class="stat-icon stat-icon-xp">
+          <ph-star weight="fill" size="22"></ph-star>
+        </div>
+        <div class="stat-num number-display">{{xp}}</div>
+        <div class="label-caps">XP</div>
+      </div>
+      <div class="stat-card surface interactive">
+        <div class="stat-icon stat-icon-level">
+          <ph-trophy weight="fill" size="22"></ph-trophy>
+        </div>
+        <div class="stat-num number-display">{{level}}</div>
+        <div class="label-caps">Nivel</div>
+      </div>
+      <div class="stat-card surface interactive">
+        <div class="stat-icon stat-icon-medal">
+          <ph-medal weight="fill" size="22"></ph-medal>
+        </div>
+        <div class="stat-num number-display">{{achievements}}</div>
+        <div class="label-caps">Logros</div>
+      </div>
+    </div>
+
+    <!-- SECTION HEADER -->
+    <div class="section-head">
+      <div>
+        <div class="text-h3">Tus módulos</div>
+        <div class="label-caps" style="margin-top:2px">¿Por dónde empezamos hoy?</div>
+      </div>
+    </div>
+
+    <!-- MODULES GRID -->
+    <div class="modules-grid">
+      <div *ngFor="let m of modules; let i = index"
+        class="module-card surface interactive"
+        [class.module-wide]="i === 4"
+        (click)="goTo(m.route)">
+        <div class="module-top">
+          <div class="module-icon-wrap" [style.background]="m.color + '1F'">
+            <ph-vault *ngIf="m.route==='/vault'" weight="fill" size="24" [style.color]="m.color"></ph-vault>
+            <ph-chart-bar *ngIf="m.route==='/auditor'" weight="fill" size="24" [style.color]="m.color"></ph-chart-bar>
+            <ph-fish-simple *ngIf="m.route==='/phishing'" weight="fill" size="24" [style.color]="m.color"></ph-fish-simple>
+            <ph-map-trifold *ngIf="m.route==='/roadmap'" weight="fill" size="24" [style.color]="m.color"></ph-map-trifold>
+            <ph-bell-ringing *ngIf="m.route==='/news'" weight="fill" size="24" [style.color]="m.color"></ph-bell-ringing>
+          </div>
+          <span class="module-badge" [style.background]="m.color + '22'" [style.color]="m.color">→</span>
+        </div>
+        <div class="module-text">
+          <div class="module-label">{{m.label}}</div>
+          <div class="module-desc">{{m.desc}}</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:140px"></div>
+  </div>
+</ion-content>
+
+<ion-tab-bar class="dash-tabbar">
+  <ion-tab-button (click)="goTo('/dashboard')" class="tab-active">
+    <ph-house weight="fill" size="22"></ph-house>
+    <span>Inicio</span>
+  </ion-tab-button>
+  <ion-tab-button (click)="goTo('/vault')">
+    <ph-vault weight="bold" size="22"></ph-vault>
+    <span>Bóveda</span>
+  </ion-tab-button>
+  <ion-tab-button (click)="goTo('/roadmap')">
+    <ph-map-trifold weight="bold" size="22"></ph-map-trifold>
+    <span>Roadmap</span>
+  </ion-tab-button>
+  <ion-tab-button (click)="goTo('/profile')">
+    <ph-user-circle weight="bold" size="22"></ph-user-circle>
+    <span>Perfil</span>
+  </ion-tab-button>
+</ion-tab-bar>

@@ -1,0 +1,277 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/dashboard" text="">
+        <ph-arrow-left weight="bold" size="22" slot="icon-only"></ph-arrow-left>
+      </ion-back-button>
+    </ion-buttons>
+    <ion-title>Mi Bóveda</ion-title>
+    <ion-buttons slot="end">
+      <ion-button>
+        <ph-magnifying-glass weight="bold" size="22" slot="icon-only"></ph-magnifying-glass>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="vault-content">
+  <div class="vault-scroll scroll-clean">
+
+    <div class="vault-stats-banner">
+      <div class="vault-banner-bg"></div>
+      <div class="vault-banner-grid">
+        <div class="vault-banner-icon">
+          <ph-vault weight="fill" size="36"></ph-vault>
+        </div>
+        <div class="vault-banner-content">
+          <div class="vault-banner-title">{{totalEntries}} elementos</div>
+          <div class="vault-banner-sub">
+            <ph-shield-check weight="fill" size="13"></ph-shield-check>
+            Cifrado AES-256-GCM
+          </div>
+        </div>
+        <div class="vault-banner-storage">
+          <div class="storage-text">{{storageUsedMb}}/{{storageTotalMb}} MB</div>
+          <div class="storage-track">
+            <div class="storage-fill" [style.width]="getStorageProgress() + '%'"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-pill">
+        <ph-key weight="fill" size="18"
+          style="color:var(--color-primary)"></ph-key>
+        <div class="stat-pill-num">{{strongPercent}}%</div>
+        <div class="stat-pill-lbl">Fuertes</div>
+      </div>
+      <div class="stat-pill">
+        <ph-folder weight="fill" size="18"
+          style="color:var(--color-secondary)"></ph-folder>
+        <div class="stat-pill-num">{{folders.length}}</div>
+        <div class="stat-pill-lbl">Carpetas</div>
+      </div>
+      <div class="stat-pill">
+        <ph-cloud-arrow-up weight="fill" size="18"
+          style="color:var(--color-success)"></ph-cloud-arrow-up>
+        <div class="stat-pill-num">Hoy</div>
+        <div class="stat-pill-lbl">Sincronizado</div>
+      </div>
+    </div>
+
+    <div class="search-wrap">
+      <ph-magnifying-glass weight="bold" size="18" class="search-icon"></ph-magnifying-glass>
+      <input class="search-input" type="text"
+        placeholder="Buscar contraseña, nota o archivo..."
+        [(ngModel)]="searchQuery">
+      <button *ngIf="searchQuery" class="search-clear"
+        (click)="searchQuery=''">
+        <ph-x weight="bold" size="14"></ph-x>
+      </button>
+    </div>
+
+    <div class="tabs-scroll">
+      <div class="tabs-inner">
+        <button class="tab-pill" [class.active]="activeTab === 'all'"
+          (click)="setTab('all')">
+          <ph-list-bullets weight="bold" size="14"></ph-list-bullets>
+          <span>Todo</span>
+        </button>
+        <button class="tab-pill" [class.active]="activeTab === 'password'"
+          (click)="setTab('password')">
+          <ph-key weight="fill" size="14"></ph-key>
+          <span>Contraseñas</span>
+        </button>
+        <button class="tab-pill" [class.active]="activeTab === 'note'"
+          (click)="setTab('note')">
+          <ph-note weight="fill" size="14"></ph-note>
+          <span>Notas</span>
+        </button>
+        <button class="tab-pill" [class.active]="activeTab === 'file'"
+          (click)="setTab('file')">
+          <ph-file weight="fill" size="14"></ph-file>
+          <span>Archivos</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="folders-section">
+      <div class="folders-header">
+        <span class="folders-title">Carpetas</span>
+        <span class="folders-count">{{folders.length}} organizadas</span>
+      </div>
+      <div class="folders-scroll">
+        <div class="folder-card"
+          [class.active]="activeFolderId === null"
+          (click)="selectFolder(null)">
+          <div class="folder-icon-wrap"
+            style="background: color-mix(in srgb, var(--color-primary) 18%, transparent)">
+            <ph-list-bullets weight="bold" size="20"
+              style="color:var(--color-primary)"></ph-list-bullets>
+          </div>
+          <div class="folder-name">Todo</div>
+          <div class="folder-count">{{items.length}} elementos</div>
+        </div>
+        <div *ngFor="let f of folders" class="folder-card"
+          [class.active]="activeFolderId === f.id"
+          (click)="selectFolder(f.id)">
+          <div class="folder-icon-wrap" [style.background]="f.color + '22'">
+            <ph-bank *ngIf="f.icon === 'bank'" weight="fill" size="20"
+              [style.color]="f.color"></ph-bank>
+            <ph-envelope *ngIf="f.icon === 'envelope'" weight="fill" size="20"
+              [style.color]="f.color"></ph-envelope>
+            <ph-share-network *ngIf="f.icon === 'share-network'" weight="fill" size="20"
+              [style.color]="f.color"></ph-share-network>
+            <ph-briefcase *ngIf="f.icon === 'briefcase'" weight="fill" size="20"
+              [style.color]="f.color"></ph-briefcase>
+            <ph-house-line *ngIf="f.icon === 'house-line'" weight="fill" size="20"
+              [style.color]="f.color"></ph-house-line>
+          </div>
+          <div class="folder-name">{{f.name}}</div>
+          <div class="folder-count">{{f.itemCount}} elementos</div>
+          <div class="folder-health-bar">
+            <div class="folder-health-fill"
+              [style.width]="f.healthScore + '%'"
+              [style.background]="getHealthColor(f.healthScore)"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="list-section">
+      <div class="list-header">
+        <div>
+          <div class="list-title" *ngIf="activeFolderId === null">
+            {{ activeTab === 'all' ? 'Todos los elementos' :
+               activeTab === 'password' ? 'Contraseñas' :
+               activeTab === 'note' ? 'Notas seguras' : 'Archivos cifrados' }}
+          </div>
+          <div class="list-title" *ngIf="activeFolderId !== null">
+            {{ getFolderName(activeFolderId!) }}
+          </div>
+          <div class="list-sub">{{filteredItems.length}} resultados</div>
+        </div>
+      </div>
+
+      <div class="vault-list">
+        <div *ngFor="let item of filteredItems" class="vault-item"
+          [id]="'item-' + item.id">
+
+          <div class="item-avatar interactive"
+            [style.background]="item.customIcon ? 'transparent' : item.color"
+            (click)="openIconPicker(item, $event)">
+            <img *ngIf="item.customIcon" [src]="item.customIcon" [alt]="item.name">
+            <ph-key *ngIf="!item.customIcon && item.type === 'password'"
+              weight="fill" size="20" style="color:white"></ph-key>
+            <ph-note *ngIf="!item.customIcon && item.type === 'note'"
+              weight="fill" size="20" style="color:white"></ph-note>
+            <ph-file *ngIf="!item.customIcon && item.type === 'file'"
+              weight="fill" size="20" style="color:white"></ph-file>
+            <div class="item-edit-badge">
+              <ph-pencil-simple weight="fill" size="9"></ph-pencil-simple>
+            </div>
+          </div>
+
+          <div class="item-info">
+            <div class="item-top-row">
+              <span class="item-name">{{item.name}}</span>
+              <span *ngIf="item.type === 'password'" class="strength-pill"
+                [style.background]="getStrengthColor(item.strength) + '22'"
+                [style.color]="getStrengthColor(item.strength)">
+                {{getStrengthLabel(item.strength)}}
+              </span>
+              <span *ngIf="item.type === 'file'" class="file-ext-pill">
+                {{item.fileExt}}
+              </span>
+            </div>
+            <div class="item-meta">
+              <span *ngIf="item.type === 'password'" class="item-username">
+                {{item.username}}
+              </span>
+              <span *ngIf="item.type === 'note'" class="item-snippet">
+                {{item.noteSnippet}}
+              </span>
+              <span *ngIf="item.type === 'file'" class="item-filesize">
+                {{item.fileSize}}
+              </span>
+            </div>
+            <div class="item-bottom-row">
+              <span class="item-folder-tag"
+                [style.background]="getFolderColor(item.folderId) + '18'"
+                [style.color]="getFolderColor(item.folderId)">
+                <ph-folder weight="fill" size="10"></ph-folder>
+                {{getFolderName(item.folderId)}}
+              </span>
+              <span class="item-date">{{item.lastModified}}</span>
+            </div>
+          </div>
+
+          <button class="item-action" (click)="copyPassword(item, $event)">
+            <ph-copy *ngIf="item.type === 'password'" weight="bold" size="18"></ph-copy>
+            <ph-eye *ngIf="item.type === 'note'" weight="bold" size="18"></ph-eye>
+            <ph-download-simple *ngIf="item.type === 'file'" weight="bold" size="18"></ph-download-simple>
+          </button>
+        </div>
+
+        <div *ngIf="filteredItems.length === 0" class="empty-state">
+          <ph-archive weight="thin" size="48" style="color:var(--color-text-muted)"></ph-archive>
+          <div class="empty-title">Nada por aquí</div>
+          <div class="empty-sub">
+            {{searchQuery ? 'Sin resultados para "' + searchQuery + '"' :
+              'Pulsa el + para añadir tu primer elemento'}}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:120px"></div>
+  </div>
+
+  <div *ngIf="showCipherAnim" class="cipher-overlay">
+    <div class="cipher-modal">
+      <div class="cipher-icon-stack">
+        <div class="cipher-shield">
+          <ph-shield-check weight="fill" size="64"
+            style="color:var(--color-primary)"></ph-shield-check>
+        </div>
+        <div class="cipher-rings">
+          <div class="cipher-ring r1"></div>
+          <div class="cipher-ring r2"></div>
+          <div class="cipher-ring r3"></div>
+        </div>
+      </div>
+      <div class="cipher-title">Cifrando archivo</div>
+      <div class="cipher-sub">AES-256-GCM · Argon2id</div>
+      <div class="cipher-progress">
+        <div class="cipher-progress-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fab-container" [class.open]="fabOpen">
+    <div class="fab-menu">
+      <button class="fab-mini" (click)="addFile()">
+        <ph-file weight="fill" size="18"></ph-file>
+        <span>Archivo</span>
+      </button>
+      <button class="fab-mini" (click)="addNote()">
+        <ph-note weight="fill" size="18"></ph-note>
+        <span>Nota</span>
+      </button>
+      <button class="fab-mini" (click)="addPassword()">
+        <ph-key weight="fill" size="18"></ph-key>
+        <span>Contraseña</span>
+      </button>
+    </div>
+    <button class="fab-main" (click)="toggleFab()">
+      <ph-plus weight="bold" size="26"></ph-plus>
+    </button>
+  </div>
+
+  <input #iconInput type="file" accept="image/*"
+    style="display:none" (change)="onIconSelected($event)">
+  <input #fileInput type="file"
+    style="display:none" (change)="onFileSelected($event)">
+
+</ion-content>

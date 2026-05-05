@@ -1,0 +1,107 @@
+<!-- CONTENIDO PRINCIPAL DE LA PAGINA DE ONBOARDING DE ARGOS — SIN HEADER PARA INMERSION TOTAL -->
+<ion-content [fullscreen]="true" class="onboarding-content">
+
+  <!-- CARRUSEL DE SWIPER QUE CONTIENE LOS TRES SLIDES DE BIENVENIDA -->
+  <swiper-container
+    class="onboarding-swiper"
+    [attr.slides-per-view]="1"
+    [attr.speed]="400"
+    (slidechange)="onSlideChange($event)">
+
+    <!-- SLIDE 1 — BIENVENIDA CON ESCUDO+OJO Y MENSAJE INICIAL -->
+    <swiper-slide class="argos-slide argos-slide--welcome">
+      <div class="argos-slide__inner">
+
+        <!-- MASCOTA ARGUS COMO LOGO DE BIENVENIDA EN ESTADO HAPPY -->
+        <app-argus [size]="140" mood="happy" class="shield-icon">
+        </app-argus>
+
+        <!-- TITULO DE BIENVENIDA — USA LA CLASE GLOBAL .text-hero PARA TIPOGRAFIA CONSISTENTE -->
+        <h1 class="argos-title text-hero">Bienvenido a ARGOS</h1>
+        <!-- SUBTITULO DESCRIPTIVO — USA CLASES GLOBALES .text-body Y .text-muted -->
+        <p class="argos-subtitle text-body text-muted">Tu entrenador personal de ciberseguridad</p>
+
+      </div>
+    </swiper-slide>
+
+    <!-- SLIDE 2 — RESUMEN DE LO QUE OFRECE ARGOS EN TRES TARJETAS HORIZONTALES -->
+    <swiper-slide class="argos-slide argos-slide--features">
+      <div class="argos-slide__inner">
+
+        <!-- TITULO DE LA SECCION DE CARACTERISTICAS -->
+        <h2 class="argos-title">Todo lo que necesitas</h2>
+
+        <!-- CONTENEDOR DE LAS TARJETAS DE CARACTERISTICAS -->
+        <div class="argos-features">
+
+          <!-- TARJETA 1 — BOVEDA CIFRADA -->
+          <article class="argos-feature-card">
+            <span class="argos-feature-card__icon" aria-hidden="true">
+              <ph-vault weight="fill" size="40"></ph-vault>
+            </span>
+            <span class="argos-feature-card__text">Bóveda cifrada</span>
+          </article>
+
+          <!-- TARJETA 2 — AUDITOR DE SEGURIDAD -->
+          <article class="argos-feature-card">
+            <span class="argos-feature-card__icon" aria-hidden="true">
+              <ph-chart-bar weight="fill" size="40"></ph-chart-bar>
+            </span>
+            <span class="argos-feature-card__text">Auditor de seguridad</span>
+          </article>
+
+          <!-- TARJETA 3 — APRENDIZAJE GAMIFICADO -->
+          <article class="argos-feature-card">
+            <span class="argos-feature-card__icon" aria-hidden="true">
+              <ph-graduation-cap weight="fill" size="40"></ph-graduation-cap>
+            </span>
+            <span class="argos-feature-card__text">Aprende jugando</span>
+          </article>
+
+        </div>
+
+      </div>
+    </swiper-slide>
+
+    <!-- SLIDE 3 — CTA FINAL CON BOTONES DE REGISTRO Y LOGIN -->
+    <swiper-slide class="argos-slide argos-slide--cta">
+      <div class="argos-slide__inner">
+
+        <!-- TITULO PRINCIPAL DE LA LLAMADA A LA ACCION -->
+        <h1 class="argos-title argos-title--cta">Empieza en 10 minutos</h1>
+        <!-- SUBTITULO QUE ELIMINA OBJECCIONES Y BAJA LA BARRERA DE ENTRADA -->
+        <p class="argos-subtitle">Sin conocimientos técnicos. Sin excusas.</p>
+
+        <!-- BOTON PRIMARIO — USA CLASES GLOBALES .btn-primary Y .shadow-glow-primary -->
+        <button
+          type="button"
+          class="btn-primary shadow-glow-primary"
+          (click)="goToSignUp()">
+          Crear mi cuenta
+        </button>
+
+        <!-- BOTON SECUNDARIO — USA CLASE GLOBAL .btn-ghost -->
+        <button
+          type="button"
+          class="btn-ghost"
+          (click)="goToLogin()">
+          Ya tengo cuenta
+        </button>
+
+      </div>
+    </swiper-slide>
+
+  </swiper-container>
+
+  <!-- INDICADORES DE PROGRESO (DOTS) — EL ACTIVO USA LA VARIABLE --color-primary -->
+  <div class="argos-dots" role="tablist" aria-label="Progreso del onboarding">
+    <span
+      *ngFor="let i of dotIndices"
+      class="argos-dots__dot"
+      [class.argos-dots__dot--active]="i === activeIndex"
+      role="tab"
+      [attr.aria-selected]="i === activeIndex">
+    </span>
+  </div>
+
+</ion-content>

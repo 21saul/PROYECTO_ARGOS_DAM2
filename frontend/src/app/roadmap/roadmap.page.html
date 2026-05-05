@@ -1,0 +1,149 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/dashboard" text=""></ion-back-button>
+    </ion-buttons>
+    <ion-title>Mi Progreso</ion-title>
+    <ion-buttons slot="end">
+      <ion-button>
+        <ph-trophy weight="fill" size="24"></ph-trophy>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+
+  <!-- STATS BAR -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <span class="stat-val"><ph-fire weight="fill"></ph-fire> {{stats.streak}}</span>
+      <span class="stat-lbl">RACHA</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-val"><ph-star weight="fill"></ph-star> {{stats.xp}}</span>
+      <span class="stat-lbl">XP</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-val"><ph-trophy weight="fill"></ph-trophy> {{stats.level}}</span>
+      <span class="stat-lbl">NIVEL</span>
+    </div>
+  </div>
+
+  <!-- SELECTOR DE ITINERARIOS -->
+  <div class="itinerary-scroll">
+    <div class="itinerary-pills">
+      <button
+        *ngFor="let it of itineraries"
+        class="itinerary-pill"
+        [class.active]="activeItinerary.id === it.id"
+        (click)="selectItinerary(it)">
+        <ng-container [ngSwitch]="it.id">
+          <ph-leaf             *ngSwitchCase="'beginner'" weight="fill" size="20"></ph-leaf>
+          <ph-globe            *ngSwitchCase="'pentest'"  weight="fill" size="20"></ph-globe>
+          <ph-terminal-window  *ngSwitchCase="'linux'"    weight="fill" size="20"></ph-terminal-window>
+          <ph-shield-check     *ngSwitchCase="'soc'"      weight="fill" size="20"></ph-shield-check>
+          <ph-skull            *ngSwitchCase="'redteam'"  weight="fill" size="20"></ph-skull>
+        </ng-container>
+        {{it.label}}
+      </button>
+    </div>
+  </div>
+
+  <!-- CARD DE PROGRESO -->
+  <div class="progress-card gradient-primary">
+    <div class="progress-card-top">
+      <div>
+        <div class="progress-card-title">{{activeItinerary.label}}</div>
+        <div class="progress-card-sub">{{activeItinerary.completed}} de {{activeItinerary.total}} nodos</div>
+      </div>
+      <div class="progress-pct">{{activeItinerary.progress}}%</div>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" [style.width]="activeItinerary.progress + '%'"></div>
+    </div>
+  </div>
+
+  <!-- MAPA DE NODOS -->
+  <div class="nodes-map">
+    <ng-container *ngFor="let node of activeItinerary.nodes; let i = index">
+
+      <div class="node-row"
+        [class.row-left]="i % 4 === 0"
+        [class.row-mid-left]="i % 4 === 1"
+        [class.row-mid-right]="i % 4 === 2"
+        [class.row-right]="i % 4 === 3">
+
+        <!-- TOOLTIP EMPEZAR -->
+        <div *ngIf="node.status === 'active'" class="start-tooltip">
+          <span>EMPEZAR</span>
+          <div class="tooltip-arrow"></div>
+        </div>
+
+        <!-- CHIP NODO -->
+        <div class="node-chip"
+          [class]="'chip-' + node.status + ' type-' + node.nodeType"
+          (click)="onNodeTap(node)">
+          <div class="chip-shadow"></div>
+          <div class="chip-base"></div>
+          <div class="chip-top">
+
+            <!-- LESSON: estrella si activo, check si completado, lock si bloqueado -->
+            <ng-container *ngIf="node.nodeType === 'lesson'">
+              <ph-star *ngIf="node.status === 'active'" weight="fill" size="38" class="chip-icon"></ph-star>
+              <ph-check *ngIf="node.status === 'completed'" weight="bold" size="34" class="chip-icon"></ph-check>
+              <ph-lock *ngIf="node.status === 'locked'" weight="fill" size="28" class="chip-icon"></ph-lock>
+            </ng-container>
+
+            <!-- PRACTICE: mancuerna -->
+            <ng-container *ngIf="node.nodeType === 'practice'">
+              <ph-barbell *ngIf="node.status !== 'locked'" weight="fill" size="34" class="chip-icon"></ph-barbell>
+              <ph-lock *ngIf="node.status === 'locked'" weight="fill" size="28" class="chip-icon"></ph-lock>
+            </ng-container>
+
+            <!-- REVIEW: velocímetro -->
+            <ng-container *ngIf="node.nodeType === 'review'">
+              <ph-gauge *ngIf="node.status !== 'locked'" weight="fill" size="34" class="chip-icon"></ph-gauge>
+              <ph-lock *ngIf="node.status === 'locked'" weight="fill" size="28" class="chip-icon"></ph-lock>
+            </ng-container>
+
+            <!-- CHEST: cofre -->
+            <ng-container *ngIf="node.nodeType === 'chest'">
+              <ph-treasure-chest weight="fill" size="36" class="chip-icon"></ph-treasure-chest>
+            </ng-container>
+
+            <!-- BOSS: corona/llama -->
+            <ng-container *ngIf="node.nodeType === 'boss'">
+              <ph-crown *ngIf="node.status !== 'locked'" weight="fill" size="36" class="chip-icon"></ph-crown>
+              <ph-lock *ngIf="node.status === 'locked'" weight="fill" size="28" class="chip-icon"></ph-lock>
+            </ng-container>
+
+          </div>
+        </div>
+
+        <!-- CAPTION -->
+        <div class="node-caption" [class.locked]="node.status === 'locked'">
+          <div class="node-caption-title">{{node.title}}</div>
+          <div *ngIf="node.status !== 'locked'" class="node-caption-xp">+{{node.xp}} XP</div>
+        </div>
+
+      </div>
+
+      <!-- ESCENA MASCOTA DURMIENTE cada 5 nodos -->
+      <div *ngIf="i === 4 || i === 9" class="scene-mascot"
+        [class.scene-left]="i === 4"
+        [class.scene-right]="i === 9">
+        <div class="zzz">z<span>z</span><span>z</span></div>
+        <div class="sleep-bubble">
+          <ph-moon weight="fill" size="24" style="color:var(--color-secondary)"></ph-moon>
+        </div>
+      </div>
+
+    </ng-container>
+
+    <div style="height:80px"></div>
+  </div>
+
+</ion-content>
