@@ -1,0 +1,33 @@
+# DOCKER-COMPOSE PARA LEVANTAR N8N SELF-HOSTED AISLADO
+# RESUMEN: ORQUESTA UN CONTENEDOR DE N8N EN LOCALHOST 5678 PARA
+# EJECUTAR LOS WORKFLOWS DE INGESTA DE NVD Y RSS DE ARGOS.
+# LOGICA DE NEGOCIO: SE EXPONE SOLO EN 127.0.0.1 PARA EVITAR
+# ACCESO EXTERNO. LA CONEXION A MARIADB SE HACE A TRAVES DE
+# host.docker.internal QUE APUNTA A LA BASE DE DATOS DE DDEV.
+version: '3.8'
+
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: argos-n8n
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5679:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=argos_n8n_local
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5679/
+      - GENERIC_TIMEZONE=Europe/Madrid
+      - N8N_DEFAULT_LOCALE=es
+      - N8N_DISABLE_PRODUCTION_MAIN_PROCESS_WEBHOOK=true
+      - DB_TYPE=sqlite
+      - N8N_USER_FOLDER=/home/node/.n8n
+    volumes:
+      - ./data:/home/node/.n8n
+      - ./workflows:/workflows:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

@@ -1,0 +1,157 @@
+{
+  "name": "ARGOS - Ingesta de feeds RSS",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      "id": "trigger-cron-rss",
+      "name": "Cron cada 24h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "url": "https://www.incibe.es/incibe/feeds/avisos-seguridad.rss"
+      },
+      "id": "rss-incibe",
+      "name": "RSS INCIBE",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [460, 200]
+    },
+    {
+      "parameters": {
+        "url": "https://unaaldia.hispasec.com/feed"
+      },
+      "id": "rss-hispasec",
+      "name": "RSS Hispasec",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [460, 360]
+    },
+    {
+      "parameters": {
+        "url": "https://www.bleepingcomputer.com/feed/"
+      },
+      "id": "rss-bleeping",
+      "name": "RSS BleepingComputer",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [460, 520]
+    },
+    {
+      "parameters": {
+        "url": "https://feeds.feedburner.com/TheHackersNews"
+      },
+      "id": "rss-thn",
+      "name": "RSS The Hacker News",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [460, 680]
+    },
+    {
+      "parameters": {},
+      "id": "merge",
+      "name": "Merge feeds",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [780, 400]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "category",
+              "value": "phishing"
+            },
+            {
+              "name": "title",
+              "value": "={{ $json.title }}"
+            },
+            {
+              "name": "description",
+              "value": "={{ ($json.contentSnippet || $json.content || '').substring(0, 1000) }}"
+            },
+            {
+              "name": "url",
+              "value": "={{ $json.link }}"
+            },
+            {
+              "name": "severity",
+              "value": "medium"
+            },
+            {
+              "name": "published_at",
+              "value": "={{ $json.isoDate || $json.pubDate }}"
+            },
+            {
+              "name": "source",
+              "value": "={{ $node['Merge feeds'].context?.currentNodeInput?.name || 'RSS' }}"
+            }
+          ]
+        }
+      },
+      "id": "normalize-rss",
+      "name": "Normalize RSS",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [1000, 400]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT IGNORE INTO news_cache (category, source, title, description, url, severity, published_at, created_at) VALUES ('{{$json.category}}', '{{$json.source}}', '{{$json.title.replace(/'/g, \"''\")}}', '{{$json.description.replace(/'/g, \"''\")}}', '{{$json.url}}', '{{$json.severity}}', '{{$json.published_at}}', NOW())"
+      },
+      "id": "insert-db-rss",
+      "name": "Insert news_cache",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2,
+      "position": [1220, 400]
+    }
+  ],
+  "connections": {
+    "Cron cada 24h": {
+      "main": [
+        [
+          {"node": "RSS INCIBE", "type": "main", "index": 0},
+          {"node": "RSS Hispasec", "type": "main", "index": 0},
+          {"node": "RSS BleepingComputer", "type": "main", "index": 0},
+          {"node": "RSS The Hacker News", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "RSS INCIBE": {
+      "main": [[{"node": "Merge feeds", "type": "main", "index": 0}]]
+    },
+    "RSS Hispasec": {
+      "main": [[{"node": "Merge feeds", "type": "main", "index": 1}]]
+    },
+    "RSS BleepingComputer": {
+      "main": [[{"node": "Merge feeds", "type": "main", "index": 2}]]
+    },
+    "RSS The Hacker News": {
+      "main": [[{"node": "Merge feeds", "type": "main", "index": 3}]]
+    },
+    "Merge feeds": {
+      "main": [[{"node": "Normalize RSS", "type": "main", "index": 0}]]
+    },
+    "Normalize RSS": {
+      "main": [[{"node": "Insert news_cache", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "argos-rss-v1"
+}

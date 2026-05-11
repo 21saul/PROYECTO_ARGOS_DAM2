@@ -65,3 +65,7 @@ yarn-error.log*
 **/[Cc][Ll][Aa][Uu][Dd][Ee].md
 **/.claude/
 README.md
+!automation/n8n/README.md
+
+# DATOS LOCALES DE N8N
+automation/n8n/data/

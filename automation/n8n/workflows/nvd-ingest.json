@@ -1,0 +1,196 @@
+{
+  "name": "ARGOS - Ingesta de CVEs del NVD",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      "id": "trigger-cron",
+      "name": "Cron cada 24h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://services.nvd.nist.gov/rest/json/cves/2.0",
+        "options": {
+          "qs": {
+            "cvssV3Severity": "CRITICAL",
+            "resultsPerPage": "50",
+            "pubStartDate": "={{ $now.minus({days: 1}).toISO() }}",
+            "pubEndDate": "={{ $now.toISO() }}"
+          },
+          "headers": {
+            "User-Agent": "ARGOS-Backend/1.0"
+          }
+        }
+      },
+      "id": "fetch-nvd",
+      "name": "Fetch NVD API 2.0",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "vulnerabilities",
+        "options": {}
+      },
+      "id": "split-vulns",
+      "name": "Split vulnerabilities",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ JSON.stringify($json.cve.descriptions).toLowerCase() }}",
+              "operation": "regex",
+              "value2": "windows|android|ios|chrome|firefox|router|tp-link|netgear|d-link|cisco|asus"
+            }
+          ]
+        }
+      },
+      "id": "filter-domestic",
+      "name": "Filter productos domesticos",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "category",
+              "value": "cve"
+            },
+            {
+              "name": "source",
+              "value": "NVD"
+            },
+            {
+              "name": "title",
+              "value": "={{ $json.cve.id }}"
+            },
+            {
+              "name": "description",
+              "value": "={{ ($json.cve.descriptions.find(d => d.lang === 'en') || {}).value || '' }}"
+            },
+            {
+              "name": "url",
+              "value": "=https://nvd.nist.gov/vuln/detail/{{ $json.cve.id }}"
+            },
+            {
+              "name": "cve_id",
+              "value": "={{ $json.cve.id }}"
+            },
+            {
+              "name": "severity",
+              "value": "critical"
+            },
+            {
+              "name": "published_at",
+              "value": "={{ $json.cve.published }}"
+            }
+          ],
+          "number": [
+            {
+              "name": "cvss_score",
+              "value": "={{ (($json.cve.metrics?.cvssMetricV31 || [])[0]?.cvssData?.baseScore) || (($json.cve.metrics?.cvssMetricV30 || [])[0]?.cvssData?.baseScore) || 0 }}"
+            }
+          ]
+        }
+      },
+      "id": "normalize",
+      "name": "Normalize",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT IGNORE INTO news_cache (category, source, title, description, url, cve_id, cvss_score, severity, published_at, created_at) VALUES ('{{$json.category}}', '{{$json.source}}', '{{$json.title}}', '{{$json.description.replace(/'/g, \"''\")}}', '{{$json.url}}', '{{$json.cve_id}}', {{$json.cvss_score}}, '{{$json.severity}}', '{{$json.published_at}}', NOW())"
+      },
+      "id": "insert-db",
+      "name": "Insert news_cache",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2,
+      "position": [1340, 200]
+    }
+  ],
+  "connections": {
+    "Cron cada 24h": {
+      "main": [
+        [
+          {
+            "node": "Fetch NVD API 2.0",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch NVD API 2.0": {
+      "main": [
+        [
+          {
+            "node": "Split vulnerabilities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split vulnerabilities": {
+      "main": [
+        [
+          {
+            "node": "Filter productos domesticos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter productos domesticos": {
+      "main": [
+        [
+          {
+            "node": "Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize": {
+      "main": [
+        [
+          {
+            "node": "Insert news_cache",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "argos-nvd-v1"
+}
