@@ -61,4 +61,20 @@ $routes->group('api/v1', static function ($routes) {
             $routes->delete('(:num)', 'Api\V1\FolderController::delete/$1');
         });
     });
+
+    // SUBGRUPO DE RUTAS DEL AUDITOR PROTEGIDAS POR JWT
+    $routes->group('auditor', ['filter' => 'jwtauth'], static function ($routes) {
+
+        // SUBGRUPO DE CONSULTAS A HIBP
+        $routes->group('hibp', static function ($routes) {
+            $routes->get('(:segment)', 'Api\V1\AuditorController::hibpQuery/$1');
+        });
+
+        // SUBGRUPO DEL HISTORICO DEL PRIVACY SCORE
+        $routes->group('score', static function ($routes) {
+            $routes->post('/', 'Api\V1\AuditorController::saveScore');
+            $routes->get('history', 'Api\V1\AuditorController::scoreHistory');
+            $routes->get('latest', 'Api\V1\AuditorController::scoreLatest');
+        });
+    });
 });
