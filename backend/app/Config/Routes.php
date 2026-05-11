@@ -9,6 +9,12 @@ $routes->get('/', 'Home::index');
 
 service('auth')->routes($routes);
 
+// RUTA CATCH-ALL PARA PETICIONES OPTIONS DE PREFLIGHT CORS BAJO api/v1
+// EL FILTRO Cors INTERCEPTA ESTA RUTA Y DEVUELVE 204 ANTES DE EJECUTAR EL CIERRE
+$routes->options('api/v1/(:any)', static function (): \CodeIgniter\HTTP\ResponseInterface {
+    return service('response')->setStatusCode(204);
+});
+
 // GRUPO DE RUTAS DE LA API VERSION 1
 $routes->group('api/v1', static function ($routes) {
     // SUBGRUPO DE RUTAS DE AUTENTICACION ZERO-KNOWLEDGE

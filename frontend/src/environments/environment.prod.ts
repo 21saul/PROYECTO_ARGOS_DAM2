@@ -1,3 +1,16 @@
+// ENVIRONMENT (PRODUCCION)
+//
+// RESUMEN: VARIABLES DE ENTORNO PARA EL BUILD DE PRODUCCION DEL
+// FRONTEND IONIC. EXPONE LA URL BASE DEL BACKEND ARGOS QUE
+// CONSUME EL ApiService EN EL ENTORNO DESPLEGADO.
+//
+// NOTA: ANGULAR REEMPLAZA environment.ts POR ESTE ARCHIVO EN
+// BUILDS DE PRODUCCION (CONFIGURADO EN angular.json).
+
 export const environment = {
-  production: true
+  // FLAG DE PRODUCCION ACTIVADO
+  production: true,
+
+  // URL BASE DEL BACKEND EN EL VPS DE PRODUCCION (PLACEHOLDER)
+  apiBaseUrl: 'https://argos.tu-dominio-produccion.com/api/v1',
 };

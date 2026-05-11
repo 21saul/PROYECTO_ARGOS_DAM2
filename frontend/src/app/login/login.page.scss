@@ -127,3 +127,16 @@
   font-size: 0.72rem; font-weight: 700;
   color: var(--color-text-muted); text-align: center;
 }
+
+/* MENSAJE DE ERROR DE AUTENTICACION */
+.auth-error {
+  margin: 12px 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: var(--color-danger, #ef4444);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+}

@@ -4,6 +4,8 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 // IMPORTACION DE GSAP PARA ANIMACIONES DE ENTRADA Y FEEDBACK DE BOTON
 import { gsap } from 'gsap';
+// IMPORTACION DEL SERVICIO DE AUTENTICACION ZERO-KNOWLEDGE
+import { AuthService } from '../services/auth.service';
 
 // METADATOS DEL COMPONENTE DE LOGIN DE ARGOS
 @Component({
@@ -23,9 +25,14 @@ export class LoginPage {
   showPassword = false;
   // FLAG QUE INDICA QUE LA AUTENTICACION ESTA EN PROCESO
   isLoading = false;
+  // MENSAJE DE ERROR DE LA ULTIMA LLAMADA AL BACKEND (VACIO SI NO HAY ERROR)
+  errorMessage = '';
 
-  // INYECCION DEL ROUTER PARA NAVEGAR AL DASHBOARD O AL REGISTRO
-  constructor(private router: Router) {}
+  // INYECCION DEL ROUTER Y DEL AUTHSERVICE PARA AUTENTICAR Y NAVEGAR
+  constructor(
+    private router: Router,
+    private authService: AuthService,
+  ) {}
 
   // HOOK DE IONIC ANTES DE ENTRAR — FUERZA TEMA OSCURO PARA LOGIN
   ionViewWillEnter() {
@@ -52,18 +59,27 @@ export class LoginPage {
     );
   }
 
-  // HANDLER DE LOGIN — VALIDA, SIMULA AUTENTICACION Y NAVEGA AL DASHBOARD
+  // HANDLER DE LOGIN — LLAMA AL BACKEND REAL CON AUTH ZERO-KNOWLEDGE
   async login() {
     if (!this.email || !this.password) return;
     // ACTIVAMOS EL ESTADO DE CARGA PARA DESHABILITAR EL BOTON Y MOSTRAR SPINNER
     this.isLoading = true;
+    // LIMPIAMOS CUALQUIER ERROR PREVIO ANTES DE INTENTAR LA AUTENTICACION
+    this.errorMessage = '';
     // FEEDBACK VISUAL DE PULSACION SOBRE EL BOTON DE LOGIN
     gsap.to('.login-btn', { scale: 0.97, duration: 0.1, yoyo: true, repeat: 1 });
-    // SIMULACION DE LATENCIA DE LOGIN ANTES DE NAVEGAR AL DASHBOARD
-    setTimeout(() => {
+    try {
+      // INVOCA AL AUTHSERVICE QUE DERIVA EL auth_hash EN LOCAL Y LLAMA AL BACKEND
+      await this.authService.login(this.email, this.password);
+      // SI LA AUTENTICACION FUE EXITOSA NAVEGAMOS AL DASHBOARD
+      this.router.navigateByUrl('/dashboard');
+    } catch (err: any) {
+      // PROPAGAMOS EL MENSAJE DE ERROR AL USUARIO (CREDENCIALES O RED)
+      this.errorMessage = err?.message || 'Credenciales incorrectas';
+    } finally {
+      // DESACTIVAMOS EL ESTADO DE CARGA INDEPENDIENTEMENTE DEL RESULTADO
       this.isLoading = false;
-      this.router.navigate(['/dashboard']);
-    }, 1200);
+    }
   }
 
   // NAVEGACION HACIA LA PAGINA DE REGISTRO PARA NUEVOS USUARIOS

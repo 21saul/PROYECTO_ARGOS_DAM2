@@ -108,5 +108,11 @@ class Filters extends BaseFilters
      *
      * @var array<string, array<string, list<string>>>
      */
-    public array $filters = [];
+    public array $filters = [
+        // FILTRO CORS APLICADO A TODA LA API V1 EN PETICIONES PREFLIGHT Y RESPUESTAS
+        'cors' => [
+            'before' => ['api/v1/*', 'api/v1'],
+            'after'  => ['api/v1/*', 'api/v1'],
+        ],
+    ];
 }

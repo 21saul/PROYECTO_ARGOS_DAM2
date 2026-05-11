@@ -4,6 +4,8 @@ import { CUSTOM_ELEMENTS_SCHEMA, NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 // IMPORTACION DE LA INTERFAZ DE ESTRATEGIA DE REUTILIZACION DE RUTAS
 import { RouteReuseStrategy } from '@angular/router';
+// IMPORTACION DEL HTTPCLIENTMODULE NECESARIO PARA EL APISERVICE
+import { HttpClientModule } from '@angular/common/http';
 
 // IMPORTACION DEL MODULO DE IONIC Y SU ESTRATEGIA DE RUTAS NATIVAS
 import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
@@ -20,7 +22,7 @@ import { ArgusEyeComponent } from './shared/components/argus-eye/argus-eye.compo
   // DECLARACIONES DE COMPONENTES NO STANDALONE GESTIONADOS POR ESTE MODULO
   declarations: [AppComponent],
   // IMPORTACIONES NECESARIAS PARA QUE LA APP ARRANQUE Y RENDERICE CORRECTAMENTE
-  imports: [BrowserModule, IonicModule.forRoot(), AppRoutingModule, ArgusEyeComponent],
+  imports: [BrowserModule, HttpClientModule, IonicModule.forRoot(), AppRoutingModule, ArgusEyeComponent],
   // PROVIDERS — SUSTITUYE LA ESTRATEGIA DE RUTAS POR LA DE IONIC PARA TRANSICIONES NATIVAS
   providers: [{ provide: RouteReuseStrategy, useClass: IonicRouteStrategy }],
   // COMPONENTE QUE SE INSTANCIA AL ARRANCAR LA APLICACION

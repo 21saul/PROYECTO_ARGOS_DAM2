@@ -63,6 +63,11 @@
         <button class="forgot-btn">¿Olvidaste tu contraseña?</button>
       </div>
 
+      <!-- MENSAJE DE ERROR DEVUELTO POR EL BACKEND -->
+      <div class="auth-error" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
       <!-- BOTÓN LOGIN -->
       <button class="login-btn"
         [disabled]="!email || !password || isLoading"
