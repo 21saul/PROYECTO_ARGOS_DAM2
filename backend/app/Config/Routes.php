@@ -77,4 +77,11 @@ $routes->group('api/v1', static function ($routes) {
             $routes->get('latest', 'Api\V1\AuditorController::scoreLatest');
         });
     });
+
+    // SUBGRUPO DE RUTAS DEL ANALIZADOR DE PHISHING PROTEGIDAS POR JWT
+    $routes->group('phishing', ['filter' => 'jwtauth'], static function ($routes) {
+        $routes->post('safebrowsing', 'Api\V1\PhishingController::safebrowsing');
+        $routes->post('phishtank', 'Api\V1\PhishingController::phishtank');
+        $routes->post('virustotal', 'Api\V1\PhishingController::virustotal');
+    });
 });
