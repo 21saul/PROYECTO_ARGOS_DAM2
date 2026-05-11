@@ -111,6 +111,11 @@
         <span>Tu contraseña maestra <strong>nunca sale de tu dispositivo</strong>. Ni nosotros podemos verla.</span>
       </div>
 
+      <!-- MENSAJE DE ERROR DEVUELTO POR EL BACKEND -->
+      <div class="auth-error" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
       <!-- BOTÓN REGISTRO -->
       <button class="register-submit-btn"
         [disabled]="!name || !email || !password ||

@@ -4,6 +4,8 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 // IMPORTACION DE GSAP PARA ANIMACIONES DE ENTRADA
 import { gsap } from 'gsap';
+// IMPORTACION DEL SERVICIO DE AUTENTICACION ZERO-KNOWLEDGE
+import { AuthService } from '../services/auth.service';
 
 // METADATOS DEL COMPONENTE DE REGISTRO DE ARGOS
 @Component({
@@ -31,9 +33,14 @@ export class RegisterPage {
   isLoading = false;
   // PASO ACTUAL DEL FORMULARIO MULTIPASO POR SI EN EL FUTURO SE DIVIDE EN PANTALLAS
   currentStep = 1;
+  // MENSAJE DE ERROR DE LA ULTIMA LLAMADA AL BACKEND (VACIO SI NO HAY ERROR)
+  errorMessage = '';
 
-  // INYECCION DEL ROUTER PARA NAVEGAR AL DASHBOARD O VOLVER AL LOGIN
-  constructor(private router: Router) {}
+  // INYECCION DEL ROUTER Y DEL AUTHSERVICE PARA REGISTRAR Y NAVEGAR
+  constructor(
+    private router: Router,
+    private authService: AuthService,
+  ) {}
 
   // HOOK DE IONIC ANTES DE ENTRAR — FUERZA TEMA OSCURO PARA REGISTRO
   ionViewWillEnter() {
@@ -95,16 +102,25 @@ export class RegisterPage {
     return this.password === this.confirmPassword && this.confirmPassword !== '';
   }
 
-  // HANDLER DE REGISTRO — VALIDA, SIMULA EL ALTA Y NAVEGA AL DASHBOARD
+  // HANDLER DE REGISTRO — LLAMA AL BACKEND REAL CON AUTH ZERO-KNOWLEDGE
   async register() {
     if (!this.name || !this.email || !this.password || !this.acceptTerms) return;
     // ACTIVAMOS EL ESTADO DE CARGA PARA DESHABILITAR EL BOTON Y MOSTRAR SPINNER
     this.isLoading = true;
-    // SIMULACION DE LATENCIA DE REGISTRO ANTES DE NAVEGAR AL DASHBOARD
-    setTimeout(() => {
+    // LIMPIAMOS CUALQUIER ERROR PREVIO ANTES DE INTENTAR EL REGISTRO
+    this.errorMessage = '';
+    try {
+      // INVOCA AL AUTHSERVICE QUE DERIVA EL auth_hash EN LOCAL Y LLAMA AL BACKEND
+      await this.authService.register(this.email, this.password);
+      // SI EL REGISTRO FUE EXITOSO NAVEGAMOS AL DASHBOARD
+      this.router.navigateByUrl('/dashboard');
+    } catch (err: any) {
+      // PROPAGAMOS EL MENSAJE DE ERROR AL USUARIO
+      this.errorMessage = err?.message || 'No se pudo completar el registro';
+    } finally {
+      // DESACTIVAMOS EL ESTADO DE CARGA INDEPENDIENTEMENTE DEL RESULTADO
       this.isLoading = false;
-      this.router.navigate(['/dashboard']);
-    }, 1500);
+    }
   }
 
   // NAVEGACION HACIA LA PAGINA DE LOGIN PARA USUARIOS QUE YA TIENEN CUENTA

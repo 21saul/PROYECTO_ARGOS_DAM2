@@ -1,9 +1,18 @@
-// This file can be replaced during build by using the `fileReplacements` array.
-// `ng build` replaces `environment.ts` with `environment.prod.ts`.
-// The list of file replacements can be found in `angular.json`.
+// ENVIRONMENT (DESARROLLO)
+//
+// RESUMEN: VARIABLES DE ENTORNO PARA EL BUILD DE DESARROLLO DEL
+// FRONTEND IONIC. EXPONE LA URL BASE DEL BACKEND ARGOS QUE
+// CONSUME EL ApiService.
+//
+// NOTA: ANGULAR REEMPLAZA ESTE ARCHIVO POR environment.prod.ts
+// EN BUILDS DE PRODUCCION (CONFIGURADO EN angular.json).
 
 export const environment = {
-  production: false
+  // FLAG DE PRODUCCION DESACTIVADO EN DESARROLLO
+  production: false,
+
+  // URL BASE DEL BACKEND CODEIGNITER 4 SERVIDO POR DDEV EN LOCAL
+  apiBaseUrl: 'https://argos.ddev.site/api/v1',
 };
 
 /*
