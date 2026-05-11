@@ -84,4 +84,11 @@ $routes->group('api/v1', static function ($routes) {
         $routes->post('phishtank', 'Api\V1\PhishingController::phishtank');
         $routes->post('virustotal', 'Api\V1\PhishingController::virustotal');
     });
+
+    // SUBGRUPO DE RUTAS DEL PANEL DE NOTICIAS PROTEGIDAS POR JWT
+    $routes->group('news', ['filter' => 'jwtauth'], static function ($routes) {
+        $routes->get('/', 'Api\V1\NewsController::index');
+        $routes->get('stats', 'Api\V1\NewsController::stats');
+        $routes->get('breaking', 'Api\V1\NewsController::breaking');
+    });
 });
