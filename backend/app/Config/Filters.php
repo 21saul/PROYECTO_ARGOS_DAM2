@@ -34,6 +34,8 @@ class Filters extends BaseFilters
         'forcehttps'    => ForceHTTPS::class,
         'pagecache'     => PageCache::class,
         'performance'   => PerformanceMetrics::class,
+        // ALIAS PARA EL FILTRO QUE VALIDA JWT EN ENDPOINTS PROTEGIDOS DE LA API
+        'jwtauth'       => \App\Filters\JwtAuthFilter::class,
     ];
 
     /**
