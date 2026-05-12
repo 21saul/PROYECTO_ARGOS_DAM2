@@ -9,7 +9,6 @@
   border-radius: 18px;
   background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   overflow: hidden;
-  opacity: 0;
 }
 .stats-banner-bg {
   position: absolute;
@@ -81,7 +80,7 @@
   padding: 8px 12px 8px 8px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, white 6%, transparent);
-  flex-shrink: 0; opacity: 0;
+  flex-shrink: 0;
   position: relative;
 }
 .source-logo {
@@ -128,7 +127,6 @@
   font-size: 0.78rem; font-weight: 700;
   cursor: pointer; white-space: nowrap;
   transition: all 0.2s ease;
-  opacity: 0;
 }
 .filter-pill.active {
   background: var(--color-primary);
@@ -153,13 +151,36 @@
   background: var(--color-surface);
   border: 1px solid color-mix(in srgb, white 6%, transparent);
   overflow: hidden;
-  opacity: 0;
   box-shadow: 0 8px 32px rgba(0,0,0,0.2);
 }
 .featured-image-wrap {
   position: relative;
   width: 100%; height: 180px;
   overflow: hidden;
+}
+.featured-fallback {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255, 255, 255, 0.92);
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.35));
+}
+.featured-fallback-source {
+  position: absolute; left: 14px; bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+  color: white; font-size: 0.78rem; font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+.news-fallback {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255, 255, 255, 0.92);
+  filter: drop-shadow(0 3px 8px rgba(0,0,0,0.35));
+}
+.news-fallback-source {
+  position: absolute; left: 10px; bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+  color: white; font-size: 0.7rem; font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
 }
 .featured-image {
   width: 100%; height: 100%;
@@ -332,7 +353,6 @@
   border-radius: 16px;
   border: 1px solid color-mix(in srgb, white 6%, transparent);
   overflow: hidden;
-  opacity: 0;
   transition: transform 0.18s ease;
 }
 .news-card:active { transform: scale(0.985); }
