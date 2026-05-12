@@ -17,6 +17,12 @@
 <ion-content class="vault-content">
   <div class="vault-scroll scroll-clean">
 
+    <div *ngIf="loading" class="vault-loading">
+      <ion-spinner name="crescent" color="primary"></ion-spinner>
+      <div class="vault-loading-text">Descifrando bóveda…</div>
+    </div>
+
+    <ng-container *ngIf="!loading">
     <div class="vault-stats-banner">
       <div class="vault-banner-bg"></div>
       <div class="vault-banner-grid">
@@ -99,9 +105,21 @@
     <div class="folders-section">
       <div class="folders-header">
         <span class="folders-title">Carpetas</span>
-        <span class="folders-count">{{folders.length}} organizadas</span>
+        <button class="folders-add-btn" type="button" (click)="addFolder()"
+          aria-label="Crear carpeta">
+          <ph-plus weight="bold" size="14"></ph-plus>
+          <span>Nueva</span>
+        </button>
       </div>
       <div class="folders-scroll">
+        <div class="folder-card folder-card-add" (click)="addFolder()"
+          role="button" aria-label="Crear carpeta">
+          <div class="folder-icon-wrap folder-icon-add">
+            <ph-plus weight="bold" size="22"></ph-plus>
+          </div>
+          <div class="folder-name">Nueva</div>
+          <div class="folder-count">Crear carpeta</div>
+        </div>
         <div class="folder-card"
           [class.active]="activeFolderId === null"
           (click)="selectFolder(null)">
@@ -123,17 +141,23 @@
               [style.color]="f.color"></ph-envelope>
             <ph-share-network *ngIf="f.icon === 'share-network'" weight="fill" size="20"
               [style.color]="f.color"></ph-share-network>
+            <ph-users-three *ngIf="f.icon === 'users-three'" weight="fill" size="20"
+              [style.color]="f.color"></ph-users-three>
             <ph-briefcase *ngIf="f.icon === 'briefcase'" weight="fill" size="20"
               [style.color]="f.color"></ph-briefcase>
             <ph-house-line *ngIf="f.icon === 'house-line'" weight="fill" size="20"
               [style.color]="f.color"></ph-house-line>
+            <ph-house *ngIf="f.icon === 'house'" weight="fill" size="20"
+              [style.color]="f.color"></ph-house>
+            <ph-folder *ngIf="!['bank','envelope','share-network','users-three','briefcase','house-line','house'].includes(f.icon)"
+              weight="fill" size="20" [style.color]="f.color"></ph-folder>
           </div>
           <div class="folder-name">{{f.name}}</div>
-          <div class="folder-count">{{f.itemCount}} elementos</div>
+          <div class="folder-count">{{f.item_count}} elementos</div>
           <div class="folder-health-bar">
             <div class="folder-health-fill"
-              [style.width]="f.healthScore + '%'"
-              [style.background]="getHealthColor(f.healthScore)"></div>
+              [style.width]="getFolderHealth(f.id) + '%'"
+              [style.background]="getHealthColor(getFolderHealth(f.id))"></div>
           </div>
         </div>
       </div>
@@ -159,14 +183,14 @@
           [id]="'item-' + item.id">
 
           <div class="item-avatar interactive"
-            [style.background]="item.customIcon ? 'transparent' : item.color"
+            [style.background]="customIcons[item.id] ? 'transparent' : itemColor(item)"
             (click)="openIconPicker(item, $event)">
-            <img *ngIf="item.customIcon" [src]="item.customIcon" [alt]="item.name">
-            <ph-key *ngIf="!item.customIcon && item.type === 'password'"
+            <img *ngIf="customIcons[item.id]" [src]="customIcons[item.id]" [alt]="item.payload.title">
+            <ph-key *ngIf="!customIcons[item.id] && item.item_type === 'password'"
               weight="fill" size="20" style="color:white"></ph-key>
-            <ph-note *ngIf="!item.customIcon && item.type === 'note'"
+            <ph-note *ngIf="!customIcons[item.id] && item.item_type === 'note'"
               weight="fill" size="20" style="color:white"></ph-note>
-            <ph-file *ngIf="!item.customIcon && item.type === 'file'"
+            <ph-file *ngIf="!customIcons[item.id] && item.item_type === 'file'"
               weight="fill" size="20" style="color:white"></ph-file>
             <div class="item-edit-badge">
               <ph-pencil-simple weight="fill" size="9"></ph-pencil-simple>
@@ -175,42 +199,46 @@
 
           <div class="item-info">
             <div class="item-top-row">
-              <span class="item-name">{{item.name}}</span>
-              <span *ngIf="item.type === 'password'" class="strength-pill"
-                [style.background]="getStrengthColor(item.strength) + '22'"
-                [style.color]="getStrengthColor(item.strength)">
-                {{getStrengthLabel(item.strength)}}
+              <span class="item-name">{{item.payload.title}}</span>
+              <span *ngIf="item.item_type === 'password'" class="strength-pill"
+                [style.background]="getStrengthColor(itemStrength(item)) + '22'"
+                [style.color]="getStrengthColor(itemStrength(item))">
+                {{getStrengthLabel(itemStrength(item))}}
               </span>
-              <span *ngIf="item.type === 'file'" class="file-ext-pill">
-                {{item.fileExt}}
+              <span *ngIf="item.item_type === 'file'" class="file-ext-pill">
+                {{fileExt(item)}}
               </span>
             </div>
             <div class="item-meta">
-              <span *ngIf="item.type === 'password'" class="item-username">
-                {{item.username}}
+              <span *ngIf="item.item_type === 'password'" class="item-username">
+                {{item.payload.username}}
               </span>
-              <span *ngIf="item.type === 'note'" class="item-snippet">
-                {{item.noteSnippet}}
+              <span *ngIf="item.item_type === 'note'" class="item-snippet">
+                {{noteSnippet(item)}}
               </span>
-              <span *ngIf="item.type === 'file'" class="item-filesize">
-                {{item.fileSize}}
+              <span *ngIf="item.item_type === 'file'" class="item-filesize">
+                {{fileSize(item)}}
               </span>
             </div>
             <div class="item-bottom-row">
-              <span class="item-folder-tag"
-                [style.background]="getFolderColor(item.folderId) + '18'"
-                [style.color]="getFolderColor(item.folderId)">
+              <span class="item-folder-tag" *ngIf="item.folder_id !== null"
+                [style.background]="getFolderColor(item.folder_id) + '18'"
+                [style.color]="getFolderColor(item.folder_id)">
                 <ph-folder weight="fill" size="10"></ph-folder>
-                {{getFolderName(item.folderId)}}
+                {{getFolderName(item.folder_id)}}
               </span>
-              <span class="item-date">{{item.lastModified}}</span>
+              <span class="item-date">{{itemDate(item)}}</span>
             </div>
           </div>
 
           <button class="item-action" (click)="copyPassword(item, $event)">
-            <ph-copy *ngIf="item.type === 'password'" weight="bold" size="18"></ph-copy>
-            <ph-eye *ngIf="item.type === 'note'" weight="bold" size="18"></ph-eye>
-            <ph-download-simple *ngIf="item.type === 'file'" weight="bold" size="18"></ph-download-simple>
+            <ph-copy *ngIf="item.item_type === 'password'" weight="bold" size="18"></ph-copy>
+            <ph-eye *ngIf="item.item_type === 'note'" weight="bold" size="18"></ph-eye>
+            <ph-download-simple *ngIf="item.item_type === 'file'" weight="bold" size="18"></ph-download-simple>
+          </button>
+          <button class="item-action item-delete" (click)="deleteItem(item, $event)"
+            aria-label="Eliminar item">
+            <ph-trash weight="bold" size="18"></ph-trash>
           </button>
         </div>
 
@@ -226,6 +254,7 @@
     </div>
 
     <div style="height:120px"></div>
+    </ng-container>
   </div>
 
   <div *ngIf="showCipherAnim" class="cipher-overlay">
@@ -251,6 +280,10 @@
 
   <div class="fab-container" [class.open]="fabOpen">
     <div class="fab-menu">
+      <button class="fab-mini" (click)="addFolder()">
+        <ph-folder weight="fill" size="18"></ph-folder>
+        <span>Carpeta</span>
+      </button>
       <button class="fab-mini" (click)="addFile()">
         <ph-file weight="fill" size="18"></ph-file>
         <span>Archivo</span>
@@ -267,6 +300,221 @@
     <button class="fab-main" (click)="toggleFab()">
       <ph-plus weight="bold" size="26"></ph-plus>
     </button>
+  </div>
+
+  <!-- MODAL DE NUEVA CONTRASENA -->
+  <div *ngIf="addPasswordOpen" class="form-overlay" (click)="cancelAddPassword()">
+    <div class="form-modal" (click)="$event.stopPropagation()">
+      <div class="form-header">
+        <div class="form-header-icon" style="background: linear-gradient(135deg, #7C3AED, #06B6D4);">
+          <ph-key weight="fill" size="22"></ph-key>
+        </div>
+        <div class="form-header-text">
+          <div class="form-title">Nueva contraseña</div>
+          <div class="form-sub">Se cifrará en tu dispositivo con AES-256-GCM</div>
+        </div>
+        <button class="form-close" type="button" (click)="cancelAddPassword()" aria-label="Cerrar">
+          <ph-x weight="bold" size="18"></ph-x>
+        </button>
+      </div>
+      <div class="form-body">
+        <label class="form-field">
+          <span class="form-label">Título</span>
+          <input class="form-input" type="text" placeholder="Ej: Gmail Personal"
+            [(ngModel)]="formPassword.title" autocomplete="off">
+        </label>
+        <label class="form-field">
+          <span class="form-label">Usuario o email</span>
+          <input class="form-input" type="text" placeholder="usuario@example.com"
+            [(ngModel)]="formPassword.username" autocomplete="off">
+        </label>
+        <label class="form-field">
+          <span class="form-label">Contraseña</span>
+          <div class="form-input-wrap">
+            <input class="form-input form-input-with-action"
+              [type]="showPasswordInForm ? 'text' : 'password'"
+              placeholder="********"
+              [(ngModel)]="formPassword.password" autocomplete="new-password">
+            <button type="button" class="form-input-action"
+              (click)="showPasswordInForm = !showPasswordInForm"
+              [attr.aria-label]="showPasswordInForm ? 'Ocultar' : 'Mostrar'">
+              <ph-eye *ngIf="!showPasswordInForm" weight="bold" size="16"></ph-eye>
+              <ph-eye-slash *ngIf="showPasswordInForm" weight="bold" size="16"></ph-eye-slash>
+            </button>
+          </div>
+        </label>
+        <label class="form-field">
+          <span class="form-label">URL (opcional)</span>
+          <input class="form-input" type="text" placeholder="https://..."
+            [(ngModel)]="formPassword.url" autocomplete="off">
+        </label>
+        <label class="form-field">
+          <span class="form-label">Carpeta</span>
+          <select class="form-input" [(ngModel)]="formPassword.folderId">
+            <option [ngValue]="null">Sin carpeta</option>
+            <option *ngFor="let f of folders" [ngValue]="f.id">{{ f.name }}</option>
+          </select>
+        </label>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="form-btn form-btn-ghost" (click)="cancelAddPassword()">
+          Cancelar
+        </button>
+        <button type="button" class="form-btn form-btn-primary"
+          [disabled]="saving || !formPassword.title.trim()"
+          (click)="submitAddPassword()">
+          <ph-shield-check weight="fill" size="16"></ph-shield-check>
+          <span>{{ saving ? 'Cifrando…' : 'Guardar cifrado' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE NUEVA NOTA -->
+  <div *ngIf="addNoteOpen" class="form-overlay" (click)="cancelAddNote()">
+    <div class="form-modal" (click)="$event.stopPropagation()">
+      <div class="form-header">
+        <div class="form-header-icon" style="background: linear-gradient(135deg, #06B6D4, #3B82F6);">
+          <ph-note weight="fill" size="22"></ph-note>
+        </div>
+        <div class="form-header-text">
+          <div class="form-title">Nueva nota segura</div>
+          <div class="form-sub">El contenido se cifra antes de salir del dispositivo</div>
+        </div>
+        <button class="form-close" type="button" (click)="cancelAddNote()" aria-label="Cerrar">
+          <ph-x weight="bold" size="18"></ph-x>
+        </button>
+      </div>
+      <div class="form-body">
+        <label class="form-field">
+          <span class="form-label">Título</span>
+          <input class="form-input" type="text" placeholder="Ej: PIN tarjeta"
+            [(ngModel)]="formNote.title" autocomplete="off">
+        </label>
+        <label class="form-field">
+          <span class="form-label">Contenido</span>
+          <textarea class="form-input form-textarea" rows="5"
+            placeholder="Escribe aquí el contenido sensible…"
+            [(ngModel)]="formNote.notes"></textarea>
+        </label>
+        <label class="form-field">
+          <span class="form-label">Carpeta</span>
+          <select class="form-input" [(ngModel)]="formNote.folderId">
+            <option [ngValue]="null">Sin carpeta</option>
+            <option *ngFor="let f of folders" [ngValue]="f.id">{{ f.name }}</option>
+          </select>
+        </label>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="form-btn form-btn-ghost" (click)="cancelAddNote()">
+          Cancelar
+        </button>
+        <button type="button" class="form-btn form-btn-primary"
+          [disabled]="saving || !formNote.title.trim()"
+          (click)="submitAddNote()">
+          <ph-shield-check weight="fill" size="16"></ph-shield-check>
+          <span>{{ saving ? 'Cifrando…' : 'Guardar cifrado' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE NUEVA CARPETA -->
+  <div *ngIf="addFolderOpen" class="form-overlay" (click)="cancelAddFolder()">
+    <div class="form-modal" (click)="$event.stopPropagation()">
+      <div class="form-header">
+        <div class="form-header-icon" [style.background]="formFolder.color + 'cc'">
+          <ph-folder weight="fill" size="22"></ph-folder>
+        </div>
+        <div class="form-header-text">
+          <div class="form-title">Nueva carpeta</div>
+          <div class="form-sub">Organiza tus secretos por categorías</div>
+        </div>
+        <button class="form-close" type="button" (click)="cancelAddFolder()" aria-label="Cerrar">
+          <ph-x weight="bold" size="18"></ph-x>
+        </button>
+      </div>
+      <div class="form-body">
+        <label class="form-field">
+          <span class="form-label">Nombre</span>
+          <input class="form-input" type="text" placeholder="Ej: Bancos"
+            [(ngModel)]="formFolder.name" autocomplete="off" maxlength="100">
+        </label>
+        <div class="form-field">
+          <span class="form-label">Color</span>
+          <div class="color-grid">
+            <button *ngFor="let c of folderColors" type="button"
+              class="color-swatch" [class.active]="formFolder.color === c"
+              [style.background]="c" (click)="pickFolderColor(c)"
+              [attr.aria-label]="'Color ' + c">
+              <ph-check *ngIf="formFolder.color === c" weight="bold" size="14"></ph-check>
+            </button>
+          </div>
+        </div>
+        <div class="form-field">
+          <span class="form-label">Icono</span>
+          <div class="icon-grid">
+            <button *ngFor="let i of folderIcons" type="button"
+              class="icon-swatch" [class.active]="formFolder.icon === i"
+              [style.color]="formFolder.icon === i ? formFolder.color : ''"
+              [style.border-color]="formFolder.icon === i ? formFolder.color : ''"
+              (click)="pickFolderIcon(i)" [attr.aria-label]="'Icono ' + i">
+              <ph-folder *ngIf="i === 'folder'" weight="fill" size="20"></ph-folder>
+              <ph-bank *ngIf="i === 'bank'" weight="fill" size="20"></ph-bank>
+              <ph-envelope *ngIf="i === 'envelope'" weight="fill" size="20"></ph-envelope>
+              <ph-users-three *ngIf="i === 'users-three'" weight="fill" size="20"></ph-users-three>
+              <ph-briefcase *ngIf="i === 'briefcase'" weight="fill" size="20"></ph-briefcase>
+              <ph-house *ngIf="i === 'house'" weight="fill" size="20"></ph-house>
+              <ph-share-network *ngIf="i === 'share-network'" weight="fill" size="20"></ph-share-network>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="form-btn form-btn-ghost" (click)="cancelAddFolder()">
+          Cancelar
+        </button>
+        <button type="button" class="form-btn form-btn-primary"
+          [disabled]="saving || !formFolder.name.trim()"
+          [style.background]="'linear-gradient(135deg, ' + formFolder.color + ', ' + formFolder.color + 'cc)'"
+          (click)="submitAddFolder()">
+          <ph-plus weight="bold" size="16"></ph-plus>
+          <span>{{ saving ? 'Creando…' : 'Crear carpeta' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE CONFIRMACION DE BORRADO -->
+  <div *ngIf="confirmDelete" class="form-overlay" (click)="cancelDelete()">
+    <div class="form-modal form-modal-confirm" (click)="$event.stopPropagation()">
+      <div class="form-header">
+        <div class="form-header-icon" style="background: linear-gradient(135deg, #EF4444, #C026D3);">
+          <ph-trash weight="fill" size="22"></ph-trash>
+        </div>
+        <div class="form-header-text">
+          <div class="form-title">Eliminar elemento</div>
+          <div class="form-sub">Esta acción es irreversible</div>
+        </div>
+      </div>
+      <div class="form-body">
+        <p class="confirm-text">
+          ¿Seguro que quieres eliminar
+          <strong>"{{ confirmDelete.payload.title }}"</strong>?
+          El bloque cifrado se borrará del servidor para siempre.
+        </p>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="form-btn form-btn-ghost" (click)="cancelDelete()">
+          Cancelar
+        </button>
+        <button type="button" class="form-btn form-btn-danger"
+          [disabled]="saving" (click)="confirmDeleteAction()">
+          <ph-trash weight="bold" size="16"></ph-trash>
+          <span>{{ saving ? 'Eliminando…' : 'Eliminar' }}</span>
+        </button>
+      </div>
+    </div>
   </div>
 
   <input #iconInput type="file" accept="image/*"

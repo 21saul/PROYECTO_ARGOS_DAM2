@@ -65,11 +65,13 @@ class VaultController extends BaseController
             $items = $this->itemModel->findByUser($userId);
         }
 
-        // CONVIERTE LOS BLOBS BINARIOS A BASE64 PARA TRANSMISION JSON
+        // CONVIERTE LOS BLOBS BINARIOS A BASE64 Y NORMALIZA TIPOS NUMERICOS
+        // (EL DRIVER DE MARIADB DEVUELVE TODOS LOS CAMPOS COMO STRING)
         foreach ($items as &$item) {
             if (isset($item['encrypted_blob'])) {
                 $item['encrypted_blob'] = base64_encode($item['encrypted_blob']);
             }
+            $this->castItemTypes($item);
         }
 
         // DEVUELVE LA LISTA EN EL FORMATO DE RESPUESTA ESTANDAR
@@ -78,6 +80,18 @@ class VaultController extends BaseController
             'data' => $items,
             'error' => null,
         ]);
+    }
+
+    // CONVIERTE LOS CAMPOS NUMERICOS DE UN ITEM A INT REAL
+    // EVITA QUE EL FRONTEND HAGA CONCATENACION EN LUGAR DE SUMA
+    private function castItemTypes(array &$item): void
+    {
+        if (isset($item['id']))          $item['id']          = (int) $item['id'];
+        if (isset($item['user_id']))     $item['user_id']     = (int) $item['user_id'];
+        if (isset($item['size_bytes']))  $item['size_bytes']  = (int) $item['size_bytes'];
+        if (array_key_exists('folder_id', $item) && $item['folder_id'] !== null) {
+            $item['folder_id'] = (int) $item['folder_id'];
+        }
     }
 
     // CREA UN NUEVO ELEMENTO CIFRADO EN LA BOVEDA DEL USUARIO
@@ -204,10 +218,11 @@ class VaultController extends BaseController
         // RECUPERA EL ITEM COMPLETO
         $item = $this->itemModel->find($id);
 
-        // CONVIERTE EL BLOB A BASE64 PARA TRANSMISION JSON
+        // CONVIERTE EL BLOB A BASE64 Y NORMALIZA TIPOS NUMERICOS
         if (isset($item['encrypted_blob'])) {
             $item['encrypted_blob'] = base64_encode($item['encrypted_blob']);
         }
+        $this->castItemTypes($item);
 
         // DEVUELVE EL ITEM EN EL FORMATO ESTANDAR
         return $this->response->setJSON([
