@@ -65,6 +65,48 @@
           <span>Mejor que el {{percentileRank}}%</span>
         </div>
       </div>
+
+      <div class="auditor-loading" *ngIf="loading">
+        <ion-spinner name="dots"></ion-spinner>
+        <span>Cargando tu auditoría…</span>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <div>
+        <div class="section-title">Verificar contraseña</div>
+        <div class="section-sub">k-anonymity HIBP · solo viaja prefijo SHA-1</div>
+      </div>
+    </div>
+
+    <div class="hibp-check">
+      <div class="hibp-input-row">
+        <input
+          type="password"
+          class="hibp-input"
+          placeholder="Introduce una contraseña"
+          [(ngModel)]="passwordInput"
+          [disabled]="checkingPassword"
+          (keyup.enter)="onCheckPassword(passwordInput)"/>
+        <button class="hibp-btn"
+          [disabled]="checkingPassword || !passwordInput"
+          (click)="onCheckPassword(passwordInput)">
+          <ion-spinner *ngIf="checkingPassword" name="dots"></ion-spinner>
+          <span *ngIf="!checkingPassword">Verificar</span>
+        </button>
+      </div>
+
+      <div *ngIf="passwordCheckResult && passwordCheckResult.found"
+        class="hibp-result hibp-result-found">
+        <ph-warning-circle weight="fill" size="20"></ph-warning-circle>
+        <span>Esta contraseña aparece en {{passwordCheckResult.occurrences}} filtraciones</span>
+      </div>
+
+      <div *ngIf="passwordCheckResult && !passwordCheckResult.found"
+        class="hibp-result hibp-result-clean">
+        <ph-shield-check weight="fill" size="20"></ph-shield-check>
+        <span>Contraseña no encontrada en filtraciones</span>
+      </div>
     </div>
 
     <div class="value-stats">
