@@ -184,41 +184,53 @@
 }
 .score-ring-center {
   position: absolute;
-  inset: 0;
+  /* CIRCULO INSCRITO DENTRO DEL ANILLO — DEJA MARGEN PARA QUE EL TEXTO
+     NO TOQUE EL STROKE (radio interior visible ~65px sobre 80px de centro) */
+  inset: 22px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   color: white;
   text-align: center;
+  pointer-events: none;
+  /* CLIP CIRCULAR — EVITA QUE CUALQUIER OVERFLOW INVADA EL STROKE */
+  border-radius: 50%;
+  overflow: hidden;
 }
 .score-label {
-  font-size: 0.66rem;
+  font-size: 0.62rem;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.7);
-  margin-bottom: 4px;
+  color: rgba(255, 255, 255, 0.78);
+  margin-bottom: 2px;
+  line-height: 1;
+  white-space: nowrap;
 }
 .score-num {
   font-family: 'Bricolage Grotesque', sans-serif !important;
-  font-size: var(--fs-score);
+  /* TAMANO ACOTADO PARA QUE NUMEROS DE 1-3 DIGITOS QUEPAN DENTRO DEL
+     ANILLO SIN TOCAR EL STROKE — INDEPENDIENTE DE --fs-score GLOBAL */
+  font-size: clamp(2.4rem, 6.5vw, 3rem);
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.04em;
   color: white;
 }
 .score-sub {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.55);
   margin-top: 2px;
+  line-height: 1;
 }
-/* LATERAL: MASCOTA + PILL + DELTA */
+/* LATERAL: MASCOTA + PILL + DELTA — TODO CENTRADO BAJO LA MASCOTA */
 .score-side {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
+  text-align: center;
   gap: var(--s-2);
   flex: 1;
   min-width: 0;
@@ -230,7 +242,6 @@
   --color-secondary: #F472B6;
   --color-accent: #06B6D4;
   filter: drop-shadow(0 6px 14px rgba(15, 23, 42, 0.4));
-  align-self: center;
 }
 .score-pill {
   display: inline-flex;
