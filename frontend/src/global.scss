@@ -14,6 +14,11 @@
 .font-display, .text-hero, .text-title, .text-h3, .number-display {
   font-family: 'Bricolage Grotesque', 'Inter', sans-serif !important;
 }
+/* TIPOGRAFIA MONO — RESERVADA AL DASHBOARD OPS PANEL Y METRICAS BRUTALIST */
+.ops-stencil, .ops-metric, .ops-mono, .ops-divider-label, .ops-chip {
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, SFMono-Regular,
+    Menlo, Consolas, monospace !important;
+}
 
 /* ICONOS PHOSPHOR — HEREDAN COLOR DEL CONTEXTO Y SE ALINEAN COMO ICONOS INLINE */
 ph-shield-check,
@@ -26,7 +31,8 @@ ph-bell, ph-warning-circle, ph-warning, ph-book-open,
 ph-palette, ph-export, ph-question, ph-sign-out,
 ph-caret-right, ph-moon, ph-sun,
 ph-identification-card, ph-key, ph-device-mobile, ph-link,
-ph-fire, ph-star, ph-medal, ph-circle, ph-x, ph-x-circle, ph-caret-left {
+ph-fire, ph-star, ph-medal, ph-circle, ph-x, ph-x-circle, ph-caret-left,
+ph-arrow-right, ph-arrow-up-right {
   color: inherit;
   display: inline-flex;
   align-items: center;
@@ -96,6 +102,30 @@ ph-fire, ph-star, ph-medal, ph-circle, ph-x, ph-x-circle, ph-caret-left {
   --blur-sm: blur(8px) saturate(140%);
   --blur-md: blur(20px) saturate(180%);
   --blur-lg: blur(40px) saturate(180%);
+
+  /* CAPA DE TOKENS DE COMPONENTE — DASHBOARD OPS PANEL (BRUTALIST + ARGUS) */
+  /* FUENTE MONO PARA METRICAS, TIMESTAMPS Y CODIGOS CVE */
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, SFMono-Regular,
+    Menlo, Consolas, monospace;
+  /* RADIOS BRUTALIST — BORDES CASI RECTOS PARA SUPERFICIES DE DATOS */
+  --r-ops: 6px;
+  /* GRID DE OPERACIONES — 12 COLUMNAS LOGICAS */
+  --ops-col-gap: var(--s-3);
+  --ops-row-gap: var(--s-3);
+  /* BORDES NITIDOS — UTILIZADOS POR LAS CELDAS DEL PANEL */
+  --ops-border: 1px solid color-mix(in srgb, var(--color-text) 14%, transparent);
+  --ops-border-strong: 1px solid color-mix(in srgb, var(--color-text) 24%, transparent);
+  --ops-border-dashed: 1px dashed color-mix(in srgb, var(--color-text) 18%, transparent);
+  /* MARCADOR DE ACENTO LATERAL (LINEA VERTICAL TIPO TERMINAL) */
+  --ops-rail-ok: 3px solid var(--color-success);
+  --ops-rail-warn: 3px solid var(--color-warning);
+  --ops-rail-danger: 3px solid var(--color-danger);
+  /* COLOR DE FONDO DE LA SUPERFICIE DE OPERACIONES — MAS PLANO QUE --color-surface */
+  --ops-bg: color-mix(in srgb, var(--color-surface) 96%, transparent);
+  /* TIPOGRAFIA OPERACIONAL — METRICAS GRANDES Y ETIQUETA TIPO STENCIL */
+  --fs-metric: clamp(3.2rem, 7vw, 4.6rem);
+  --fs-metric-sm: 1.6rem;
+  --tracking-stencil: 0.18em;
 
   /* MODO CLARO — VALORES POR DEFECTO */
   --color-bg: #F0F4F8;
@@ -443,4 +473,117 @@ ion-router-outlet {
   backdrop-filter: blur(20px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
   border-bottom: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent) !important;
+}
+
+/* ════════════ OPS PANEL — UTILIDADES DASHBOARD BRUTALIST ════════════ */
+/* SUPERFICIE PLANA PARA CELDAS DE DATOS — SIN SOMBRA BLANDA */
+.ops-cell {
+  background: var(--ops-bg);
+  border: var(--ops-border);
+  border-radius: var(--r-ops);
+  padding: var(--s-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+/* RAIL LATERAL DE ESTADO — LINEA VERTICAL DE COLOR FUNCIONAL */
+.ops-cell--ok      { border-left: var(--ops-rail-ok); }
+.ops-cell--warn    { border-left: var(--ops-rail-warn); }
+.ops-cell--danger  { border-left: var(--ops-rail-danger); }
+/* ETIQUETA STENCIL — TIPO LABEL DE TERMINAL */
+.ops-stencil {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-stencil);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+/* METRICA OPERACIONAL — NUMERO GRANDE TABULAR */
+.ops-metric {
+  font-family: var(--font-mono);
+  font-feature-settings: 'tnum' on;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+  color: var(--color-text);
+}
+.ops-metric--xl { font-size: var(--fs-metric); }
+.ops-metric--md { font-size: var(--fs-metric-sm); }
+/* TEXTO MONO INLINE — TIMESTAMPS, CVE IDs, RUTAS */
+.ops-mono {
+  font-family: var(--font-mono);
+  font-feature-settings: 'tnum' on;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+/* DIVIDER STENCIL — LINEA ETIQUETADA AL ESTILO PLANO DESCLASIFICADO */
+.ops-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin: var(--s-3) 0 var(--s-2);
+}
+.ops-divider::before,
+.ops-divider::after {
+  content: '';
+  flex: 1;
+  height: 0;
+  border-top: var(--ops-border);
+}
+.ops-divider-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: var(--tracking-stencil);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+/* CHIP DE SEVERIDAD — USADO EN LISTAS DE CVE Y FILTRACIONES */
+.ops-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: var(--r-ops);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: var(--ops-border);
+}
+.ops-chip--ok     { color: var(--color-success); border-color: color-mix(in srgb, var(--color-success) 45%, transparent); }
+.ops-chip--warn   { color: var(--color-warning); border-color: color-mix(in srgb, var(--color-warning) 45%, transparent); }
+.ops-chip--danger { color: var(--color-danger);  border-color: color-mix(in srgb, var(--color-danger)  55%, transparent); }
+/* PUNTO DE ESTADO — DOT SOBRIO SIN GLOW EXCESIVO */
+.ops-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.ops-dot--ok     { background: var(--color-success); }
+.ops-dot--warn   { background: var(--color-warning); }
+.ops-dot--danger { background: var(--color-danger);  }
+/* RING DE FOCO ACCESIBLE — VISIBLE EN CUALQUIER FONDO */
+.ops-focus:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--r-ops);
+}
+/* SKELETON DE CARGA — PULSO SUTIL SIN SHIMMER MARKETING */
+.ops-skeleton {
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+  border-radius: var(--r-ops);
+  animation: opsSkeletonPulse 1.4s ease-in-out infinite;
+}
+@keyframes opsSkeletonPulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 0.9; }
+}
+/* RESPETO DE PREFERENCIA DE MOTION REDUCIDA */
+@media (prefers-reduced-motion: reduce) {
+  .ops-skeleton { animation: none; opacity: 0.7; }
 }
