@@ -475,3 +475,91 @@ ion-router-outlet {
 @media (prefers-reduced-motion: reduce) {
   .skeleton-pulse { animation: none; opacity: 0.7; }
 }
+
+/* ════════════ VAULT-SCOPE — EXTIENDE TOKENS DEL DASHBOARD ════════════
+   CAPA QUE SE APLICA AL MODULO BOVEDA (CLAYMORPHISM SUAVE + BENTO).
+   NO REEMPLAZA NINGUN TOKEN GLOBAL — SOLO ANADE. EL RESTO DE LA APP NO
+   VE ESTAS VARIABLES SALVO EL FOOTPRINT DE :root QUE ES INERTE.
+   --vault-accent ES EL UNICO QUE EL USUARIO PUEDE CAMBIAR EN RUNTIME.
+   ──────────────────────────────────────────────────────────────────── */
+:root {
+  /* RADIOS +1 NIVEL: CARDS PRINCIPALES 28PX, SECUNDARIAS 20PX, PILLS 16PX */
+  --r-vault-blob: 28px;
+  --r-vault-card: 20px;
+  --r-vault-pill: 16px;
+  --r-vault-chip: 12px;
+
+  /* SOMBRAS SOFT-LIFTED (NO PLANAS) PARA CLAYMORPHISM */
+  --shadow-vault-lifted:
+    0 10px 30px rgba(0, 0, 0, 0.32),
+    0 2px 8px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --shadow-vault-flat: 0 1px 2px rgba(0, 0, 0, 0.18);
+  --shadow-vault-halo:
+    0 14px 38px color-mix(in srgb, var(--vault-shadow) 30%, transparent),
+    0 4px 12px color-mix(in srgb, var(--vault-shadow) 14%, transparent);
+
+  /* MOTION BOVEDA — DURACIONES MAS LARGAS QUE EL DASHBOARD */
+  --dur-vault-base: 240ms;
+  --dur-vault-slow: 320ms;
+  --ease-vault-bounce: cubic-bezier(0.34, 1.72, 0.64, 1);
+
+  /* PALETA HEALTH DERIVADA (NUNCA INVENTADA) */
+  --vault-health-good: var(--color-success);
+  --vault-health-mid:  var(--color-warning);
+  --vault-health-bad:  var(--color-danger);
+
+  /* TRIPLETE DE ACENTOS — CADA UNO PERSONALIZABLE POR SEPARADO POR EL USUARIO.
+     --vault-accent  = color GENERAL (gradientes, focus rings, botones primarios)
+     --vault-icons   = color de ICONOS de items y favoritos (sigue al accent por defecto)
+     --vault-shadow  = color de SOMBRAS suaves halo (sigue al accent por defecto)
+     CADA ONE SE SOBRESCRIBE VIA data-vault-accent / data-vault-icons / data-vault-shadow.
+     EL DEFAULT VIOLETA NO ESTA ATADO A --color-primary PORQUE PRIMARY VARIA SEGUN TEMA. */
+  --vault-accent: #7C3AED;
+  --vault-icons: var(--vault-accent);
+  --vault-shadow: var(--vault-accent);
+  --vault-accent-soft: color-mix(in srgb, var(--vault-accent) 16%, transparent);
+  --vault-accent-ring: color-mix(in srgb, var(--vault-accent) 28%, transparent);
+
+  /* DENSIDAD DE LISTAS (COMODO POR DEFECTO) */
+  --vault-row-y: 14px;
+  --vault-row-gap: 10px;
+}
+
+/* PRESETS DE ACENTO GENERAL — APLICA AL <body> VIA data-vault-accent="<key>" */
+body[data-vault-accent="rosa"]   { --vault-accent: #EC4899; }
+body[data-vault-accent="cyan"]   { --vault-accent: #06B6D4; }
+body[data-vault-accent="verde"]  { --vault-accent: #10B981; }
+body[data-vault-accent="ambar"]  { --vault-accent: #F59E0B; }
+body[data-vault-accent="rojo"]   { --vault-accent: #EF4444; }
+
+/* PRESETS DE ICONOS — SOBRESCRIBEN --vault-icons SIN TOCAR LOS DEMAS ACENTOS */
+body[data-vault-icons="default"] { --vault-icons: #7C3AED; }
+body[data-vault-icons="rosa"]    { --vault-icons: #EC4899; }
+body[data-vault-icons="cyan"]    { --vault-icons: #06B6D4; }
+body[data-vault-icons="verde"]   { --vault-icons: #10B981; }
+body[data-vault-icons="ambar"]   { --vault-icons: #F59E0B; }
+body[data-vault-icons="rojo"]    { --vault-icons: #EF4444; }
+
+/* PRESETS DE SOMBRAS — SOBRESCRIBEN --vault-shadow SIN TOCAR LOS DEMAS ACENTOS */
+body[data-vault-shadow="default"] { --vault-shadow: #7C3AED; }
+body[data-vault-shadow="rosa"]    { --vault-shadow: #EC4899; }
+body[data-vault-shadow="cyan"]    { --vault-shadow: #06B6D4; }
+body[data-vault-shadow="verde"]   { --vault-shadow: #10B981; }
+body[data-vault-shadow="ambar"]   { --vault-shadow: #F59E0B; }
+body[data-vault-shadow="rojo"]    { --vault-shadow: #EF4444; }
+
+/* MODO DENSIDAD COMPACTA — APLICA AL <body> VIA .vault-density-compact */
+body.vault-density-compact {
+  --vault-row-y: 8px;
+  --vault-row-gap: 6px;
+}
+
+/* MOTION REDUCIDA — DESACTIVA BOUNCES Y DURACIONES PROPIAS DE LA BOVEDA */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-vault-base: 1ms;
+    --dur-vault-slow: 1ms;
+    --ease-vault-bounce: linear;
+  }
+}

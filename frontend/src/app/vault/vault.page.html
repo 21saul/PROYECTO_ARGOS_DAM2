@@ -1,15 +1,20 @@
+<!-- BOVEDA — CLAYMORPHISM SUAVE + BENTO + GAMIFICACION HONESTA
+     ESTRUCTURA: HEADER PERSONAL → HEALTH SCORE → BENTO FAVORITOS → BUSQUEDA
+     → TABS POR TIPO → STRIP DE CARPETAS → LISTA DENSA → MODALES + ONBOARDING. -->
+
 <ion-header>
-  <ion-toolbar>
+  <ion-toolbar class="vault-toolbar">
     <ion-buttons slot="start">
       <ion-back-button defaultHref="/dashboard" text="">
         <ph-arrow-left weight="bold" size="22" slot="icon-only"></ph-arrow-left>
       </ion-back-button>
     </ion-buttons>
-    <ion-title>Mi Bóveda</ion-title>
+    <ion-title class="vault-toolbar-title">Mi Boveda</ion-title>
     <ion-buttons slot="end">
-      <ion-button>
-        <ph-magnifying-glass weight="bold" size="22" slot="icon-only"></ph-magnifying-glass>
-      </ion-button>
+      <button class="vault-toolbar-action" (click)="openCustomize()"
+        aria-label="Personalizar boveda">
+        <ph-palette weight="bold" size="20"></ph-palette>
+      </button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>
@@ -17,66 +22,145 @@
 <ion-content class="vault-content">
   <div class="vault-scroll scroll-clean">
 
-    <div *ngIf="loading" class="vault-loading">
-      <ion-spinner name="crescent" color="primary"></ion-spinner>
-      <div class="vault-loading-text">Descifrando bóveda…</div>
+    <!-- SKELETON DE CARGA CON FORMA DEL CONTENIDO REAL -->
+    <div *ngIf="loading" class="vault-skeleton">
+      <div class="sk-card sk-health"></div>
+      <div class="sk-row">
+        <div class="sk-card sk-fav"></div>
+        <div class="sk-card sk-fav"></div>
+        <div class="sk-card sk-fav"></div>
+      </div>
+      <div class="sk-card sk-search"></div>
+      <div class="sk-list">
+        <div class="sk-card sk-item" *ngFor="let n of [1,2,3,4]"></div>
+      </div>
     </div>
 
     <ng-container *ngIf="!loading">
-    <div class="vault-stats-banner">
-      <div class="vault-banner-bg"></div>
-      <div class="vault-banner-grid">
-        <div class="vault-banner-icon">
-          <ph-vault weight="fill" size="36"></ph-vault>
+
+    <!-- ── HEADER PERSONAL CON SALUDO ──────────────────────────────── -->
+    <div class="vault-greeting">
+      <button class="vault-avatar"
+        [class.vault-avatar-photo]="!!userAvatarPhoto"
+        (click)="openCustomize()"
+        [attr.aria-label]="'Editar personalizacion (' + (userAvatarPhoto ? 'avatar personalizado' : userInitial) + ')'">
+        <img *ngIf="userAvatarPhoto" [src]="userAvatarPhoto" alt="Avatar">
+        <span *ngIf="!userAvatarPhoto" class="vault-avatar-letter">{{ userInitial }}</span>
+        <span class="vault-avatar-dot"></span>
+        <span class="vault-avatar-edit" aria-hidden="true">
+          <ph-camera weight="fill" size="11"></ph-camera>
+        </span>
+      </button>
+      <div class="vault-greeting-text">
+        <div class="vault-greeting-hi">
+          {{ userDisplay ? 'Hola, ' + userDisplay : 'Tu boveda privada' }}
         </div>
-        <div class="vault-banner-content">
-          <div class="vault-banner-title">{{totalEntries}} elementos</div>
-          <div class="vault-banner-sub">
-            <ph-shield-check weight="fill" size="13"></ph-shield-check>
-            Cifrado AES-256-GCM
-          </div>
-        </div>
-        <div class="vault-banner-storage">
-          <div class="storage-text">{{storageUsedMb}}/{{storageTotalMb}} MB</div>
-          <div class="storage-track">
-            <div class="storage-fill" [style.width]="getStorageProgress() + '%'"></div>
-          </div>
+        <div class="vault-greeting-sub">
+          {{ totalEntries }} secretos cifrados en este dispositivo
         </div>
       </div>
     </div>
 
-    <div class="stats-row">
-      <div class="stat-pill">
-        <ph-key weight="fill" size="18"
-          style="color:var(--color-primary)"></ph-key>
-        <div class="stat-pill-num">{{strongPercent}}%</div>
-        <div class="stat-pill-lbl">Fuertes</div>
+    <!-- ── HEALTH SCORE CLAYMORPHIC ──────────────────────────────── -->
+    <div class="vault-health-card">
+      <div class="health-ring-wrap">
+        <svg class="health-ring" viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="health-ring-track" cx="60" cy="60" r="50"></circle>
+          <circle class="health-ring-fill" cx="60" cy="60" r="50"
+            [attr.stroke]="getHealthColor(healthScore)"
+            [style.stroke-dashoffset]="(314 - (314 * healthScore / 100))"
+            [style.stroke-dasharray]="314"></circle>
+        </svg>
+        <div class="health-ring-center">
+          <div class="health-ring-num">{{ healthScore }}</div>
+          <div class="health-ring-lbl">Salud</div>
+        </div>
       </div>
-      <div class="stat-pill">
-        <ph-folder weight="fill" size="18"
-          style="color:var(--color-secondary)"></ph-folder>
-        <div class="stat-pill-num">{{folders.length}}</div>
-        <div class="stat-pill-lbl">Carpetas</div>
-      </div>
-      <div class="stat-pill">
-        <ph-cloud-arrow-up weight="fill" size="18"
-          style="color:var(--color-success)"></ph-cloud-arrow-up>
-        <div class="stat-pill-num">Hoy</div>
-        <div class="stat-pill-lbl">Sincronizado</div>
+      <div class="health-info">
+        <div class="health-title">Salud de la boveda</div>
+        <div class="health-narrative">{{ healthNarrative }}</div>
+        <div class="health-breakdown">
+          <span class="hb-chip" [class.hb-ok]="healthBreakdown.strong >= 70">
+            <ph-lock weight="fill" size="11"></ph-lock>
+            {{ healthBreakdown.strong }}% fuertes
+          </span>
+          <span class="hb-chip" [class.hb-ok]="healthBreakdown.unique >= 90">
+            <ph-check-circle weight="fill" size="11"></ph-check-circle>
+            {{ healthBreakdown.unique }}% unicas
+          </span>
+        </div>
+        <div class="health-achievements">
+          <span *ngFor="let a of achievements" class="achv-pill"
+            [class.achv-locked]="!a.unlocked"
+            [attr.data-achv-id]="a.id"
+            [attr.title]="a.hint">
+            <ph-shield-check *ngIf="a.icon === 'shield-check'" weight="fill" size="11"></ph-shield-check>
+            <ph-check-circle *ngIf="a.icon === 'check-circle'" weight="fill" size="11"></ph-check-circle>
+            <ph-lock *ngIf="a.icon === 'lock'" weight="fill" size="11"></ph-lock>
+            <span>{{ a.label }}</span>
+          </span>
+        </div>
       </div>
     </div>
 
-    <div class="search-wrap">
-      <ph-magnifying-glass weight="bold" size="18" class="search-icon"></ph-magnifying-glass>
-      <input class="search-input" type="text"
-        placeholder="Buscar contraseña, nota o archivo..."
-        [(ngModel)]="searchQuery">
-      <button *ngIf="searchQuery" class="search-clear"
-        (click)="searchQuery=''">
+    <!-- ── BANNER DE CLIPBOARD COUNTDOWN ─────────────────────────── -->
+    <div *ngIf="copiedItemId !== null" class="clipboard-banner"
+      role="status" aria-live="polite">
+      <div class="cb-progress" [style.width]="(copyCountdown / COPY_AUTOCLEAR_SECONDS * 100) + '%'"></div>
+      <ph-copy weight="fill" size="16"></ph-copy>
+      <div class="cb-text">
+        Contrasena en portapapeles · se borrara en
+        <strong>{{ copyCountdown }}s</strong>
+      </div>
+      <button type="button" class="cb-cancel" (click)="cancelClipboard($event)"
+        aria-label="Borrar del portapapeles ya">
         <ph-x weight="bold" size="14"></ph-x>
       </button>
     </div>
 
+    <!-- ── BENTO DE FAVORITOS / RECIENTES ────────────────────────── -->
+    <section *ngIf="favoriteItems.length > 0" class="bento-section">
+      <header class="section-header">
+        <span class="section-title">
+          {{ favoriteIds.length > 0 ? 'Favoritos' : 'Recientes' }}
+        </span>
+        <span class="section-sub">{{ favoriteItems.length }} destacados</span>
+      </header>
+      <div class="bento-grid">
+        <button *ngFor="let item of favoriteItems"
+          class="bento-favorite"
+          [id]="'fav-' + item.id"
+          [style.--card-accent]="itemColor(item)"
+          (click)="primaryAction(item, $event)">
+          <div class="bento-icon">
+            <ph-key *ngIf="iconForItem(item) === 'key'" weight="fill" size="22"></ph-key>
+            <ph-credit-card *ngIf="iconForItem(item) === 'credit-card'" weight="fill" size="22"></ph-credit-card>
+            <ph-terminal-window *ngIf="iconForItem(item) === 'terminal-window'" weight="fill" size="22"></ph-terminal-window>
+            <ph-wallet *ngIf="iconForItem(item) === 'wallet'" weight="fill" size="22"></ph-wallet>
+            <ph-identification-card *ngIf="iconForItem(item) === 'identification-card'" weight="fill" size="22"></ph-identification-card>
+            <ph-note *ngIf="iconForItem(item) === 'note'" weight="fill" size="22"></ph-note>
+            <ph-file *ngIf="iconForItem(item) === 'file'" weight="fill" size="22"></ph-file>
+          </div>
+          <div class="bento-title">{{ item.payload.title }}</div>
+          <div class="bento-meta">{{ labelForItem(item) }}</div>
+        </button>
+      </div>
+    </section>
+
+    <!-- ── BUSQUEDA ─────────────────────────────────────────────── -->
+    <div class="search-wrap">
+      <ph-magnifying-glass weight="bold" size="18" class="search-icon"></ph-magnifying-glass>
+      <input class="search-input" type="text"
+        placeholder="Buscar titulo, usuario, URL o nota..."
+        [(ngModel)]="searchQuery"
+        aria-label="Buscar en la boveda">
+      <button *ngIf="searchQuery" class="search-clear"
+        (click)="searchQuery=''" aria-label="Limpiar busqueda">
+        <ph-x weight="bold" size="14"></ph-x>
+      </button>
+    </div>
+
+    <!-- ── TABS POR TIPO PADRE ──────────────────────────────────── -->
     <div class="tabs-scroll">
       <div class="tabs-inner">
         <button class="tab-pill" [class.active]="activeTab === 'all'"
@@ -87,7 +171,7 @@
         <button class="tab-pill" [class.active]="activeTab === 'password'"
           (click)="setTab('password')">
           <ph-key weight="fill" size="14"></ph-key>
-          <span>Contraseñas</span>
+          <span>Cuentas</span>
         </button>
         <button class="tab-pill" [class.active]="activeTab === 'note'"
           (click)="setTab('note')">
@@ -102,9 +186,10 @@
       </div>
     </div>
 
+    <!-- ── STRIP DE CARPETAS ────────────────────────────────────── -->
     <div class="folders-section">
-      <div class="folders-header">
-        <span class="folders-title">Carpetas</span>
+      <div class="section-header section-header-pad">
+        <span class="section-title">Carpetas</span>
         <button class="folders-add-btn" type="button" (click)="addFolder()"
           aria-label="Crear carpeta">
           <ph-plus weight="bold" size="14"></ph-plus>
@@ -112,26 +197,28 @@
         </button>
       </div>
       <div class="folders-scroll">
-        <div class="folder-card folder-card-add" (click)="addFolder()"
-          role="button" aria-label="Crear carpeta">
+        <button class="folder-card folder-card-add" (click)="addFolder()"
+          type="button" aria-label="Crear carpeta">
           <div class="folder-icon-wrap folder-icon-add">
             <ph-plus weight="bold" size="22"></ph-plus>
           </div>
           <div class="folder-name">Nueva</div>
           <div class="folder-count">Crear carpeta</div>
-        </div>
-        <div class="folder-card"
+        </button>
+        <button class="folder-card"
+          type="button"
           [class.active]="activeFolderId === null"
           (click)="selectFolder(null)">
           <div class="folder-icon-wrap"
-            style="background: color-mix(in srgb, var(--color-primary) 18%, transparent)">
+            style="background: color-mix(in srgb, var(--vault-accent) 18%, transparent)">
             <ph-list-bullets weight="bold" size="20"
-              style="color:var(--color-primary)"></ph-list-bullets>
+              style="color:var(--vault-accent)"></ph-list-bullets>
           </div>
           <div class="folder-name">Todo</div>
-          <div class="folder-count">{{items.length}} elementos</div>
-        </div>
-        <div *ngFor="let f of folders" class="folder-card"
+          <div class="folder-count">{{ items.length }} elementos</div>
+        </button>
+        <button *ngFor="let f of folders" class="folder-card"
+          type="button"
           [class.active]="activeFolderId === f.id"
           (click)="selectFolder(f.id)">
           <div class="folder-icon-wrap" [style.background]="f.color + '22'">
@@ -145,110 +232,202 @@
               [style.color]="f.color"></ph-users-three>
             <ph-briefcase *ngIf="f.icon === 'briefcase'" weight="fill" size="20"
               [style.color]="f.color"></ph-briefcase>
-            <ph-house-line *ngIf="f.icon === 'house-line'" weight="fill" size="20"
-              [style.color]="f.color"></ph-house-line>
             <ph-house *ngIf="f.icon === 'house'" weight="fill" size="20"
               [style.color]="f.color"></ph-house>
-            <ph-folder *ngIf="!['bank','envelope','share-network','users-three','briefcase','house-line','house'].includes(f.icon)"
+            <ph-folder *ngIf="!['bank','envelope','share-network','users-three','briefcase','house'].includes(f.icon)"
               weight="fill" size="20" [style.color]="f.color"></ph-folder>
           </div>
-          <div class="folder-name">{{f.name}}</div>
-          <div class="folder-count">{{f.item_count}} elementos</div>
+          <div class="folder-name">{{ f.name }}</div>
+          <div class="folder-count">{{ f.item_count }} elementos</div>
           <div class="folder-health-bar">
             <div class="folder-health-fill"
               [style.width]="getFolderHealth(f.id) + '%'"
               [style.background]="getHealthColor(getFolderHealth(f.id))"></div>
           </div>
-        </div>
+        </button>
       </div>
     </div>
 
+    <!-- ── LISTA DENSA DE ITEMS ────────────────────────────────── -->
     <div class="list-section">
-      <div class="list-header">
+      <div class="section-header section-header-pad">
         <div>
-          <div class="list-title" *ngIf="activeFolderId === null">
+          <div class="section-title" *ngIf="activeFolderId === null">
             {{ activeTab === 'all' ? 'Todos los elementos' :
-               activeTab === 'password' ? 'Contraseñas' :
+               activeTab === 'password' ? 'Cuentas' :
                activeTab === 'note' ? 'Notas seguras' : 'Archivos cifrados' }}
           </div>
-          <div class="list-title" *ngIf="activeFolderId !== null">
+          <div class="section-title" *ngIf="activeFolderId !== null">
             {{ getFolderName(activeFolderId!) }}
           </div>
-          <div class="list-sub">{{filteredItems.length}} resultados</div>
+          <div class="section-sub">{{ filteredItems.length }} resultados</div>
         </div>
+        <!-- ACCIONES DE LA CARPETA ACTIVA: ELIMINAR. SOLO VISIBLE CUANDO HAY UNA
+             CARPETA SELECCIONADA — LOS ITEMS DENTRO QUEDAN SIN CARPETA, NO SE PIERDEN. -->
+        <ng-container *ngIf="getFolderById(activeFolderId) as activeFolder">
+          <button class="folder-delete-btn" type="button"
+            (click)="askDeleteFolder(activeFolder, $event)"
+            aria-label="Eliminar carpeta">
+            <ph-trash weight="bold" size="13"></ph-trash>
+            <span>Eliminar carpeta</span>
+          </button>
+        </ng-container>
       </div>
 
       <div class="vault-list">
         <div *ngFor="let item of filteredItems" class="vault-item"
-          [id]="'item-' + item.id">
+          [id]="'item-' + item.id"
+          [style.--card-accent]="itemColor(item)">
 
-          <div class="item-avatar interactive"
-            [style.background]="customIcons[item.id] ? 'transparent' : itemColor(item)"
-            (click)="openIconPicker(item, $event)">
-            <img *ngIf="customIcons[item.id]" [src]="customIcons[item.id]" [alt]="item.payload.title">
-            <ph-key *ngIf="!customIcons[item.id] && item.item_type === 'password'"
-              weight="fill" size="20" style="color:white"></ph-key>
-            <ph-note *ngIf="!customIcons[item.id] && item.item_type === 'note'"
-              weight="fill" size="20" style="color:white"></ph-note>
-            <ph-file *ngIf="!customIcons[item.id] && item.item_type === 'file'"
-              weight="fill" size="20" style="color:white"></ph-file>
-            <div class="item-edit-badge">
+          <div class="item-avatar-wrap">
+            <button class="item-avatar interactive" type="button"
+              [style.background]="customIcons[item.id] ? 'transparent' : itemColor(item)"
+              (click)="openIconPicker(item, $event)"
+              [attr.aria-label]="'Cambiar icono de ' + item.payload.title">
+              <img *ngIf="customIcons[item.id]" [src]="customIcons[item.id]" [alt]="item.payload.title">
+              <ng-container *ngIf="!customIcons[item.id]">
+                <ph-key *ngIf="iconForItem(item) === 'key'" weight="fill" size="20" style="color:white"></ph-key>
+                <ph-credit-card *ngIf="iconForItem(item) === 'credit-card'" weight="fill" size="20" style="color:white"></ph-credit-card>
+                <ph-terminal-window *ngIf="iconForItem(item) === 'terminal-window'" weight="fill" size="20" style="color:white"></ph-terminal-window>
+                <ph-wallet *ngIf="iconForItem(item) === 'wallet'" weight="fill" size="20" style="color:white"></ph-wallet>
+                <ph-identification-card *ngIf="iconForItem(item) === 'identification-card'" weight="fill" size="20" style="color:white"></ph-identification-card>
+                <ph-note *ngIf="iconForItem(item) === 'note'" weight="fill" size="20" style="color:white"></ph-note>
+                <ph-file *ngIf="iconForItem(item) === 'file'" weight="fill" size="20" style="color:white"></ph-file>
+              </ng-container>
+            </button>
+            <span class="item-edit-badge" aria-hidden="true">
               <ph-pencil-simple weight="fill" size="9"></ph-pencil-simple>
-            </div>
+            </span>
           </div>
 
-          <div class="item-info">
+          <!-- ZONA CLICKABLE PRINCIPAL: TITULO + METADATOS. EL CLICK AQUI EJECUTA
+               LA ACCION PRIMARIA (COPIAR / VER / DESCARGAR). ANTES EL CLICK ESTABA
+               EN TODA LA FILA Y EL HIT ZONE TRAGABA LOS BOTONES DE 32PX DE EDITAR/
+               ELIMINAR EN TACTIL. AHORA LOS BOTONES TIENEN SU PROPIO ESPACIO. -->
+          <button class="item-info" type="button"
+            (click)="primaryAction(item, $event)"
+            [attr.aria-label]="(item.item_type === 'password' ? 'Copiar contrasena de ' :
+                                item.item_type === 'note' ? 'Abrir nota ' : 'Descargar ') + item.payload.title">
             <div class="item-top-row">
-              <span class="item-name">{{item.payload.title}}</span>
+              <span class="item-name">{{ item.payload.title }}</span>
               <span *ngIf="item.item_type === 'password'" class="strength-pill"
                 [style.background]="getStrengthColor(itemStrength(item)) + '22'"
-                [style.color]="getStrengthColor(itemStrength(item))">
-                {{getStrengthLabel(itemStrength(item))}}
+                [style.color]="getStrengthColor(itemStrength(item))"
+                [attr.title]="getStrengthReason(item)">
+                {{ getStrengthLabel(itemStrength(item)) }}
+              </span>
+              <span *ngIf="isReused(item)" class="reuse-pill"
+                title="Esta contrasena se repite en otras cuentas — vector clasico de fuga">
+                reutilizada
               </span>
               <span *ngIf="item.item_type === 'file'" class="file-ext-pill">
-                {{fileExt(item)}}
+                {{ fileExt(item) }}
               </span>
             </div>
             <div class="item-meta">
               <span *ngIf="item.item_type === 'password'" class="item-username">
-                {{item.payload.username}}
+                {{ item.payload.username }}
               </span>
               <span *ngIf="item.item_type === 'note'" class="item-snippet">
-                {{noteSnippet(item)}}
+                {{ noteSnippet(item) }}
               </span>
               <span *ngIf="item.item_type === 'file'" class="item-filesize">
-                {{fileSize(item)}}
+                {{ fileSize(item) }}
               </span>
             </div>
             <div class="item-bottom-row">
+              <span class="item-kind-tag">
+                {{ labelForItem(item) }}
+              </span>
               <span class="item-folder-tag" *ngIf="item.folder_id !== null"
                 [style.background]="getFolderColor(item.folder_id) + '18'"
                 [style.color]="getFolderColor(item.folder_id)">
                 <ph-folder weight="fill" size="10"></ph-folder>
-                {{getFolderName(item.folder_id)}}
+                {{ getFolderName(item.folder_id) }}
               </span>
-              <span class="item-date">{{itemDate(item)}}</span>
+              <span class="item-date">{{ itemDate(item) }}</span>
             </div>
-          </div>
+          </button>
 
-          <button class="item-action" (click)="copyPassword(item, $event)">
-            <ph-copy *ngIf="item.item_type === 'password'" weight="bold" size="18"></ph-copy>
-            <ph-eye *ngIf="item.item_type === 'note'" weight="bold" size="18"></ph-eye>
-            <ph-download-simple *ngIf="item.item_type === 'file'" weight="bold" size="18"></ph-download-simple>
-          </button>
-          <button class="item-action item-delete" (click)="deleteItem(item, $event)"
-            aria-label="Eliminar item">
-            <ph-trash weight="bold" size="18"></ph-trash>
-          </button>
+          <div class="item-actions">
+            <button class="item-action item-fav" type="button"
+              [class.active]="isFavorite(item)"
+              (click)="toggleFavorite(item, $event)"
+              [attr.aria-label]="isFavorite(item) ? 'Quitar de favoritos' : 'Anadir a favoritos'">
+              <ph-star [attr.weight]="isFavorite(item) ? 'fill' : 'bold'" size="16"></ph-star>
+            </button>
+            <button class="item-action item-edit-btn" type="button"
+              (click)="editItem(item, $event)"
+              *ngIf="item.item_type !== 'file'"
+              aria-label="Editar item">
+              <ph-pencil-simple weight="bold" size="16"></ph-pencil-simple>
+            </button>
+            <button class="item-action item-action-primary" type="button"
+              (click)="primaryAction(item, $event)"
+              [attr.aria-label]="item.item_type === 'password' ? 'Copiar contrasena' :
+                                  item.item_type === 'note' ? 'Ver nota' : 'Descargar fichero'">
+              <ph-copy *ngIf="item.item_type === 'password'" weight="bold" size="16"></ph-copy>
+              <ph-eye *ngIf="item.item_type === 'note'" weight="bold" size="16"></ph-eye>
+              <ph-download-simple *ngIf="item.item_type === 'file'" weight="bold" size="16"></ph-download-simple>
+            </button>
+            <button class="item-action item-delete" type="button"
+              (click)="deleteItem(item, $event)"
+              aria-label="Eliminar item">
+              <ph-trash weight="bold" size="16"></ph-trash>
+            </button>
+          </div>
         </div>
 
+        <!-- EMPTY STATES DIFERENCIADOS POR CONTEXTO -->
         <div *ngIf="filteredItems.length === 0" class="empty-state">
-          <ph-archive weight="thin" size="48" style="color:var(--color-text-muted)"></ph-archive>
-          <div class="empty-title">Nada por aquí</div>
-          <div class="empty-sub">
-            {{searchQuery ? 'Sin resultados para "' + searchQuery + '"' :
-              'Pulsa el + para añadir tu primer elemento'}}
-          </div>
+          <ng-container *ngIf="searchQuery">
+            <div class="empty-illustration empty-search">
+              <ph-magnifying-glass weight="duotone" size="56"></ph-magnifying-glass>
+            </div>
+            <div class="empty-title">Sin coincidencias</div>
+            <div class="empty-sub">No hay nada que case con "<strong>{{ searchQuery }}</strong>".</div>
+            <button class="empty-cta" type="button" (click)="searchQuery=''">
+              <ph-x weight="bold" size="14"></ph-x>
+              <span>Borrar busqueda</span>
+            </button>
+          </ng-container>
+          <ng-container *ngIf="!searchQuery && activeFolderId !== null">
+            <div class="empty-illustration empty-folder">
+              <ph-folder weight="duotone" size="56"></ph-folder>
+            </div>
+            <div class="empty-title">Carpeta vacia</div>
+            <div class="empty-sub">"{{ getFolderName(activeFolderId!) }}" aun no tiene elementos.</div>
+            <button class="empty-cta" type="button" (click)="addPassword('login')">
+              <ph-plus weight="bold" size="14"></ph-plus>
+              <span>Anadir aqui</span>
+            </button>
+          </ng-container>
+          <ng-container *ngIf="!searchQuery && activeFolderId === null && items.length === 0">
+            <div class="empty-illustration empty-vault">
+              <ph-vault weight="duotone" size="64"></ph-vault>
+            </div>
+            <div class="empty-title">Tu boveda esta vacia</div>
+            <div class="empty-sub">
+              Empieza guardando una contrasena. Se cifrara en tu dispositivo
+              con AES-256-GCM antes de salir.
+            </div>
+            <button class="empty-cta empty-cta-strong" type="button"
+              (click)="addPassword('login')">
+              <ph-plus weight="bold" size="14"></ph-plus>
+              <span>Guardar mi primera cuenta</span>
+            </button>
+          </ng-container>
+          <ng-container *ngIf="!searchQuery && activeFolderId === null && items.length > 0 && activeTab !== 'all'">
+            <div class="empty-illustration empty-filter">
+              <ph-list-bullets weight="duotone" size="56"></ph-list-bullets>
+            </div>
+            <div class="empty-title">Sin elementos en esta vista</div>
+            <div class="empty-sub">No tienes nada del tipo seleccionado todavia.</div>
+            <button class="empty-cta" type="button" (click)="setTab('all')">
+              <ph-list-bullets weight="bold" size="14"></ph-list-bullets>
+              <span>Ver todo</span>
+            </button>
+          </ng-container>
         </div>
       </div>
     </div>
@@ -257,12 +436,13 @@
     </ng-container>
   </div>
 
+  <!-- ── OVERLAY DE CIFRADO PARA UPLOADS ───────────────────────── -->
   <div *ngIf="showCipherAnim" class="cipher-overlay">
     <div class="cipher-modal">
       <div class="cipher-icon-stack">
         <div class="cipher-shield">
           <ph-shield-check weight="fill" size="64"
-            style="color:var(--color-primary)"></ph-shield-check>
+            style="color:var(--vault-accent)"></ph-shield-check>
         </div>
         <div class="cipher-rings">
           <div class="cipher-ring r1"></div>
@@ -278,58 +458,111 @@
     </div>
   </div>
 
+  <!-- ── FAB CON SUBTIPOS ──────────────────────────────────────── -->
   <div class="fab-container" [class.open]="fabOpen">
     <div class="fab-menu">
       <button class="fab-mini" (click)="addFolder()">
-        <ph-folder weight="fill" size="18"></ph-folder>
+        <ph-folder weight="fill" size="16"></ph-folder>
         <span>Carpeta</span>
       </button>
       <button class="fab-mini" (click)="addFile()">
-        <ph-file weight="fill" size="18"></ph-file>
+        <ph-file weight="fill" size="16"></ph-file>
         <span>Archivo</span>
       </button>
-      <button class="fab-mini" (click)="addNote()">
-        <ph-note weight="fill" size="18"></ph-note>
+      <button class="fab-mini" (click)="addNote('identity')">
+        <ph-identification-card weight="fill" size="16"></ph-identification-card>
+        <span>Identidad</span>
+      </button>
+      <button class="fab-mini" (click)="addNote('note')">
+        <ph-note weight="fill" size="16"></ph-note>
         <span>Nota</span>
       </button>
-      <button class="fab-mini" (click)="addPassword()">
-        <ph-key weight="fill" size="18"></ph-key>
-        <span>Contraseña</span>
+      <button class="fab-mini" (click)="addPassword('seed')">
+        <ph-wallet weight="fill" size="16"></ph-wallet>
+        <span>Semilla</span>
+      </button>
+      <button class="fab-mini" (click)="addPassword('apikey')">
+        <ph-terminal-window weight="fill" size="16"></ph-terminal-window>
+        <span>API key</span>
+      </button>
+      <button class="fab-mini" (click)="addPassword('card')">
+        <ph-credit-card weight="fill" size="16"></ph-credit-card>
+        <span>Tarjeta</span>
+      </button>
+      <button class="fab-mini" (click)="addPassword('login')">
+        <ph-key weight="fill" size="16"></ph-key>
+        <span>Cuenta</span>
       </button>
     </div>
-    <button class="fab-main" (click)="toggleFab()">
+    <button class="fab-main" (click)="toggleFab()"
+      [attr.aria-label]="fabOpen ? 'Cerrar menu de nuevo' : 'Anadir nuevo'">
       <ph-plus weight="bold" size="26"></ph-plus>
     </button>
   </div>
 
-  <!-- MODAL DE NUEVA CONTRASENA -->
-  <div *ngIf="addPasswordOpen" class="form-overlay" (click)="cancelAddPassword()">
+  <!-- ── MODAL DE PASSWORD (ALTA + EDICION + GENERATOR) ────────── -->
+  <div *ngIf="addPasswordOpen" class="form-overlay" (click)="cancelAddPassword()"
+    role="dialog" aria-modal="true">
     <div class="form-modal" (click)="$event.stopPropagation()">
       <div class="form-header">
-        <div class="form-header-icon" style="background: linear-gradient(135deg, #7C3AED, #06B6D4);">
-          <ph-key weight="fill" size="22"></ph-key>
+        <div class="form-header-icon"
+          [style.background]="'linear-gradient(135deg, var(--vault-accent), color-mix(in srgb, var(--vault-accent) 60%, var(--color-accent)))'">
+          <ph-key *ngIf="formPassword.kind === 'login'" weight="fill" size="22"></ph-key>
+          <ph-credit-card *ngIf="formPassword.kind === 'card'" weight="fill" size="22"></ph-credit-card>
+          <ph-terminal-window *ngIf="formPassword.kind === 'apikey'" weight="fill" size="22"></ph-terminal-window>
+          <ph-wallet *ngIf="formPassword.kind === 'seed'" weight="fill" size="22"></ph-wallet>
         </div>
         <div class="form-header-text">
-          <div class="form-title">Nueva contraseña</div>
-          <div class="form-sub">Se cifrará en tu dispositivo con AES-256-GCM</div>
+          <div class="form-title">
+            {{ editingItem ? 'Editar' : 'Nueva' }}
+            {{ formPassword.kind === 'login' ? 'cuenta' :
+               formPassword.kind === 'card' ? 'tarjeta' :
+               formPassword.kind === 'apikey' ? 'API key' : 'semilla' }}
+          </div>
+          <div class="form-sub">Se cifra en tu dispositivo antes de salir</div>
         </div>
         <button class="form-close" type="button" (click)="cancelAddPassword()" aria-label="Cerrar">
           <ph-x weight="bold" size="18"></ph-x>
         </button>
       </div>
       <div class="form-body">
+        <!-- SELECTOR DE SUBTIPO EN PILL-GROUP (NO DROPDOWN) -->
+        <div class="form-field">
+          <span class="form-label">Tipo</span>
+          <div class="kind-picker">
+            <button *ngFor="let k of passwordKinds" type="button" class="kind-pill"
+              [class.active]="formPassword.kind === k"
+              (click)="formPassword.kind = k">
+              <ph-key *ngIf="k === 'login'" weight="fill" size="14"></ph-key>
+              <ph-credit-card *ngIf="k === 'card'" weight="fill" size="14"></ph-credit-card>
+              <ph-terminal-window *ngIf="k === 'apikey'" weight="fill" size="14"></ph-terminal-window>
+              <ph-wallet *ngIf="k === 'seed'" weight="fill" size="14"></ph-wallet>
+              <span>{{ kindMeta[k].label }}</span>
+            </button>
+          </div>
+        </div>
+
         <label class="form-field">
-          <span class="form-label">Título</span>
+          <span class="form-label">Titulo</span>
           <input class="form-input" type="text" placeholder="Ej: Gmail Personal"
             [(ngModel)]="formPassword.title" autocomplete="off">
         </label>
-        <label class="form-field">
-          <span class="form-label">Usuario o email</span>
-          <input class="form-input" type="text" placeholder="usuario@example.com"
+        <label class="form-field" *ngIf="formPassword.kind !== 'seed'">
+          <span class="form-label">
+            {{ formPassword.kind === 'card' ? 'Numero / titular' :
+               formPassword.kind === 'apikey' ? 'Service / scope' : 'Usuario o email' }}
+          </span>
+          <input class="form-input" type="text"
+            [placeholder]="formPassword.kind === 'card' ? '4242 4242 4242 4242' :
+                            formPassword.kind === 'apikey' ? 'github.com / repo:read' : 'usuario@example.com'"
             [(ngModel)]="formPassword.username" autocomplete="off">
         </label>
         <label class="form-field">
-          <span class="form-label">Contraseña</span>
+          <span class="form-label">
+            {{ formPassword.kind === 'card' ? 'PIN / CVV' :
+               formPassword.kind === 'apikey' ? 'Token / secreto' :
+               formPassword.kind === 'seed' ? 'Semilla (12-24 palabras)' : 'Contrasena' }}
+          </span>
           <div class="form-input-wrap">
             <input class="form-input form-input-with-action"
               [type]="showPasswordInForm ? 'text' : 'password'"
@@ -342,8 +575,43 @@
               <ph-eye-slash *ngIf="showPasswordInForm" weight="bold" size="16"></ph-eye-slash>
             </button>
           </div>
+          <!-- GENERADOR DE CONTRASENAS INTEGRADO (SOLO PARA LOGIN/APIKEY) -->
+          <div *ngIf="formPassword.kind === 'login' || formPassword.kind === 'apikey'"
+            class="generator-row">
+            <button type="button" class="generator-toggle"
+              (click)="toggleGenerator()">
+              <ph-sparkle weight="fill" size="13"></ph-sparkle>
+              <span>{{ generatorOpen ? 'Cerrar generador' : 'Generar fuerte' }}</span>
+            </button>
+            <div *ngIf="generatorOpen" class="generator-panel">
+              <div class="gen-length">
+                <span class="gen-length-lbl">Longitud {{ generatorConfig.length }}</span>
+                <input type="range" min="8" max="32" step="1"
+                  [(ngModel)]="generatorConfig.length"
+                  aria-label="Longitud de la contrasena">
+              </div>
+              <div class="gen-flags">
+                <label class="gen-flag">
+                  <input type="checkbox" [(ngModel)]="generatorConfig.upper"> A-Z
+                </label>
+                <label class="gen-flag">
+                  <input type="checkbox" [(ngModel)]="generatorConfig.lower"> a-z
+                </label>
+                <label class="gen-flag">
+                  <input type="checkbox" [(ngModel)]="generatorConfig.digits"> 0-9
+                </label>
+                <label class="gen-flag">
+                  <input type="checkbox" [(ngModel)]="generatorConfig.symbols"> &#64;!$
+                </label>
+              </div>
+              <button type="button" class="gen-apply" (click)="generatePassword()">
+                <ph-sparkle weight="fill" size="14"></ph-sparkle>
+                <span>Generar</span>
+              </button>
+            </div>
+          </div>
         </label>
-        <label class="form-field">
+        <label class="form-field" *ngIf="formPassword.kind === 'login' || formPassword.kind === 'apikey'">
           <span class="form-label">URL (opcional)</span>
           <input class="form-input" type="text" placeholder="https://..."
             [(ngModel)]="formPassword.url" autocomplete="off">
@@ -364,21 +632,27 @@
           [disabled]="saving || !formPassword.title.trim()"
           (click)="submitAddPassword()">
           <ph-shield-check weight="fill" size="16"></ph-shield-check>
-          <span>{{ saving ? 'Cifrando…' : 'Guardar cifrado' }}</span>
+          <span>{{ saving ? 'Cifrando...' : (editingItem ? 'Guardar cambios' : 'Guardar cifrado') }}</span>
         </button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL DE NUEVA NOTA -->
-  <div *ngIf="addNoteOpen" class="form-overlay" (click)="cancelAddNote()">
+  <!-- ── MODAL DE NOTA (ALTA + EDICION) ───────────────────────── -->
+  <div *ngIf="addNoteOpen" class="form-overlay" (click)="cancelAddNote()"
+    role="dialog" aria-modal="true">
     <div class="form-modal" (click)="$event.stopPropagation()">
       <div class="form-header">
-        <div class="form-header-icon" style="background: linear-gradient(135deg, #06B6D4, #3B82F6);">
-          <ph-note weight="fill" size="22"></ph-note>
+        <div class="form-header-icon"
+          [style.background]="'linear-gradient(135deg, var(--color-accent), var(--vault-accent))'">
+          <ph-identification-card *ngIf="formNote.kind === 'identity'" weight="fill" size="22"></ph-identification-card>
+          <ph-note *ngIf="formNote.kind === 'note'" weight="fill" size="22"></ph-note>
         </div>
         <div class="form-header-text">
-          <div class="form-title">Nueva nota segura</div>
+          <div class="form-title">
+            {{ editingItem ? 'Editar' : 'Nueva' }}
+            {{ formNote.kind === 'identity' ? 'identidad' : 'nota segura' }}
+          </div>
           <div class="form-sub">El contenido se cifra antes de salir del dispositivo</div>
         </div>
         <button class="form-close" type="button" (click)="cancelAddNote()" aria-label="Cerrar">
@@ -386,15 +660,27 @@
         </button>
       </div>
       <div class="form-body">
+        <div class="form-field">
+          <span class="form-label">Tipo</span>
+          <div class="kind-picker">
+            <button *ngFor="let k of noteKinds" type="button" class="kind-pill"
+              [class.active]="formNote.kind === k"
+              (click)="formNote.kind = k">
+              <ph-note *ngIf="k === 'note'" weight="fill" size="14"></ph-note>
+              <ph-identification-card *ngIf="k === 'identity'" weight="fill" size="14"></ph-identification-card>
+              <span>{{ kindMeta[k].label }}</span>
+            </button>
+          </div>
+        </div>
         <label class="form-field">
-          <span class="form-label">Título</span>
+          <span class="form-label">Titulo</span>
           <input class="form-input" type="text" placeholder="Ej: PIN tarjeta"
             [(ngModel)]="formNote.title" autocomplete="off">
         </label>
         <label class="form-field">
           <span class="form-label">Contenido</span>
           <textarea class="form-input form-textarea" rows="5"
-            placeholder="Escribe aquí el contenido sensible…"
+            placeholder="Escribe aqui el contenido sensible..."
             [(ngModel)]="formNote.notes"></textarea>
         </label>
         <label class="form-field">
@@ -413,14 +699,15 @@
           [disabled]="saving || !formNote.title.trim()"
           (click)="submitAddNote()">
           <ph-shield-check weight="fill" size="16"></ph-shield-check>
-          <span>{{ saving ? 'Cifrando…' : 'Guardar cifrado' }}</span>
+          <span>{{ saving ? 'Cifrando...' : (editingItem ? 'Guardar cambios' : 'Guardar cifrado') }}</span>
         </button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL DE NUEVA CARPETA -->
-  <div *ngIf="addFolderOpen" class="form-overlay" (click)="cancelAddFolder()">
+  <!-- ── MODAL DE CARPETA ────────────────────────────────────── -->
+  <div *ngIf="addFolderOpen" class="form-overlay" (click)="cancelAddFolder()"
+    role="dialog" aria-modal="true">
     <div class="form-modal" (click)="$event.stopPropagation()">
       <div class="form-header">
         <div class="form-header-icon" [style.background]="formFolder.color + 'cc'">
@@ -428,7 +715,7 @@
         </div>
         <div class="form-header-text">
           <div class="form-title">Nueva carpeta</div>
-          <div class="form-sub">Organiza tus secretos por categorías</div>
+          <div class="form-sub">Organiza tus secretos por categorias</div>
         </div>
         <button class="form-close" type="button" (click)="cancelAddFolder()" aria-label="Cerrar">
           <ph-x weight="bold" size="18"></ph-x>
@@ -479,29 +766,29 @@
           [style.background]="'linear-gradient(135deg, ' + formFolder.color + ', ' + formFolder.color + 'cc)'"
           (click)="submitAddFolder()">
           <ph-plus weight="bold" size="16"></ph-plus>
-          <span>{{ saving ? 'Creando…' : 'Crear carpeta' }}</span>
+          <span>{{ saving ? 'Creando...' : 'Crear carpeta' }}</span>
         </button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL DE CONFIRMACION DE BORRADO -->
-  <div *ngIf="confirmDelete" class="form-overlay" (click)="cancelDelete()">
+  <!-- ── MODAL DE BORRADO DE ITEM ─────────────────────────────── -->
+  <div *ngIf="confirmDelete" class="form-overlay" (click)="cancelDelete()"
+    role="dialog" aria-modal="true">
     <div class="form-modal form-modal-confirm" (click)="$event.stopPropagation()">
       <div class="form-header">
-        <div class="form-header-icon" style="background: linear-gradient(135deg, #EF4444, #C026D3);">
+        <div class="form-header-icon" style="background: linear-gradient(135deg, var(--color-danger), #C026D3);">
           <ph-trash weight="fill" size="22"></ph-trash>
         </div>
         <div class="form-header-text">
           <div class="form-title">Eliminar elemento</div>
-          <div class="form-sub">Esta acción es irreversible</div>
+          <div class="form-sub">Esta accion es irreversible</div>
         </div>
       </div>
       <div class="form-body">
         <p class="confirm-text">
-          ¿Seguro que quieres eliminar
-          <strong>"{{ confirmDelete.payload.title }}"</strong>?
-          El bloque cifrado se borrará del servidor para siempre.
+          Vas a eliminar <strong>"{{ confirmDelete.payload.title }}"</strong>.
+          El bloque cifrado se borra del servidor para siempre — no hay papelera.
         </p>
       </div>
       <div class="form-actions">
@@ -509,17 +796,308 @@
           Cancelar
         </button>
         <button type="button" class="form-btn form-btn-danger"
-          [disabled]="saving" (click)="confirmDeleteAction()">
+          [disabled]="saving"
+          (click)="confirmDeleteAction()">
           <ph-trash weight="bold" size="16"></ph-trash>
-          <span>{{ saving ? 'Eliminando…' : 'Eliminar' }}</span>
+          <span>{{ saving ? 'Eliminando...' : 'Eliminar' }}</span>
         </button>
       </div>
     </div>
+  </div>
+
+  <!-- ── MODAL DE CONFIRMACION DE BORRADO DE CARPETA ──────────── -->
+  <div *ngIf="confirmFolderDelete" class="form-overlay" (click)="cancelDeleteFolder()"
+    role="dialog" aria-modal="true">
+    <div class="form-modal form-modal-confirm" (click)="$event.stopPropagation()">
+      <div class="form-header">
+        <div class="form-header-icon"
+          [style.background]="'linear-gradient(135deg, var(--color-danger), ' + (confirmFolderDelete.color || '#C026D3') + ')'">
+          <ph-folder-minus weight="fill" size="22"></ph-folder-minus>
+        </div>
+        <div class="form-header-text">
+          <div class="form-title">Eliminar carpeta</div>
+          <div class="form-sub">Los items dentro quedan sin carpeta</div>
+        </div>
+      </div>
+      <div class="form-body">
+        <p class="confirm-text">
+          Vas a eliminar la carpeta <strong>"{{ confirmFolderDelete.name }}"</strong>.
+          Los <strong>{{ confirmFolderDelete.item_count }}</strong> elementos que contiene
+          NO se borran &mdash; quedan listados en "Todo" para que los reasignes.
+        </p>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="form-btn form-btn-ghost" (click)="cancelDeleteFolder()">
+          Cancelar
+        </button>
+        <button type="button" class="form-btn form-btn-danger"
+          [disabled]="saving"
+          (click)="confirmDeleteFolderAction()">
+          <ph-trash weight="bold" size="16"></ph-trash>
+          <span>{{ saving ? 'Eliminando...' : 'Eliminar carpeta' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── VISOR DE NOTA / ARCHIVO ──────────────────────────────── -->
+  <div *ngIf="viewingItem" class="form-overlay" (click)="closeItemViewer()"
+    role="dialog" aria-modal="true">
+    <div class="form-modal viewer-modal" (click)="$event.stopPropagation()">
+      <div class="form-header">
+        <div class="form-header-icon"
+          [style.background]="'linear-gradient(135deg, var(--vault-accent), color-mix(in srgb, var(--vault-accent) 55%, var(--color-secondary)))'">
+          <ph-note *ngIf="viewingItem.item_type === 'note'" weight="fill" size="22"></ph-note>
+          <ph-file *ngIf="viewingItem.item_type === 'file'" weight="fill" size="22"></ph-file>
+        </div>
+        <div class="form-header-text">
+          <div class="form-title">{{ viewingItem.payload.title }}</div>
+          <div class="form-sub">
+            {{ viewingItem.item_type === 'note' ? 'Contenido cifrado · descifrado en este dispositivo' : 'Archivo cifrado · descarga local' }}
+          </div>
+        </div>
+        <button class="form-close" type="button" (click)="closeItemViewer()" aria-label="Cerrar">
+          <ph-x weight="bold" size="18"></ph-x>
+        </button>
+      </div>
+      <div class="form-body">
+        <ng-container *ngIf="viewingItem.item_type === 'note'">
+          <div class="viewer-note" [class.revealed]="viewerRevealed">
+            <ng-container *ngIf="viewerRevealed; else hiddenNote">{{ viewingItem.payload.notes }}</ng-container>
+            <ng-template #hiddenNote>
+              <div class="viewer-note-hidden">
+                <ph-eye-slash weight="bold" size="22"></ph-eye-slash>
+                <span>Contenido oculto. Pulsa <strong>Mostrar</strong> para revelarlo.</span>
+              </div>
+            </ng-template>
+          </div>
+        </ng-container>
+        <ng-container *ngIf="viewingItem.item_type === 'file'">
+          <div class="viewer-file">
+            <div class="viewer-file-icon">
+              <ph-file weight="fill" size="40"></ph-file>
+            </div>
+            <div class="viewer-file-meta">
+              <div class="viewer-file-name">{{ viewingItem.payload.fileName || viewingItem.payload.title }}</div>
+              <div class="viewer-file-info">{{ fileSize(viewingItem) }} &middot; {{ fileExt(viewingItem) }}</div>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+      <div class="form-actions">
+        <button *ngIf="viewingItem.item_type === 'note'"
+          type="button" class="form-btn form-btn-ghost" (click)="toggleViewerReveal()">
+          <ph-eye *ngIf="!viewerRevealed" weight="bold" size="16"></ph-eye>
+          <ph-eye-slash *ngIf="viewerRevealed" weight="bold" size="16"></ph-eye-slash>
+          <span>{{ viewerRevealed ? 'Ocultar' : 'Mostrar' }}</span>
+        </button>
+        <button *ngIf="viewingItem.item_type === 'note'"
+          type="button" class="form-btn form-btn-primary"
+          (click)="copyViewingContent($event)">
+          <ph-copy weight="bold" size="16"></ph-copy>
+          <span>Copiar</span>
+        </button>
+        <button *ngIf="viewingItem.item_type === 'file'"
+          type="button" class="form-btn form-btn-primary"
+          (click)="downloadFile(viewingItem); closeItemViewer()">
+          <ph-download-simple weight="bold" size="16"></ph-download-simple>
+          <span>Descargar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PANEL DE PERSONALIZACION ─────────────────────────────── -->
+  <div *ngIf="customizeOpen" class="form-overlay" (click)="closeCustomize()"
+    role="dialog" aria-modal="true">
+    <div class="form-modal customize-modal" (click)="$event.stopPropagation()">
+      <div class="form-header">
+        <div class="form-header-icon"
+          style="background: linear-gradient(135deg, var(--vault-accent), color-mix(in srgb, var(--vault-accent) 50%, var(--color-secondary)));">
+          <ph-palette weight="fill" size="22"></ph-palette>
+        </div>
+        <div class="form-header-text">
+          <div class="form-title">Personalizar boveda</div>
+          <div class="form-sub">Solo tu ves estos cambios</div>
+        </div>
+        <button class="form-close" type="button" (click)="closeCustomize()" aria-label="Cerrar">
+          <ph-x weight="bold" size="18"></ph-x>
+        </button>
+      </div>
+      <div class="form-body">
+        <!-- AVATAR — FOTO O ICONO PERSONALIZADO PARA EL HEADER DE LA BOVEDA -->
+        <div class="form-field">
+          <span class="form-label">Tu avatar</span>
+          <div class="avatar-editor">
+            <div class="avatar-preview" [class.avatar-preview-photo]="!!userAvatarPhoto">
+              <img *ngIf="userAvatarPhoto" [src]="userAvatarPhoto" alt="Avatar">
+              <span *ngIf="!userAvatarPhoto" class="avatar-preview-letter">{{ userInitial }}</span>
+            </div>
+            <div class="avatar-editor-actions">
+              <button type="button" class="avatar-action" (click)="openAvatarPicker($event)">
+                <ph-camera weight="fill" size="14"></ph-camera>
+                <span>{{ userAvatarPhoto ? 'Cambiar foto' : 'Subir foto' }}</span>
+              </button>
+              <button *ngIf="userAvatarPhoto" type="button"
+                class="avatar-action avatar-action-ghost"
+                (click)="clearAvatar($event)">
+                <ph-x weight="bold" size="13"></ph-x>
+                <span>Quitar</span>
+              </button>
+            </div>
+          </div>
+          <p class="form-hint">Se guarda solo en este dispositivo (no sale cifrada al servidor).</p>
+        </div>
+
+        <!-- ACENTO GENERAL — GRADIENTES, FOCUS RINGS Y BOTONES PRIMARIOS -->
+        <div class="form-field">
+          <span class="form-label">Acento general</span>
+          <div class="accent-grid">
+            <button *ngFor="let a of accentPresets" type="button"
+              class="accent-swatch"
+              [class.active]="accentKey === a.key"
+              [style.background]="a.hex"
+              (click)="pickAccent(a.key)"
+              [attr.aria-label]="'Acento general ' + a.label">
+              <ph-check *ngIf="accentKey === a.key" weight="bold" size="14"></ph-check>
+            </button>
+          </div>
+        </div>
+
+        <!-- ICONOS — AVATARES, ICONOS DE FAVORITOS E ITEMS -->
+        <div class="form-field">
+          <span class="form-label">Color de iconos</span>
+          <div class="accent-grid accent-grid-with-auto">
+            <button type="button"
+              class="accent-swatch accent-swatch-auto"
+              [class.active]="iconAccentKey === 'auto'"
+              (click)="pickIconAccent('auto')"
+              aria-label="Iconos: seguir acento general">
+              <ph-link weight="bold" size="14"></ph-link>
+            </button>
+            <button *ngFor="let a of accentPresets" type="button"
+              class="accent-swatch"
+              [class.active]="iconAccentKey === a.key"
+              [style.background]="a.hex"
+              (click)="pickIconAccent(a.key)"
+              [attr.aria-label]="'Iconos ' + a.label">
+              <ph-check *ngIf="iconAccentKey === a.key" weight="bold" size="14"></ph-check>
+            </button>
+          </div>
+        </div>
+
+        <!-- SOMBRAS — HALO Y BRILLO SUAVE EN CARDS, BENTO Y FAB -->
+        <div class="form-field">
+          <span class="form-label">Color de sombras</span>
+          <div class="accent-grid accent-grid-with-auto">
+            <button type="button"
+              class="accent-swatch accent-swatch-auto"
+              [class.active]="shadowAccentKey === 'auto'"
+              (click)="pickShadowAccent('auto')"
+              aria-label="Sombras: seguir acento general">
+              <ph-link weight="bold" size="14"></ph-link>
+            </button>
+            <button *ngFor="let a of accentPresets" type="button"
+              class="accent-swatch"
+              [class.active]="shadowAccentKey === a.key"
+              [style.background]="a.hex"
+              (click)="pickShadowAccent(a.key)"
+              [attr.aria-label]="'Sombras ' + a.label">
+              <ph-check *ngIf="shadowAccentKey === a.key" weight="bold" size="14"></ph-check>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <span class="form-label">Densidad</span>
+          <div class="density-toggle">
+            <button type="button" class="density-opt"
+              [class.active]="density === 'comfortable'"
+              (click)="density === 'compact' && toggleDensity()">
+              Comoda
+            </button>
+            <button type="button" class="density-opt"
+              [class.active]="density === 'compact'"
+              (click)="density === 'comfortable' && toggleDensity()">
+              Compacta
+            </button>
+          </div>
+        </div>
+        <div class="form-field">
+          <span class="form-label">Tutorial</span>
+          <button type="button" class="restart-onboarding"
+            (click)="restartOnboarding()">
+            <ph-sparkle weight="fill" size="14"></ph-sparkle>
+            <span>Repetir tour didactico</span>
+          </button>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="form-btn form-btn-primary"
+          (click)="closeCustomize()">
+          <ph-check weight="bold" size="16"></ph-check>
+          <span>Hecho</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ONBOARDING DIDACTICO ────────────────────────────────── -->
+  <div *ngIf="onboardingStep >= 0" class="onboard-overlay" role="dialog" aria-modal="true">
+    <div class="onboard-modal" (click)="$event.stopPropagation()">
+      <div class="onboard-header">
+        <div class="onboard-icon">
+          <ph-shield-check *ngIf="onboardingSteps[onboardingStep].icon === 'shield-check'" weight="fill" size="32"></ph-shield-check>
+          <ph-key *ngIf="onboardingSteps[onboardingStep].icon === 'key'" weight="fill" size="32"></ph-key>
+          <ph-lock *ngIf="onboardingSteps[onboardingStep].icon === 'lock'" weight="fill" size="32"></ph-lock>
+          <ph-lock-open *ngIf="onboardingSteps[onboardingStep].icon === 'lock-open'" weight="fill" size="32"></ph-lock-open>
+          <ph-copy *ngIf="onboardingSteps[onboardingStep].icon === 'copy'" weight="fill" size="32"></ph-copy>
+        </div>
+        <button class="onboard-skip" type="button" (click)="skipOnboarding()">
+          Saltar
+        </button>
+      </div>
+      <div class="onboard-body">
+        <div class="onboard-title">{{ onboardingSteps[onboardingStep].title }}</div>
+        <div class="onboard-text">{{ onboardingSteps[onboardingStep].body }}</div>
+      </div>
+      <div class="onboard-footer">
+        <div class="onboard-dots">
+          <span *ngFor="let s of onboardingSteps; let i = index"
+            class="onboard-dot"
+            [class.active]="i === onboardingStep"></span>
+        </div>
+        <div class="onboard-nav">
+          <button class="form-btn form-btn-ghost" type="button"
+            (click)="prevOnboarding()"
+            [disabled]="onboardingStep === 0">
+            Atras
+          </button>
+          <button class="form-btn form-btn-primary" type="button"
+            (click)="nextOnboarding()">
+            <span>{{ onboardingStep === onboardingSteps.length - 1 ? 'Empezar' : 'Siguiente' }}</span>
+            <ph-caret-right weight="bold" size="14"></ph-caret-right>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST DE FEEDBACK BREVE PARA ACCIONES (COPY / DELETE / ERRORES). SE
+       AUTO-OCULTA A LOS 2.4S. SE COLOCA POR ENCIMA DE TODOS LOS OVERLAYS. -->
+  <div *ngIf="toast" class="vault-toast" [class]="'toast-' + toast.kind"
+    role="status" aria-live="polite">
+    <ph-check-circle *ngIf="toast.kind === 'success'" weight="fill" size="16"></ph-check-circle>
+    <ph-warning *ngIf="toast.kind === 'error'" weight="fill" size="16"></ph-warning>
+    <ph-info *ngIf="toast.kind === 'info'" weight="fill" size="16"></ph-info>
+    <span>{{ toast.text }}</span>
   </div>
 
   <input #iconInput type="file" accept="image/*"
     style="display:none" (change)="onIconSelected($event)">
   <input #fileInput type="file"
     style="display:none" (change)="onFileSelected($event)">
+  <input #avatarInput type="file" accept="image/*"
+    style="display:none" (change)="onAvatarSelected($event)">
 
 </ion-content>
