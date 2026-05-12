@@ -23,18 +23,20 @@
       <div class="stats-banner-bg"></div>
       <div class="stats-banner-content">
         <div class="banner-stat">
-          <div class="banner-stat-num number-display">{{cveCount}}</div>
+          <div class="banner-stat-num number-display">{{ stats?.cves_today ?? 0 }}</div>
           <div class="banner-stat-lbl">CVE hoy</div>
         </div>
         <div class="banner-divider"></div>
         <div class="banner-stat">
           <div class="banner-stat-num number-display"
-            [style.color]="getCvssColor(avgCvss)">{{avgCvss}}</div>
+            [style.color]="getCvssColor(stats?.cvss_average ?? 0)">
+            {{ stats?.cvss_average ?? 0 }}
+          </div>
           <div class="banner-stat-lbl">CVSS medio</div>
         </div>
         <div class="banner-divider"></div>
         <div class="banner-stat">
-          <div class="banner-stat-num number-display">{{activeFeeds}}</div>
+          <div class="banner-stat-num number-display">{{ stats?.sources_active ?? 0 }}</div>
           <div class="banner-stat-lbl">Fuentes</div>
         </div>
         <div class="banner-divider"></div>
@@ -42,26 +44,25 @@
           <div class="banner-stat-num banner-status">
             <span class="live-dot"></span>LIVE
           </div>
-          <div class="banner-stat-lbl">Hace {{lastUpdate}}</div>
+          <div class="banner-stat-lbl">Tiempo real</div>
         </div>
       </div>
     </div>
 
     <!-- CARRUSEL DE FUENTES -->
-    <div class="sources-section">
+    <div class="sources-section" *ngIf="activeSources.length > 0">
       <div class="sources-header">
         <div class="sources-title">Fuentes activas</div>
-        <span class="sources-count">{{sources.length}} feeds</span>
+        <span class="sources-count">{{ activeSources.length }} feeds</span>
       </div>
       <div class="sources-scroll">
-        <div *ngFor="let s of sources" class="source-chip"
-          [class.inactive]="!s.active">
+        <div *ngFor="let s of activeSources" class="source-chip">
           <div class="source-logo" [style.background]="s.color">
-            {{s.logo}}
+            {{ s.logo }}
           </div>
           <div class="source-info">
-            <div class="source-name">{{s.name}}</div>
-            <div class="source-count">{{s.count}} hoy</div>
+            <div class="source-name">{{ s.name }}</div>
+            <div class="source-count">Activa</div>
           </div>
           <span class="source-pulse"></span>
         </div>
@@ -73,8 +74,8 @@
       <div class="filters-inner">
         <button *ngFor="let f of filters"
           class="filter-pill"
-          [class.active]="activeFilter === f.value"
-          (click)="setFilter(f.value)">
+          [class.active]="currentCategory === f.value"
+          (click)="onFilterChange(f.value)">
           <ph-list-bullets *ngIf="f.icon === 'list-bullets'"
             weight="bold" size="14"></ph-list-bullets>
           <ph-bug *ngIf="f.icon === 'bug'" weight="fill" size="14"></ph-bug>
@@ -84,18 +85,41 @@
             weight="fill" size="14"></ph-warning-octagon>
           <ph-lightbulb *ngIf="f.icon === 'lightbulb'"
             weight="fill" size="14"></ph-lightbulb>
-          <span>{{f.label}}</span>
-          <span class="filter-count">{{f.count}}</span>
+          <span>{{ f.label }}</span>
         </button>
       </div>
     </div>
 
+    <!-- SPINNER DE CARGA -->
+    <div *ngIf="loading" class="news-loading">
+      <ion-spinner name="crescent"></ion-spinner>
+      <span>Cargando noticias…</span>
+    </div>
+
     <!-- HERO NOTICIA DESTACADA -->
-    <div *ngIf="featuredNews && activeFilter === 'all'"
-      class="featured-card">
+    <div *ngIf="!loading && breaking && currentCategory === null"
+      class="featured-card"
+      style="cursor: pointer;"
+      (click)="openNewsUrl(breaking.url)">
       <div class="featured-image-wrap">
-        <img [src]="getNewsImage(featuredNews)"
-          [alt]="featuredNews.title" class="featured-image">
+        <img *ngIf="getCustomImage(breaking) as customImg"
+          [src]="customImg"
+          [alt]="breaking.title" class="featured-image">
+        <div *ngIf="!getCustomImage(breaking)"
+          class="featured-fallback"
+          [style.background]="getCategoryGradient(breaking.category)">
+          <ph-bug *ngIf="getCategoryIcon(breaking.category) === 'bug'" weight="fill" size="64"></ph-bug>
+          <ph-fish-simple *ngIf="getCategoryIcon(breaking.category) === 'fish-simple'" weight="fill" size="64"></ph-fish-simple>
+          <ph-warning-octagon *ngIf="getCategoryIcon(breaking.category) === 'warning-octagon'" weight="fill" size="64"></ph-warning-octagon>
+          <ph-lightbulb *ngIf="getCategoryIcon(breaking.category) === 'lightbulb'" weight="fill" size="64"></ph-lightbulb>
+          <div class="featured-fallback-source">
+            <div class="source-mini-logo"
+              [style.background]="getSourceColor(breaking.source)">
+              {{ getSourceLogo(breaking.source) }}
+            </div>
+            <span>{{ breaking.source }}</span>
+          </div>
+        </div>
         <div class="featured-overlay"></div>
         <div class="featured-badge-top">
           <span class="breaking-tag">
@@ -103,12 +127,12 @@
           </span>
         </div>
         <button class="image-edit-btn"
-          (click)="openImagePicker(featuredNews, $event)">
+          (click)="openImagePicker(breaking, $event)">
           <ph-pencil-simple weight="fill" size="14"></ph-pencil-simple>
         </button>
-        <button *ngIf="featuredNews.customImage"
+        <button *ngIf="customImages[breaking.id]"
           class="image-reset-btn"
-          (click)="resetImage(featuredNews, $event)">
+          (click)="resetImage(breaking, $event)">
           <ph-x weight="bold" size="12"></ph-x>
         </button>
       </div>
@@ -116,65 +140,78 @@
         <div class="featured-meta">
           <div class="featured-source">
             <div class="source-mini-logo"
-              [style.background]="featuredNews.sourceColor">
-              {{featuredNews.sourceLogo}}
+              [style.background]="getSourceColor(breaking.source)">
+              {{ getSourceLogo(breaking.source) }}
             </div>
-            <span>{{featuredNews.source}}</span>
+            <span>{{ breaking.source }}</span>
           </div>
-          <span class="featured-time">{{featuredNews.timeAgo}}</span>
+          <span class="featured-time">{{ getTimeAgo(breaking.published_at) }}</span>
         </div>
-        <div class="featured-title">{{featuredNews.title}}</div>
-        <div class="featured-desc">{{featuredNews.desc}}</div>
-        <div *ngIf="featuredNews.cvssScore" class="cvss-row">
+        <div class="featured-title">{{ breaking.title }}</div>
+        <div class="featured-desc">{{ breaking.description }}</div>
+        <div *ngIf="breaking.cvss_score !== null" class="cvss-row">
           <div class="cvss-block">
             <div class="cvss-label">CVSS</div>
             <div class="cvss-score"
-              [style.background]="getCvssColor(featuredNews.cvssScore)">
-              {{featuredNews.cvssScore}}
+              [style.background]="getCvssColor(breaking.cvss_score!)">
+              {{ breaking.cvss_score }}
             </div>
-            <div class="cvss-text">{{getCvssLabel(featuredNews.cvssScore)}}</div>
+            <div class="cvss-text">{{ getCvssLabel(breaking.cvss_score!) }}</div>
           </div>
-          <div class="cve-block">
-            <div class="cve-label">{{featuredNews.cve}}</div>
-            <div class="cve-product">
+          <div class="cve-block" *ngIf="breaking.cve_id">
+            <div class="cve-label">{{ breaking.cve_id }}</div>
+            <div class="cve-product" *ngIf="breaking.affected_product">
               <ph-cpu weight="fill" size="14"></ph-cpu>
-              {{featuredNews.affectedProduct}}
+              {{ breaking.affected_product }}
             </div>
           </div>
-        </div>
-        <div *ngIf="featuredNews.action" class="featured-action">
-          <ph-shield-check weight="fill" size="16"
-            style="color:var(--color-success)"></ph-shield-check>
-          <span>{{featuredNews.action}}</span>
         </div>
       </div>
     </div>
 
     <!-- LISTA NOTICIAS REGULARES -->
-    <div class="news-section-header">
+    <div *ngIf="!loading" class="news-section-header">
       <span class="section-title">Últimas alertas</span>
-      <span class="section-count">{{filteredNews.length}} resultados</span>
+      <span class="section-count">{{ visibleCount }} resultados</span>
     </div>
 
-    <div class="news-list">
-      <div *ngFor="let item of filteredNews" class="news-card">
+    <div *ngIf="!loading" class="news-list">
+      <div *ngFor="let item of listItems" class="news-card"
+        style="cursor: pointer;"
+        (click)="openNewsUrl(item.url)">
 
         <!-- IMAGEN CON CONTROLES DE EDICIÓN -->
         <div class="news-image-wrap">
-          <img [src]="getNewsImage(item)" [alt]="item.title"
+          <img *ngIf="getCustomImage(item) as customImg"
+            [src]="customImg" [alt]="item.title"
             class="news-image" loading="lazy">
+          <div *ngIf="!getCustomImage(item)"
+            class="news-fallback"
+            [style.background]="getCategoryGradient(item.category)">
+            <ph-bug *ngIf="getCategoryIcon(item.category) === 'bug'" weight="fill" size="44"></ph-bug>
+            <ph-fish-simple *ngIf="getCategoryIcon(item.category) === 'fish-simple'" weight="fill" size="44"></ph-fish-simple>
+            <ph-warning-octagon *ngIf="getCategoryIcon(item.category) === 'warning-octagon'" weight="fill" size="44"></ph-warning-octagon>
+            <ph-lightbulb *ngIf="getCategoryIcon(item.category) === 'lightbulb'" weight="fill" size="44"></ph-lightbulb>
+            <div class="news-fallback-source">
+              <div class="source-mini-logo"
+                [style.background]="getSourceColor(item.source)">
+                {{ getSourceLogo(item.source) }}
+              </div>
+              <span>{{ item.source }}</span>
+            </div>
+          </div>
           <div class="news-image-gradient"></div>
 
           <span class="news-severity-badge"
             [style.background]="getSeverityColor(item.severity)">
-            {{getSeverityLabel(item.severity)}}
+            {{ getSeverityLabel(item.severity) }}
           </span>
 
           <button class="image-edit-btn"
             (click)="openImagePicker(item, $event)">
             <ph-pencil-simple weight="fill" size="14"></ph-pencil-simple>
           </button>
-          <button *ngIf="item.customImage"
+          <button *ngIf="customImages[item.id]"
             class="image-reset-btn"
             (click)="resetImage(item, $event)">
             <ph-x weight="bold" size="12"></ph-x>
@@ -184,33 +221,50 @@
         <div class="news-card-body">
           <div class="news-meta-row">
             <div class="news-source-mini">
-              <div class="source-mini-logo" [style.background]="item.sourceColor">
-                {{item.sourceLogo}}
+              <div class="source-mini-logo" [style.background]="getSourceColor(item.source)">
+                {{ getSourceLogo(item.source) }}
               </div>
-              <span>{{item.source}}</span>
+              <span>{{ item.source }}</span>
             </div>
-            <span class="news-time">{{item.timeAgo}}</span>
+            <span class="news-time">{{ getTimeAgo(item.published_at) }}</span>
           </div>
 
-          <div class="news-title">{{item.title}}</div>
-          <div class="news-desc">{{item.desc}}</div>
+          <div class="news-title">{{ item.title }}</div>
+          <div class="news-desc">{{ item.description }}</div>
 
-          <div *ngIf="item.cvssScore" class="news-cvss-mini">
-            <span class="news-cve-tag">{{item.cve}}</span>
+          <div *ngIf="item.cvss_score !== null" class="news-cvss-mini">
+            <span class="news-cve-tag" *ngIf="item.cve_id">{{ item.cve_id }}</span>
             <span class="news-cvss-pill"
-              [style.background]="getCvssColor(item.cvssScore)">
-              CVSS {{item.cvssScore}}
+              [style.background]="getCvssColor(item.cvss_score!)">
+              CVSS {{ item.cvss_score }}
             </span>
-            <span class="news-product-tag">{{item.affectedProduct}}</span>
-          </div>
-
-          <div *ngIf="item.action" class="news-action-pill">
-            <ph-arrow-right weight="bold" size="13"
-              style="color:var(--color-primary)"></ph-arrow-right>
-            <span>{{item.action}}</span>
+            <span class="news-product-tag" *ngIf="item.affected_product">{{ item.affected_product }}</span>
           </div>
         </div>
       </div>
+
+      <!-- ESTADO VACIO CUANDO NO HAY RESULTADOS PARA EL FILTRO -->
+      <div *ngIf="listItems.length === 0" class="news-empty">
+        <ph-magnifying-glass weight="bold" size="28"></ph-magnifying-glass>
+        <span>Sin noticias en esta categoría</span>
+      </div>
+    </div>
+
+    <!-- PAGINACION SIMPLE -->
+    <div *ngIf="!loading && totalPages > 1" class="news-pagination">
+      <button class="page-btn"
+        [disabled]="currentPage <= 1"
+        (click)="onPageChange(currentPage - 1)">
+        <ph-caret-left weight="bold" size="14"></ph-caret-left>
+        Anterior
+      </button>
+      <span class="page-indicator">Página {{ currentPage }} / {{ totalPages }}</span>
+      <button class="page-btn"
+        [disabled]="currentPage >= totalPages"
+        (click)="onPageChange(currentPage + 1)">
+        Siguiente
+        <ph-caret-right weight="bold" size="14"></ph-caret-right>
+      </button>
     </div>
 
     <!-- INPUT FILE OCULTO -->
