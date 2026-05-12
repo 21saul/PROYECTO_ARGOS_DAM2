@@ -1,23 +1,27 @@
 <ion-header class="dash-header">
   <ion-toolbar>
     <div class="dash-header-inner">
+      <!-- AVATAR + SALUDO -->
       <div class="dash-greet">
-        <button class="avatar-btn interactive" (click)="goTo('/profile')">
-          <img *ngIf="avatar" [src]="avatar" alt="Avatar">
-          <span *ngIf="!avatar">{{getInitial()}}</span>
+        <button
+          class="avatar-btn interactive focus-ring"
+          (click)="goTo('/profile')"
+          [attr.aria-label]="'Perfil de ' + displayName">
+          <img *ngIf="avatar" [src]="avatar" alt="">
+          <span *ngIf="!avatar">{{ getInitial() }}</span>
         </button>
         <div class="dash-greet-text">
-          <div class="dash-name">
-            Hola, Usuario
-            <span class="wave-emoji">👋</span>
-          </div>
+          <div class="dash-name">Hola, {{ displayName }}</div>
           <div class="dash-meta">
             <span class="online-dot"></span>
-            <span class="dash-meta-text">Protección activa · Nivel 5</span>
+            <span class="dash-meta-text">Protección activa · Nivel {{ level }}</span>
           </div>
         </div>
       </div>
-      <button class="icon-btn interactive" (click)="goTo('/profile')">
+      <button
+        class="icon-btn interactive focus-ring"
+        (click)="goTo('/profile')"
+        aria-label="Ajustes">
         <ph-gear-six weight="fill" size="20"></ph-gear-six>
       </button>
     </div>
@@ -27,116 +31,234 @@
 <ion-content class="dash-content">
   <div class="dash-scroll scroll-clean">
 
-    <!-- HERO SCORE CARD -->
-    <div class="score-card">
-      <app-particle-network
-        particleColor="#A78BFA"
-        lineColor="#FFFFFF"
-        [particleCount]="35"
-        [maxDistance]="100"
-        [speed]="0.3">
-      </app-particle-network>
-      <div class="score-bg-decoration"></div>
-      <div class="score-card-grid">
-        <div class="score-info">
-          <div class="label-caps" style="color:rgba(255,255,255,0.7)">PRIVACY SCORE</div>
-          <div class="score-num number-display">0</div>
-          <div class="score-pill">
-            <span class="status-dot" [style.background]="scoreStatusColor" [style.box-shadow]="'0 0 8px ' + scoreStatusColor"></span>
-            <span>{{ scoreLabel }}</span>
-          </div>
-          <div class="score-bar">
-            <div class="score-bar-fill"></div>
-          </div>
-        </div>
-        <div class="score-mascot">
-          <app-argus [size]="86" mood="happy"></app-argus>
+    <!-- HERO SCORE — ANILLO GRANDE + ARGUS + DELTA -->
+    <section class="score-card" aria-labelledby="score-title">
+      <div class="score-glow"></div>
+
+      <!-- ESTADO LOADING -->
+      <div *ngIf="scoreState === 'loading'" class="score-loading" aria-busy="true">
+        <div class="skeleton-pulse" style="height: 160px; border-radius: 80px; width: 160px;"></div>
+        <div class="score-loading-meta">
+          <div class="skeleton-pulse" style="height: 18px; width: 130px;"></div>
+          <div class="skeleton-pulse" style="height: 14px; width: 90px;"></div>
         </div>
       </div>
-    </div>
 
-    <!-- STATS GRID -->
-    <div class="stats-grid">
-      <div class="stat-card surface interactive">
+      <!-- ESTADO ERROR -->
+      <div *ngIf="scoreState === 'error'" class="score-empty">
+        <ph-warning-circle weight="fill" size="32"></ph-warning-circle>
+        <div class="score-empty-title">No pudimos cargar tu Privacy Score</div>
+        <div class="score-empty-desc">Inténtalo de nuevo en unos segundos</div>
+      </div>
+
+      <!-- ESTADO EMPTY (SIN HISTORIAL) -->
+      <div *ngIf="scoreState === 'empty'" class="score-empty">
+        <ph-shield-check weight="fill" size="32"></ph-shield-check>
+        <div class="score-empty-title">Sin auditoría todavía</div>
+        <button class="cta-primary focus-ring" (click)="goTo('/auditor')">
+          Lanzar primera auditoría
+          <ph-arrow-right weight="bold" size="14"></ph-arrow-right>
+        </button>
+      </div>
+
+      <!-- ESTADO READY -->
+      <ng-container *ngIf="scoreState === 'ready'">
+        <!-- ANILLO DE PROGRESO + NUMERO -->
+        <div class="score-ring">
+          <svg viewBox="0 0 180 180" width="160" height="160" aria-hidden="true">
+            <defs>
+              <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="var(--color-primary)"></stop>
+                <stop offset="100%" stop-color="var(--color-secondary)"></stop>
+              </linearGradient>
+            </defs>
+            <circle cx="90" cy="90" r="78" class="score-ring-bg"></circle>
+            <circle
+              cx="90"
+              cy="90"
+              r="78"
+              class="score-ring-arc"
+              data-len="490"
+              stroke-dasharray="490"
+              [attr.stroke-dashoffset]="490 - (490 * privacyScore / 100)"></circle>
+          </svg>
+          <div class="score-ring-center">
+            <div class="score-label" id="score-title">Privacy Score</div>
+            <div class="score-num">{{ privacyScore }}</div>
+            <div class="score-sub">/ 100</div>
+          </div>
+        </div>
+
+        <!-- META INFO LATERAL CON MASCOTA -->
+        <div class="score-side">
+          <app-argus [size]="72" [mood]="scoreMood()" class="score-mascot"></app-argus>
+          <div class="score-pill" [style.borderColor]="scoreStatusColor()">
+            <span class="status-dot" [style.background]="scoreStatusColor()"></span>
+            <span>{{ scoreLabel() }}</span>
+          </div>
+          <div class="score-delta" *ngIf="scoreDelta !== 0">
+            <ph-trend-up *ngIf="scoreDelta > 0" weight="fill" size="14"></ph-trend-up>
+            <ph-trend-down *ngIf="scoreDelta < 0" weight="fill" size="14"></ph-trend-down>
+            <span>{{ scoreDelta > 0 ? '+' : '' }}{{ scoreDelta }} pts · 8 semanas</span>
+          </div>
+        </div>
+      </ng-container>
+    </section>
+
+    <!-- STATS GAMIFICADAS — RACHA, XP, NIVEL, LOGROS -->
+    <section class="stats-row" aria-label="Progreso gamificado">
+      <div class="stat-card interactive focus-ring" tabindex="0">
         <div class="stat-icon stat-icon-fire">
           <ph-fire weight="fill" size="22" class="streak-fire"></ph-fire>
         </div>
-        <div class="stat-num number-display">{{streak}}</div>
-        <div class="label-caps">Racha</div>
+        <div class="stat-num">{{ streak }}</div>
+        <div class="stat-label">Racha</div>
       </div>
-      <div class="stat-card surface interactive">
+      <div class="stat-card interactive focus-ring" tabindex="0">
         <div class="stat-icon stat-icon-xp">
           <ph-star weight="fill" size="22"></ph-star>
         </div>
-        <div class="stat-num number-display">{{xp}}</div>
-        <div class="label-caps">XP</div>
+        <div class="stat-num">{{ xp }}</div>
+        <div class="stat-label">XP</div>
       </div>
-      <div class="stat-card surface interactive">
+      <div class="stat-card interactive focus-ring" tabindex="0">
         <div class="stat-icon stat-icon-level">
           <ph-trophy weight="fill" size="22"></ph-trophy>
         </div>
-        <div class="stat-num number-display">{{level}}</div>
-        <div class="label-caps">Nivel</div>
+        <div class="stat-num">{{ level }}</div>
+        <div class="stat-label">Nivel</div>
       </div>
-      <div class="stat-card surface interactive">
+      <div class="stat-card interactive focus-ring" tabindex="0">
         <div class="stat-icon stat-icon-medal">
           <ph-medal weight="fill" size="22"></ph-medal>
         </div>
-        <div class="stat-num number-display">{{achievements}}</div>
-        <div class="label-caps">Logros</div>
+        <div class="stat-num">{{ achievements }}</div>
+        <div class="stat-label">Logros</div>
       </div>
-    </div>
+    </section>
 
-    <!-- SECTION HEADER -->
+    <!-- BARRA DE NIVEL — PROGRESO HACIA EL SIGUIENTE NIVEL -->
+    <section class="level-strip" aria-label="Progreso de nivel">
+      <div class="level-strip-head">
+        <span class="level-strip-label">Nivel {{ level }} → {{ level + 1 }}</span>
+        <span class="level-strip-meta">{{ xp % 250 }} / 250 XP</span>
+      </div>
+      <div class="level-bar">
+        <div class="level-bar-fill" [style.width.%]="levelProgress"></div>
+      </div>
+    </section>
+
+    <!-- MISION RAPIDA — CTA PRINCIPAL DIDACTICA -->
+    <section
+      class="mission-card interactive focus-ring"
+      (click)="goTo(quickMission.route)"
+      tabindex="0"
+      role="button"
+      [attr.aria-label]="'Misión: ' + quickMission.title">
+      <div class="mission-icon">
+        <ph-shield-check weight="fill" size="28"></ph-shield-check>
+      </div>
+      <div class="mission-text">
+        <div class="mission-eyebrow">PRÓXIMA MISIÓN</div>
+        <div class="mission-title">{{ quickMission.title }}</div>
+        <div class="mission-desc">{{ quickMission.desc }}</div>
+        <div class="mission-meta">
+          <span class="mission-chip">
+            <ph-star weight="fill" size="12"></ph-star>
+            +{{ quickMission.reward }} XP
+          </span>
+          <span class="mission-chip mission-chip-muted">
+            <ph-clock weight="fill" size="12"></ph-clock>
+            {{ quickMission.minutes }} min
+          </span>
+        </div>
+      </div>
+      <ph-arrow-right weight="bold" size="20" class="mission-arrow"></ph-arrow-right>
+    </section>
+
+    <!-- BANNER BREAKING CVE — SOLO SI HAY UN CRITICO RECIENTE -->
+    <a
+      *ngIf="breakingNews"
+      class="breaking-card interactive focus-ring"
+      [href]="breakingNews.url"
+      target="_blank"
+      rel="noopener"
+      [attr.aria-label]="'Alerta crítica: ' + breakingNews.title">
+      <div class="breaking-icon">
+        <ph-warning weight="fill" size="22"></ph-warning>
+      </div>
+      <div class="breaking-text">
+        <div class="breaking-eyebrow">ALERTA CRÍTICA</div>
+        <div class="breaking-title">{{ breakingNews.title }}</div>
+        <div class="breaking-meta">
+          {{ breakingNews.source }}
+          <span *ngIf="breakingNews.cvss_score"> · CVSS {{ breakingNews.cvss_score }}</span>
+        </div>
+      </div>
+      <ph-arrow-up-right weight="bold" size="18" class="breaking-arrow"></ph-arrow-up-right>
+    </a>
+
+    <!-- SECCION DE MODULOS -->
     <div class="section-head">
-      <div>
-        <div class="text-h3">Tus módulos</div>
-        <div class="label-caps" style="margin-top:2px">¿Por dónde empezamos hoy?</div>
-      </div>
+      <div class="section-head-title">Tus módulos</div>
+      <div class="section-head-sub">¿Por dónde empezamos hoy?</div>
     </div>
 
-    <!-- MODULES GRID -->
-    <div class="modules-grid">
-      <div *ngFor="let m of modules; let i = index"
-        class="module-card surface interactive"
-        [class.module-wide]="i === 4"
-        (click)="goTo(m.route)">
-        <div class="module-top">
-          <div class="module-icon-wrap" [style.background]="m.color + '1F'">
-            <ph-vault *ngIf="m.route==='/vault'" weight="fill" size="24" [style.color]="m.color"></ph-vault>
-            <ph-chart-bar *ngIf="m.route==='/auditor'" weight="fill" size="24" [style.color]="m.color"></ph-chart-bar>
-            <ph-fish-simple *ngIf="m.route==='/phishing'" weight="fill" size="24" [style.color]="m.color"></ph-fish-simple>
-            <ph-map-trifold *ngIf="m.route==='/roadmap'" weight="fill" size="24" [style.color]="m.color"></ph-map-trifold>
-            <ph-bell-ringing *ngIf="m.route==='/news'" weight="fill" size="24" [style.color]="m.color"></ph-bell-ringing>
-          </div>
-          <span class="module-badge" [style.background]="m.color + '22'" [style.color]="m.color">→</span>
+    <!-- GRID DE MODULOS — CARDS REDONDEADAS CON ICONO EN CIRCULO DE COLOR -->
+    <section class="modules-grid">
+      <button
+        *ngFor="let m of modules"
+        class="module-card interactive focus-ring"
+        [class]="'module-card module-color-' + m.color"
+        (click)="goTo(m.route)"
+        [attr.aria-label]="'Abrir ' + m.label">
+        <div class="module-icon-wrap">
+          <ph-vault          *ngIf="m.icon === 'vault'"        weight="fill" size="26"></ph-vault>
+          <ph-chart-bar      *ngIf="m.icon === 'chart-bar'"    weight="fill" size="26"></ph-chart-bar>
+          <ph-fish-simple    *ngIf="m.icon === 'fish-simple'"  weight="fill" size="26"></ph-fish-simple>
+          <ph-bell-ringing   *ngIf="m.icon === 'bell-ringing'" weight="fill" size="26"></ph-bell-ringing>
+          <ph-map-trifold    *ngIf="m.icon === 'map-trifold'"  weight="fill" size="26"></ph-map-trifold>
         </div>
         <div class="module-text">
-          <div class="module-label">{{m.label}}</div>
-          <div class="module-desc">{{m.desc}}</div>
+          <div class="module-label">{{ m.label }}</div>
+          <div class="module-desc">{{ m.desc }}</div>
         </div>
-      </div>
-    </div>
+        <!-- BADGE BOVEDA: NUMERO DE ITEMS REAL -->
+        <span *ngIf="m.route === '/vault' && vaultState === 'ready'" class="module-badge">
+          {{ vaultItems }}
+        </span>
+        <!-- BADGE NOTICIAS: NUMERO DE CVE HOY REAL -->
+        <span
+          *ngIf="m.route === '/news' && newsState === 'ready' && (newsStats?.cves_today ?? 0) > 0"
+          class="module-badge module-badge-danger">
+          {{ newsStats?.cves_today }}
+        </span>
+      </button>
+    </section>
 
-    <div style="height:140px"></div>
+    <div class="dash-bottom-spacer"></div>
   </div>
 </ion-content>
 
 <ion-tab-bar class="dash-tabbar">
-  <ion-tab-button (click)="goTo('/dashboard')" class="tab-active">
+  <ion-tab-button (click)="goTo('/dashboard')" class="tab-active" aria-label="Inicio">
     <ph-house weight="fill" size="22"></ph-house>
     <span>Inicio</span>
   </ion-tab-button>
-  <ion-tab-button (click)="goTo('/vault')">
-    <ph-vault weight="bold" size="22"></ph-vault>
+  <ion-tab-button (click)="goTo('/vault')" aria-label="Bóveda">
+    <ph-vault weight="fill" size="22"></ph-vault>
     <span>Bóveda</span>
   </ion-tab-button>
-  <ion-tab-button (click)="goTo('/roadmap')">
-    <ph-map-trifold weight="bold" size="22"></ph-map-trifold>
-    <span>Roadmap</span>
+  <ion-tab-button (click)="goTo('/auditor')" aria-label="Auditor">
+    <ph-chart-bar weight="fill" size="22"></ph-chart-bar>
+    <span>Auditor</span>
   </ion-tab-button>
-  <ion-tab-button (click)="goTo('/profile')">
-    <ph-user-circle weight="bold" size="22"></ph-user-circle>
+  <ion-tab-button (click)="goTo('/news')" aria-label="Noticias">
+    <ph-bell-ringing weight="fill" size="22"></ph-bell-ringing>
+    <span>Noticias</span>
+  </ion-tab-button>
+  <ion-tab-button (click)="goTo('/profile')" aria-label="Perfil">
+    <ph-user-circle weight="fill" size="22"></ph-user-circle>
     <span>Perfil</span>
   </ion-tab-button>
 </ion-tab-bar>

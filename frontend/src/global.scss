@@ -26,7 +26,8 @@ ph-bell, ph-warning-circle, ph-warning, ph-book-open,
 ph-palette, ph-export, ph-question, ph-sign-out,
 ph-caret-right, ph-moon, ph-sun,
 ph-identification-card, ph-key, ph-device-mobile, ph-link,
-ph-fire, ph-star, ph-medal, ph-circle, ph-x, ph-x-circle, ph-caret-left {
+ph-fire, ph-star, ph-medal, ph-circle, ph-x, ph-x-circle, ph-caret-left,
+ph-arrow-right, ph-arrow-up-right, ph-trend-up, ph-trend-down, ph-clock {
   color: inherit;
   display: inline-flex;
   align-items: center;
@@ -96,6 +97,22 @@ ph-fire, ph-star, ph-medal, ph-circle, ph-x, ph-x-circle, ph-caret-left {
   --blur-sm: blur(8px) saturate(140%);
   --blur-md: blur(20px) saturate(180%);
   --blur-lg: blur(40px) saturate(180%);
+
+  /* CAPA DE TOKENS DE COMPONENTE — DASHBOARD GAMIFICADO DARK + DUOLINGO */
+  /* RADIO BLOB — CARDS REDONDEADAS GENEROSAS ESTILO APP DIDACTICA */
+  --r-blob: 22px;
+  /* ESCALA TIPOGRAFICA EXTRA PARA NUMEROS PROTAGONICOS */
+  --fs-score: clamp(3.6rem, 12vw, 5.2rem);
+  /* SOMBRAS SUAVES DARK MODE — NO DUELE LA VISTA */
+  --shadow-cardish: 0 8px 28px rgba(0, 0, 0, 0.32),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  /* HALO LATERAL COLORIDO PARA CARDS DE MODULO */
+  --halo-primary:   0 12px 32px color-mix(in srgb, #7C3AED 28%, transparent);
+  --halo-secondary: 0 12px 32px color-mix(in srgb, #EC4899 28%, transparent);
+  --halo-accent:    0 12px 32px color-mix(in srgb, #06B6D4 28%, transparent);
+  --halo-success:   0 12px 32px color-mix(in srgb, #10B981 28%, transparent);
+  --halo-warning:   0 12px 32px color-mix(in srgb, #F59E0B 28%, transparent);
+  --halo-danger:    0 12px 32px color-mix(in srgb, #EF4444 28%, transparent);
 
   /* MODO CLARO — VALORES POR DEFECTO */
   --color-bg: #F0F4F8;
@@ -443,4 +460,18 @@ ion-router-outlet {
   backdrop-filter: blur(20px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
   border-bottom: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent) !important;
+}
+
+/* SKELETON DARK — PULSO SUTIL PARA ESTADOS DE CARGA EN CUALQUIER PAGINA */
+.skeleton-pulse {
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+  border-radius: 12px;
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 0.9; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-pulse { animation: none; opacity: 0.7; }
 }
