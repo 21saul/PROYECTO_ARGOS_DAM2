@@ -53,12 +53,26 @@ class FolderController extends BaseController
         // RECUPERA LAS CARPETAS DEL USUARIO CON CONTADOR DE ITEMS
         $folders = $this->folderModel->findByUserWithCount($userId);
 
+        // NORMALIZA TIPOS NUMERICOS PORQUE EL DRIVER DEVUELVE TODO COMO STRING
+        foreach ($folders as &$folder) {
+            $this->castFolderTypes($folder);
+        }
+
         // DEVUELVE LA LISTA EN EL FORMATO ESTANDAR
         return $this->response->setJSON([
             'success' => true,
             'data' => $folders,
             'error' => null,
         ]);
+    }
+
+    // CONVIERTE LOS CAMPOS NUMERICOS DE UNA CARPETA A INT REAL
+    // GARANTIZA QUE EL FRONTEND HAGA COMPARACIONES Y SUMAS CORRECTAS
+    private function castFolderTypes(array &$folder): void
+    {
+        if (isset($folder['id']))         $folder['id']         = (int) $folder['id'];
+        if (isset($folder['user_id']))    $folder['user_id']    = (int) $folder['user_id'];
+        if (isset($folder['item_count'])) $folder['item_count'] = (int) $folder['item_count'];
     }
 
     // CREA UNA NUEVA CARPETA EN LA BOVEDA DEL USUARIO
@@ -146,6 +160,9 @@ class FolderController extends BaseController
         $folder['item_count'] = $db->table('vault_items')
                                    ->where('folder_id', $id)
                                    ->countAllResults();
+
+        // NORMALIZA LOS TIPOS NUMERICOS A INT REAL
+        $this->castFolderTypes($folder);
 
         // DEVUELVE LA CARPETA EN EL FORMATO ESTANDAR
         return $this->response->setJSON([

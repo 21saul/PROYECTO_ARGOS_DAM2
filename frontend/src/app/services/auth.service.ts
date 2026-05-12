@@ -150,6 +150,8 @@ export class AuthService {
       password,
       challenge.kdf_salt,
     );
+    // LOG DIAGNOSTICO: CONFIRMA QUE LA CLAVE QUEDA EN MEMORIA TRAS DERIVAR
+    console.log('[AuthService] encryptionKey derivada y guardada en memoria');
 
     // ENVIA LAS CREDENCIALES AL BACKEND
     const response = await firstValueFrom(
