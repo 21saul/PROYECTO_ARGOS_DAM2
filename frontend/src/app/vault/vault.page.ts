@@ -170,9 +170,10 @@ export class VaultPage implements OnInit, OnDestroy {
   };
 
   // KINDS QUE EL USUARIO PUEDE ELEGIR EN EL FORMULARIO DE PASSWORD
-  readonly passwordKinds: VaultKind[] = ['login', 'card', 'apikey', 'seed'];
+  readonly passwordKinds: Array<'login' | 'card' | 'apikey' | 'seed'> =
+    ['login', 'card', 'apikey', 'seed'];
   // KINDS QUE EL USUARIO PUEDE ELEGIR EN EL FORMULARIO DE NOTA
-  readonly noteKinds: VaultKind[] = ['note', 'identity'];
+  readonly noteKinds: Array<'note' | 'identity'> = ['note', 'identity'];
 
   // ── PERSONALIZACION ─────────────────────────────────────────────────
   // PRESETS DEL ACENTO PERSONALIZABLE (5 + DEFAULT VIOLETA)
