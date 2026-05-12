@@ -484,20 +484,36 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
       .slice(0, 6);
   }
 
+  // HANDLES DE LOS SETTIMEOUTS DE ANIMACION DIFERIDA PARA CANCELARLOS AL SALIR
+  // DE LA RUTA. SIN ESTO, UN setTimeout PROGRAMADO ANTES DE NAVEGAR DISPARA UN
+  // gsap.fromTo SOBRE UN SELECTOR QUE YA NO EXISTE EN LA NUEVA RUTA
+  // ("GSAP target .vault-item not found").
+  private pendingAnimTimeouts = new Set<any>();
+
+  // PROGRAMA UNA ANIMACION DE LISTA TRAS UN PEQUENO DELAY, VALIDANDO QUE EL
+  // COMPONENTE SIGUE VIVO Y QUE EL TARGET ESTA EN EL DOM ANTES DE LANZAR.
+  private scheduleListAnim(selector: string, from: object, to: object) {
+    const handle = setTimeout(() => {
+      this.pendingAnimTimeouts.delete(handle);
+      if (!this.viewReady) return;
+      if (!document.querySelector(selector)) return;
+      gsap.fromTo(selector, from, to);
+    }, 30);
+    this.pendingAnimTimeouts.add(handle);
+  }
+
   // CAMBIA DE PESTANA Y RELANZA LA ANIMACION DEL LISTADO
   setTab(tab: ViewTab) {
     this.activeTab = tab;
-    setTimeout(() => {
-      gsap.fromTo('.vault-item', { y: 10 }, { y: 0, duration: 0.28, stagger: 0.04, ease: 'power2.out' });
-    }, 30);
+    this.scheduleListAnim('.vault-item',
+      { y: 10 }, { y: 0, duration: 0.28, stagger: 0.04, ease: 'power2.out' });
   }
 
   // SELECCIONA UNA CARPETA O LA DESELECCIONA SI YA ESTABA ACTIVA
   selectFolder(id: number | null) {
     this.activeFolderId = this.activeFolderId === id ? null : id;
-    setTimeout(() => {
-      gsap.fromTo('.vault-item', { x: -16 }, { x: 0, duration: 0.28, stagger: 0.04, ease: 'power2.out' });
-    }, 30);
+    this.scheduleListAnim('.vault-item',
+      { x: -16 }, { x: 0, duration: 0.28, stagger: 0.04, ease: 'power2.out' });
   }
 
   // ── METADATOS DE CARPETA ────────────────────────────────────────────
@@ -1116,10 +1132,15 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
   // DESTRUCTOR: LIMPIA TWEENS, TIMERS Y CUALQUIER CONTRASENA EN FORMS ABIERTOS
   ngOnDestroy() {
     this.clearCopyTimer();
+    // CANCELA SETTIMEOUTS DIFERIDOS PARA QUE NO DISPAREN gsap.fromTo SOBRE
+    // SELECTORES DE LA BOVEDA UNA VEZ EL USUARIO HA NAVEGADO FUERA.
+    this.pendingAnimTimeouts.forEach(h => clearTimeout(h));
+    this.pendingAnimTimeouts.clear();
     // BORRA CUALQUIER CONTRASENA QUE QUEDARA EN MEMORIA DEL FORM AL NAVEGAR
     this.formPassword.password = '';
     this.showPasswordInForm = false;
     if (this.onboardSplit) { try { this.onboardSplit.revert(); } catch {} this.onboardSplit = null; }
     gsap.killTweensOf('.vault-health-card, .folder-card, .vault-item, .tab-pill, .bento-favorite, .onboard-title, .achv-pill');
+    this.viewReady = false;
   }
 }
