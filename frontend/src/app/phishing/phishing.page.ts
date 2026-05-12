@@ -1,6 +1,6 @@
-import { Component, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnDestroy, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { gsap } from 'gsap';
-// LIBRERÍA DE CONFETI PARA CELEBRAR UN VEREDICTO SEGURO DE LA URL
+// LIBRERIA DE CONFETI PARA EL VEREDICTO SEGURO
 import confetti from 'canvas-confetti';
 
 type AnalysisStatus = 'idle' | 'loading' | 'safe' | 'suspicious' | 'danger';
@@ -28,6 +28,8 @@ interface ThreatTarget {
   color: string;
   percentage: number;
   count: number;
+  // VARIACION RESPECTO AL MES ANTERIOR (% CON SIGNO PARA INDICADOR DE TREND)
+  trend: number;
 }
 
 interface UrlExample {
@@ -35,6 +37,16 @@ interface UrlExample {
   real: string;
   trick: string;
   tipIcon: string;
+  // POSICIONES DE LOS CARACTERES TRAMPA DENTRO DE LA URL FAKE
+  fakeIndices: number[];
+  // EXPLICACION LARGA DEL ATAQUE (TOOLTIP AL PASAR POR ENCIMA DE LA URL FAKE)
+  longExplanation: string;
+}
+
+interface EngineChip {
+  key: string;
+  label: string;
+  icon: string;
 }
 
 @Component({
@@ -43,22 +55,36 @@ interface UrlExample {
   styleUrls: ['./phishing.page.scss'],
   standalone: false
 })
-export class PhishingPage implements OnDestroy {
+export class PhishingPage implements OnDestroy, AfterViewInit {
 
   @ViewChild('urlInputEl') urlInputEl!: ElementRef<HTMLInputElement>;
+  @ViewChild('phishRoot', { static: false }) phishRoot!: ElementRef<HTMLElement>;
 
   urlInput = '';
   status: AnalysisStatus = 'idle';
   analysisProgress = 0;
-  private progressTween: any = null;
 
   // STATS DEL HEADER
   todayAnalyses = 247;
   threatsDetected = 18;
   detectionRate = 99.2;
   avgResponseTime = 3.4;
+  // VALOR MOSTRADO PARA EL COUNT-UP DEL PANEL RADAR
+  detectionRateDisplay = '0.0';
+
+  // ESTADO DEL MOTOR ACTIVO MOSTRADO EN EL HEADER DEL PIPELINE
+  currentEngineTitle = 'Iniciando análisis';
+  currentEngineDetail = 'Preparando motores de detección';
 
   checks: CheckResult[] = [];
+
+  // CHIPS DE LOS 4 MOTORES VISIBLES DESDE EL ESTADO IDLE
+  engineChips: EngineChip[] = [
+    { key: 'google',  label: 'Google',     icon: 'globe' },
+    { key: 'phish',   label: 'PhishTank',  icon: 'fish-simple' },
+    { key: 'argos',   label: 'ARGOS',      icon: 'cpu' },
+    { key: 'virus',   label: 'VirusTotal', icon: 'shield' },
+  ];
 
   recent: RecentAnalysis[] = [
     { url:'netflix-seguridad.com', domain:'netflix-seguridad.com', verdict:'danger',
@@ -72,107 +98,242 @@ export class PhishingPage implements OnDestroy {
   ];
 
   threatTargets: ThreatTarget[] = [
-    { category:'Bancos',         icon:'bank',          color:'#1CB0F6', percentage:34, count:84 },
-    { category:'Paqueterías',    icon:'package',       color:'#FF9600', percentage:22, count:54 },
-    { category:'Redes sociales', icon:'share-network', color:'#EC4899', percentage:18, count:44 },
-    { category:'Streaming',      icon:'television',    color:'#E50914', percentage:14, count:35 },
-    { category:'Email',          icon:'envelope',      color:'#7C3AED', percentage:12, count:30 },
+    { category:'Bancos',         icon:'bank',          color:'#06B6D4', percentage:34, count:84, trend:  12 },
+    { category:'Paqueterías',    icon:'package',       color:'#F59E0B', percentage:22, count:54, trend:   8 },
+    { category:'Redes sociales', icon:'share-network', color:'#EC4899', percentage:18, count:44, trend:  -3 },
+    { category:'Streaming',      icon:'television',    color:'#EF4444', percentage:14, count:35, trend:   5 },
+    { category:'Email',          icon:'envelope',      color:'#7C3AED', percentage:12, count:30, trend: -11 },
   ];
 
+  // EJEMPLOS COMPARATIVOS — INCLUYEN INDICES DE LOS CHARS TRAMPA Y EXPLICACION LARGA
   urlExamples: UrlExample[] = [
-    { fake:'paypa1.com',        real:'paypal.com',  trick:'1 en lugar de l',         tipIcon:'magnifying-glass' },
-    { fake:'amaz0n-shop.com',   real:'amazon.com',  trick:'0 en lugar de o',         tipIcon:'magnifying-glass' },
-    { fake:'netflìx.com',       real:'netflix.com', trick:'í con tilde (Unicode)',   tipIcon:'translate' },
-    { fake:'gооgle.com',        real:'google.com',  trick:'Cirílico о (homógrafo)',  tipIcon:'translate' },
+    {
+      fake:'paypa1.com', real:'paypal.com',
+      trick:'1 en lugar de l', tipIcon:'magnifying-glass',
+      fakeIndices:[5],
+      longExplanation:'Sustitución de la letra "l" por el dígito "1". En fuentes sans-serif son casi idénticos a primera vista.'
+    },
+    {
+      fake:'amaz0n-shop.com', real:'amazon.com',
+      trick:'0 en lugar de o', tipIcon:'magnifying-glass',
+      fakeIndices:[4],
+      longExplanation:'Reemplazo de la letra "o" por el dígito "0", combinado con un sufijo "-shop" que aparenta legitimidad.'
+    },
+    {
+      fake:'netflìx.com', real:'netflix.com',
+      trick:'í con tilde (Unicode)', tipIcon:'translate',
+      fakeIndices:[5],
+      longExplanation:'Ataque homógrafo: el carácter "ì" es Unicode (U+00EC), no la "i" ASCII. Mismo aspecto, dominio distinto.'
+    },
+    {
+      fake:'gооgle.com', real:'google.com',
+      trick:'Cirílico о (homógrafo)', tipIcon:'translate',
+      fakeIndices:[1,2],
+      longExplanation:'Las dos "o" son cirílicas (U+043E), no latinas. Visualmente idénticas pero registran un dominio distinto.'
+    },
   ];
+
+  // CONTEXTO GSAP PARA AISLAR Y LIMPIAR TODAS LAS ANIMACIONES DE LA PAGINA
+  private ctx: any = null;
+  private pipelineTl: gsap.core.Timeline | null = null;
+  private countUpTween: gsap.core.Tween | null = null;
+  // INTERSECTION OBSERVERS PARA REVEAL EN VIEWPORT (HEATMAP / RECIENTES / EJEMPLOS)
+  private observers: IntersectionObserver[] = [];
+
+  ngAfterViewInit() {
+    // CREAMOS EL CONTEXTO GSAP UNA SOLA VEZ, SCOPED A LA RAIZ DEL COMPONENTE
+    this.ctx = gsap.context(() => {}, this.phishRoot?.nativeElement);
+  }
 
   ionViewDidEnter() {
     this.animateEntrance();
+    this.scheduleViewportReveals();
   }
 
-  animateEntrance() {
-    gsap.killTweensOf('.phish-stats-banner, .stat-mini, .input-hero, .threat-bar, .recent-card, .example-card, .tip-card');
+  // DETECCION CENTRAL DE PREFERENCIA REDUCED-MOTION
+  private prefersReducedMotion(): boolean {
+    return typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
 
-    gsap.fromTo('.phish-stats-banner',
-      { y:-20, opacity:0 },
-      { y:0, opacity:1, duration:0.5, ease:'power2.out' });
+  private animateEntrance() {
+    const reduce = this.prefersReducedMotion();
+    if (!this.ctx) {
+      this.ctx = gsap.context(() => {}, this.phishRoot?.nativeElement);
+    }
 
-    gsap.fromTo('.stat-mini',
-      { scale:0.85, opacity:0 },
-      { scale:1, opacity:1, duration:0.4, stagger:0.07,
-        ease:'back.out(1.4)', delay:0.15 });
+    this.ctx.add(() => {
+      // ENTRADA DEL PANEL RADAR
+      gsap.fromTo('.radar-panel',
+        { y: -16, opacity: 0 },
+        { y: 0, opacity: 1, duration: reduce ? 0.01 : 0.5, ease: 'power2.out' });
 
-    gsap.fromTo('.input-hero',
-      { y:20, opacity:0 },
-      { y:0, opacity:1, duration:0.5,
-        ease:'power2.out', delay:0.4 });
+      // ENTRADA DE LOS TILES MINI (HALOS POR TONO)
+      gsap.fromTo('.stat-tile',
+        { scale: 0.88, opacity: 0 },
+        {
+          scale: 1, opacity: 1,
+          duration: reduce ? 0.01 : 0.4,
+          stagger: reduce ? 0 : 0.07,
+          ease: 'back.out(1.4)',
+          delay: reduce ? 0 : 0.12
+        });
 
-    gsap.fromTo('.threat-bar-row',
-      { x:-20, opacity:0 },
-      { x:0, opacity:1, duration:0.4, stagger:0.08,
-        ease:'power2.out', delay:0.6 });
+      // ENTRADA DEL INPUT HERO
+      gsap.fromTo('.input-hero',
+        { y: 20, opacity: 0 },
+        {
+          y: 0, opacity: 1,
+          duration: reduce ? 0.01 : 0.5,
+          ease: 'power2.out',
+          delay: reduce ? 0 : 0.32
+        });
 
-    gsap.fromTo('.threat-bar-fill',
-      { width:0 },
-      { width:(_:any, t:any) => t.dataset.target + '%',
-        duration:1.2, stagger:0.08, ease:'power2.out', delay:0.7 });
+      // COUNT-UP DEL PORCENTAJE DE DETECCION (SI HAY MOTION REDUCED, PINTAR EL VALOR FINAL)
+      if (reduce) {
+        this.detectionRateDisplay = this.detectionRate.toFixed(1);
+      } else {
+        const obj = { val: 0 };
+        this.countUpTween = gsap.to(obj, {
+          val: this.detectionRate,
+          duration: 1.4,
+          ease: 'power2.out',
+          delay: 0.15,
+          onUpdate: () => {
+            this.detectionRateDisplay = obj.val.toFixed(1);
+          },
+          onComplete: () => {
+            this.detectionRateDisplay = this.detectionRate.toFixed(1);
+          }
+        });
+      }
+    });
+  }
 
-    gsap.fromTo('.recent-card, .example-card, .tip-card',
-      { y:20, opacity:0 },
-      { y:0, opacity:1, duration:0.4, stagger:0.08,
-        ease:'power2.out', delay:0.9 });
+  // REVEAL EN VIEWPORT PARA SECCIONES SCROLLEABLES (HEATMAP, RECIENTES, EJEMPLOS)
+  // USAMOS INTERSECTIONOBSERVER PORQUE EL SCROLLER DE IONIC NO ES window/document
+  // Y CONFIGURAR ScrollTrigger.scrollerProxy CONTRA ion-content ES EXCESIVO PARA ESTO.
+  private scheduleViewportReveals() {
+    const reduce = this.prefersReducedMotion();
+
+    // BARRAS DEL HEATMAP — ANIMAMOS scaleX (TRANSFORM, PERFORMANTE) AL ENTRAR EN VIEWPORT
+    this.observeAndAnimate('.threat-bar-fill', (el) => {
+      const target = Number((el as HTMLElement).dataset['target'] ?? 0) / 100;
+      if (reduce) {
+        gsap.set(el, { scaleX: target });
+        return;
+      }
+      gsap.fromTo(el,
+        { scaleX: 0 },
+        { scaleX: target, duration: 1.05, ease: 'power2.out' });
+    });
+
+    // CARDS DE RECIENTES Y EJEMPLOS — FADE-IN STAGGERED PROGRESIVO POR APARICION
+    this.observeAndAnimate('.recent-card, .example-card, .threat-bar-row', (el) => {
+      if (reduce) {
+        gsap.set(el, { opacity: 1, y: 0 });
+        return;
+      }
+      gsap.fromTo(el,
+        { opacity: 0, y: 18 },
+        { opacity: 1, y: 0, duration: 0.45, ease: 'power2.out' });
+    });
+  }
+
+  private observeAndAnimate(selector: string, runner: (el: Element) => void) {
+    const els = document.querySelectorAll(selector);
+    if (els.length === 0) return;
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          runner(e.target);
+          obs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.25, rootMargin: '0px 0px -40px 0px' });
+    els.forEach(el => obs.observe(el));
+    this.observers.push(obs);
   }
 
   analyzeUrl() {
     if (!this.urlInput.trim()) return;
     this.status = 'loading';
     this.analysisProgress = 0;
+    this.currentEngineTitle = 'Iniciando análisis';
+    this.currentEngineDetail = 'Conectando con motores externos';
+
+    // ESTADO INICIAL: TODOS EN PENDING SALVO EL PRIMER MOTOR EN CHECKING
     this.checks = [
-      { label:'Google Safe Browsing', status:'checking', detail:'Consultando listas...', icon:'globe',     source:'Google' },
-      { label:'PhishTank',            status:'pending',  detail:'En espera',              icon:'fish-simple',source:'Cisco Talos' },
-      { label:'Análisis heurístico',  status:'pending',  detail:'En espera',              icon:'cpu',       source:'ARGOS' },
-      { label:'VirusTotal',           status:'pending',  detail:'En espera',              icon:'shield',    source:'VirusTotal' },
+      { label:'Google Safe Browsing', status:'pending',  detail:'En espera', icon:'globe',      source:'Google' },
+      { label:'PhishTank',            status:'pending',  detail:'En espera', icon:'fish-simple',source:'PhishTank' },
+      { label:'Análisis heurístico',  status:'pending',  detail:'En espera', icon:'cpu',        source:'ARGOS' },
+      { label:'VirusTotal',           status:'pending',  detail:'En espera', icon:'shield',     source:'VirusTotal' },
     ];
 
-    // ANIMACIÓN DEL ESCANEO RADIAL
-    gsap.to('.scan-ring', {
-      rotation: 360, duration: 2, repeat: 1, ease: 'none'
-    });
+    // ESPERAR A QUE EL DOM PINTE LA CADENA ANTES DE ARRANCAR LA TIMELINE
+    requestAnimationFrame(() => this.startPipelineTimeline());
+  }
 
-    gsap.killTweensOf(this);
-    const obj = { progress: 0 };
-    this.progressTween = gsap.to(obj, {
-      progress: 100, duration: 3.8, ease: 'power1.inOut',
+  private startPipelineTimeline() {
+    const reduce = this.prefersReducedMotion();
+    // DURACION DE CADA SEGMENTO (4 MOTORES EN CASCADA)
+    const dur = reduce ? 0.25 : 0.9;
+
+    if (this.pipelineTl) this.pipelineTl.kill();
+
+    // ASEGURAR QUE LOS CONECTORES PARTEN VACIOS EN CADA ANALISIS
+    gsap.set('.chain-conn', { '--fill': 0 });
+
+    this.pipelineTl = gsap.timeline({
       onUpdate: () => {
-        this.analysisProgress = Math.round(obj.progress);
-        if (obj.progress > 22) this.checks[0] = {
-          label:'Google Safe Browsing', status:'ok',
-          detail:'No encontrado en listas negras',
-          icon:'globe', source:'Google' };
-        if (obj.progress > 25 && this.checks[1].status === 'pending') {
-          this.checks[1] = { ...this.checks[1], status:'checking', detail:'Consultando base colaborativa...' };
+        if (this.pipelineTl) {
+          this.analysisProgress = Math.round(this.pipelineTl.progress() * 100);
         }
-        if (obj.progress > 48) this.checks[1] = {
-          label:'PhishTank', status:'ok',
-          detail:'URL no reportada como phishing',
-          icon:'fish-simple', source:'Cisco Talos' };
-        if (obj.progress > 52 && this.checks[2].status === 'pending') {
-          this.checks[2] = { ...this.checks[2], status:'checking', detail:'Analizando dominio y SSL...' };
-        }
-        if (obj.progress > 70) this.checks[2] = this.getHeuristicResult();
-        if (obj.progress > 75 && this.checks[3].status === 'pending') {
-          this.checks[3] = { ...this.checks[3], status:'checking', detail:'Consultando 70+ motores AV...' };
-        }
-        if (obj.progress > 92) this.checks[3] = {
-          label:'VirusTotal', status:'ok',
-          detail:'0 / 70 motores detectaron amenaza',
-          icon:'shield', source:'VirusTotal' };
       },
       onComplete: () => {
         this.status = this.getMockVerdict();
-        this.animateVerdict();
+        // ESPERAR UN FRAME PARA QUE EL TEMPLATE PINTE LA VERDICT-CARD ANTES DE ANIMARLA
+        requestAnimationFrame(() => this.animateVerdict());
       }
     });
+
+    // MOTOR 1: GOOGLE SAFE BROWSING
+    this.pipelineTl
+      .call(() => this.setEngine(0, 'checking', 'Consultando listas...'), [], 0)
+      .to({}, { duration: dur }, 0)
+
+      // FIN MOTOR 1 → INICIO MOTOR 2 (CONECTOR 0 SE LLENA)
+      .call(() => {
+        this.setEngine(0, 'ok', 'No encontrado en listas negras');
+        this.setEngine(1, 'checking', 'Consultando base colaborativa...');
+      }, [], dur)
+      .to('.chain-conn-0', { '--fill': 100, duration: dur, ease: 'power1.inOut' }, dur)
+
+      // FIN MOTOR 2 → INICIO MOTOR 3
+      .call(() => {
+        this.setEngine(1, 'ok', 'URL no reportada como phishing');
+        this.setEngine(2, 'checking', 'Analizando dominio y SSL...');
+      }, [], dur * 2)
+      .to('.chain-conn-1', { '--fill': 100, duration: dur, ease: 'power1.inOut' }, dur * 2)
+
+      // FIN MOTOR 3 (HEURISTICA REAL, PUEDE SER WARN) → INICIO MOTOR 4
+      .call(() => {
+        const r = this.getHeuristicResult();
+        this.setEngine(2, r.status, r.detail);
+        this.setEngine(3, 'checking', 'Consultando 70+ motores AV...');
+      }, [], dur * 3)
+      .to('.chain-conn-2', { '--fill': 100, duration: dur, ease: 'power1.inOut' }, dur * 3)
+
+      // FIN MOTOR 4
+      .call(() => this.setEngine(3, 'ok', '0 / 70 motores detectaron amenaza'), [], dur * 4);
+  }
+
+  private setEngine(i: number, status: CheckResult['status'], detail: string) {
+    if (!this.checks[i]) return;
+    this.checks[i] = { ...this.checks[i], status, detail };
+    // EL TITULO GRANDE DEL PIPELINE REFLEJA SIEMPRE EL ULTIMO MOTOR EN MARCHA O EL ULTIMO CONCLUIDO
+    this.currentEngineTitle = this.checks[i].label;
+    this.currentEngineDetail = detail;
   }
 
   private getHeuristicResult(): CheckResult {
@@ -197,17 +358,42 @@ export class PhishingPage implements OnDestroy {
   }
 
   private animateVerdict() {
-    gsap.fromTo('.verdict-card',
-      { scale:0.85, opacity:0 },
-      { scale:1, opacity:1, duration:0.5, ease:'back.out(1.6)' });
-    gsap.fromTo('.check-row',
-      { x:-20, opacity:0 },
-      { x:0, opacity:1, duration:0.3, stagger:0.07,
-        ease:'power2.out', delay:0.2 });
+    const reduce = this.prefersReducedMotion();
 
-    // CONFETI CELEBRATORIO ÚNICAMENTE CUANDO EL VEREDICTO ES SEGURO
+    if (reduce) {
+      gsap.set('.verdict-card', { opacity: 1, scale: 1, clearProps: 'x' });
+    } else if (this.status === 'danger') {
+      // ENTRADA + SHAKE UNICO HORIZONTAL DEL VEREDICTO PELIGROSO
+      const tl = gsap.timeline();
+      tl.fromTo('.verdict-card',
+          { scale: 0.9, opacity: 0 },
+          { scale: 1, opacity: 1, duration: 0.32, ease: 'back.out(1.5)' })
+        .to('.verdict-card', { x: -6, duration: 0.06, ease: 'none' })
+        .to('.verdict-card', { x:  6, duration: 0.06, ease: 'none' })
+        .to('.verdict-card', { x: -4, duration: 0.06, ease: 'none' })
+        .to('.verdict-card', { x:  4, duration: 0.06, ease: 'none' })
+        .to('.verdict-card', { x:  0, duration: 0.06, ease: 'none' });
+      // VIBRACION HAPTICA EN MOVIL SI ESTA SOPORTADA
+      if ('vibrate' in navigator) {
+        try { navigator.vibrate(120); } catch { /* IGNORADO */ }
+      }
+    } else {
+      gsap.fromTo('.verdict-card',
+        { scale: 0.9, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.5, ease: 'back.out(1.6)' });
+    }
+
+    // STAGGERED IN DE LOS PILLS DEL RESUMEN DE MOTORES
+    if (!reduce) {
+      gsap.fromTo('.vchain-pill',
+        { x: -12, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.28, stagger: 0.06, ease: 'power2.out', delay: 0.18 });
+    } else {
+      gsap.set('.vchain-pill', { x: 0, opacity: 1 });
+    }
+
+    // CONFETI SOLO EN VEREDICTO SEGURO (LA REGLA DEL BRIEF)
     if (this.status === 'safe') {
-      // RETRASO LIGERO PARA QUE EL CONFETI APAREZCA TRAS LA TARJETA DE VEREDICTO
       setTimeout(() => {
         confetti({
           particleCount: 80,
@@ -220,11 +406,48 @@ export class PhishingPage implements OnDestroy {
   }
 
   resetAnalysis() {
+    if (this.pipelineTl) {
+      this.pipelineTl.kill();
+      this.pipelineTl = null;
+    }
+    // RESET DE LAS CSS VARS DE LOS CONECTORES PARA EL PROXIMO ANALISIS
+    gsap.set('.chain-conn', { '--fill': 0 });
+
     this.status = 'idle';
     this.urlInput = '';
     this.checks = [];
     this.analysisProgress = 0;
-    if (this.progressTween) this.progressTween.kill();
+    this.currentEngineTitle = 'Iniciando análisis';
+    this.currentEngineDetail = 'Preparando motores de detección';
+
+    // REVEAL DEL INPUT HERO + SECCIONES IDLE TRAS VOLVER DESDE EL VEREDICTO
+    requestAnimationFrame(() => {
+      const reduce = this.prefersReducedMotion();
+      if (reduce) {
+        gsap.set('.input-hero', { opacity: 1, y: 0 });
+      } else {
+        gsap.fromTo('.input-hero',
+          { y: 24, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.45, ease: 'power2.out' });
+      }
+      this.scheduleViewportReveals();
+    });
+  }
+
+  // RE-ANALIZAR UNA URL DEL HISTORIAL RECIENTE
+  analyzeRecent(r: RecentAnalysis) {
+    this.urlInput = r.url;
+    this.analyzeUrl();
+  }
+
+  // MOCK UI: HOOK FUTURO PARA COMPARTIR EL REPORTE GENERADO
+  shareReport() {
+    console.log('[ARGOS] Compartir reporte:', this.urlInput);
+  }
+
+  // MOCK UI: HOOK FUTURO PARA BLOQUEAR EL DOMINIO EN LISTA NEGRA LOCAL
+  blockDomain() {
+    console.log('[ARGOS] Bloquear dominio:', this.urlInput);
   }
 
   getVerdictTitle(): string {
@@ -241,13 +464,6 @@ export class PhishingPage implements OnDestroy {
     return '';
   }
 
-  getVerdictColor(): string {
-    if (this.status === 'safe')       return 'var(--color-success)';
-    if (this.status === 'suspicious') return 'var(--color-warning)';
-    if (this.status === 'danger')     return 'var(--color-danger)';
-    return 'var(--color-text-muted)';
-  }
-
   getRecentColor(v: string): string {
     if (v === 'safe')       return 'var(--color-success)';
     if (v === 'suspicious') return 'var(--color-warning)';
@@ -260,8 +476,26 @@ export class PhishingPage implements OnDestroy {
     return 'Peligrosa';
   }
 
+  // DESCOMPONE LA URL FAKE EN ARRAY DE CHARS MARCANDO CUALES SON TRAMPA
+  getFakeChars(e: UrlExample): { char: string; suspect: boolean }[] {
+    return Array.from(e.fake).map((char, i) => ({
+      char,
+      suspect: e.fakeIndices.includes(i)
+    }));
+  }
+
   ngOnDestroy() {
-    if (this.progressTween) this.progressTween.kill();
-    gsap.killTweensOf('.phish-stats-banner, .stat-mini, .input-hero, .threat-bar, .threat-bar-fill, .recent-card, .example-card, .tip-card, .scan-ring, .verdict-card, .check-row');
+    if (this.pipelineTl) this.pipelineTl.kill();
+    if (this.countUpTween) this.countUpTween.kill();
+    // RED DE SEGURIDAD: MATAR TWEENS DE TODOS LOS SELECTORES NO CAPTURADOS POR EL CONTEXTO
+    gsap.killTweensOf([
+      '.radar-panel', '.stat-tile', '.input-hero',
+      '.verdict-card', '.vchain-pill',
+      '.threat-bar-fill', '.recent-card', '.example-card', '.threat-bar-row',
+      '.chain-conn'
+    ]);
+    if (this.ctx) this.ctx.revert();
+    this.observers.forEach(o => o.disconnect());
+    this.observers = [];
   }
 }
