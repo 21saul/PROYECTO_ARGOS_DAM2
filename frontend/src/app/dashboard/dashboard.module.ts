@@ -7,10 +7,8 @@ import { IonicModule } from '@ionic/angular';
 import { DashboardPageRoutingModule } from './dashboard-routing.module';
 
 import { DashboardPage } from './dashboard.page';
-// COMPONENTE STANDALONE DE LA MASCOTA ARGUS
+// COMPONENTE STANDALONE DE LA MASCOTA ARGUS — ANCLA EMOCIONAL DEL HERO
 import { ArgusComponent } from '../shared/components/argus/argus.component';
-// COMPONENTE STANDALONE DE RED DE PARTÍCULAS PARA FONDO DECORATIVO
-import { ParticleNetworkComponent } from '../shared/components/particle-network/particle-network.component';
 
 @NgModule({
   imports: [
@@ -19,7 +17,6 @@ import { ParticleNetworkComponent } from '../shared/components/particle-network/
     IonicModule,
     DashboardPageRoutingModule,
     ArgusComponent,
-    ParticleNetworkComponent
   ],
   declarations: [DashboardPage],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]

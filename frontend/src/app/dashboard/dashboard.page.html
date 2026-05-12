@@ -1,25 +1,27 @@
 <ion-header class="dash-header">
   <ion-toolbar>
     <div class="dash-header-inner">
-      <div class="dash-greet">
-        <button class="avatar-btn interactive" (click)="goTo('/profile')">
-          <img *ngIf="avatar" [src]="avatar" alt="Avatar">
-          <span *ngIf="!avatar">{{getInitial()}}</span>
-        </button>
-        <div class="dash-greet-text">
-          <div class="dash-name">
-            Hola, Usuario
-            <span class="wave-emoji">👋</span>
-          </div>
-          <div class="dash-meta">
-            <span class="online-dot"></span>
-            <span class="dash-meta-text">Protección activa · Nivel 5</span>
-          </div>
-        </div>
+      <!-- IDENTIDAD OPERACIONAL: NOMBRE DEL PANEL + RELOJ UTC -->
+      <div class="dash-id">
+        <span class="ops-stencil">ARGOS // PRIVACY-OPS</span>
+        <span class="ops-mono dash-clock">{{ systemClock }}</span>
       </div>
-      <button class="icon-btn interactive" (click)="goTo('/profile')">
-        <ph-gear-six weight="fill" size="20"></ph-gear-six>
-      </button>
+      <!-- AVATAR Y AJUSTES -->
+      <div class="dash-id-right">
+        <button
+          class="dash-icon-btn ops-focus"
+          (click)="goTo('/profile')"
+          aria-label="Abrir perfil">
+          <ph-gear-six weight="regular" size="18"></ph-gear-six>
+        </button>
+        <button
+          class="dash-avatar ops-focus"
+          (click)="goTo('/profile')"
+          [attr.aria-label]="'Perfil de ' + displayName">
+          <img *ngIf="avatar" [src]="avatar" alt="">
+          <span *ngIf="!avatar">{{ getInitial() }}</span>
+        </button>
+      </div>
     </div>
   </ion-toolbar>
 </ion-header>
@@ -27,116 +29,277 @@
 <ion-content class="dash-content">
   <div class="dash-scroll scroll-clean">
 
-    <!-- HERO SCORE CARD -->
-    <div class="score-card">
-      <app-particle-network
-        particleColor="#A78BFA"
-        lineColor="#FFFFFF"
-        [particleCount]="35"
-        [maxDistance]="100"
-        [speed]="0.3">
-      </app-particle-network>
-      <div class="score-bg-decoration"></div>
-      <div class="score-card-grid">
-        <div class="score-info">
-          <div class="label-caps" style="color:rgba(255,255,255,0.7)">PRIVACY SCORE</div>
-          <div class="score-num number-display">0</div>
-          <div class="score-pill">
-            <span class="status-dot" [style.background]="scoreStatusColor" [style.box-shadow]="'0 0 8px ' + scoreStatusColor"></span>
-            <span>{{ scoreLabel }}</span>
+    <!-- SALUDO COMPACTO Y CONTEXTO DE ULTIMA AUDITORIA -->
+    <header class="ops-intro">
+      <h1 class="ops-greeting">
+        Hola,
+        <span class="ops-greeting-name">{{ displayName }}</span>
+      </h1>
+      <p class="ops-intro-meta">
+        <span class="ops-stencil">última auditoría</span>
+        <span class="ops-mono">· {{ lastAuditAt }}</span>
+      </p>
+    </header>
+
+    <!-- GRID PRINCIPAL DEL PANEL DE OPERACIONES -->
+    <main class="ops-grid">
+
+      <!-- HERO SCORE — CELDA PRINCIPAL CON MASCOTA ARGUS Y SPARKLINE -->
+      <section
+        class="ops-cell ops-hero"
+        [class.ops-cell--ok]="scoreRank() === 'ok'"
+        [class.ops-cell--warn]="scoreRank() === 'warn'"
+        [class.ops-cell--danger]="scoreRank() === 'danger'"
+        aria-labelledby="hero-title">
+        <div class="ops-hero-head">
+          <div class="ops-hero-head-meta">
+            <span class="ops-stencil" id="hero-title">PRIVACY SCORE / 8W TREND</span>
+            <span class="ops-mono">{{ scoreLabel() }}</span>
           </div>
-          <div class="score-bar">
-            <div class="score-bar-fill"></div>
+          <app-argus
+            class="ops-hero-mascot"
+            [size]="56"
+            mood="happy"
+            aria-hidden="true"></app-argus>
+        </div>
+
+        <!-- ESTADO LOADING — SKELETON -->
+        <div *ngIf="scoreState === 'loading'" class="ops-hero-body" aria-busy="true">
+          <div class="ops-skeleton" style="height: 86px; width: 60%"></div>
+          <div class="ops-skeleton" style="height: 56px; margin-top: 12px"></div>
+        </div>
+
+        <!-- ESTADO ERROR -->
+        <div *ngIf="scoreState === 'error'" class="ops-hero-body">
+          <div class="ops-mono ops-error">SCORE_UNAVAILABLE · reintenta en unos segundos</div>
+        </div>
+
+        <!-- ESTADO EMPTY -->
+        <div *ngIf="scoreState === 'empty'" class="ops-hero-body">
+          <div class="ops-mono">Sin historial todavía. Lanza una auditoría desde el módulo Auditor.</div>
+          <button class="ops-btn ops-focus" (click)="goTo('/auditor')">
+            Ir al Auditor
+            <ph-arrow-right size="14" weight="bold"></ph-arrow-right>
+          </button>
+        </div>
+
+        <!-- ESTADO READY — METRICA + DIAL + SPARKLINE -->
+        <div *ngIf="scoreState === 'ready'" class="ops-hero-body">
+          <div class="ops-hero-metric">
+            <span class="ops-metric ops-metric--xl score-num">{{ privacyScore }}</span>
+            <div class="ops-hero-metric-meta">
+              <span class="ops-mono">/100</span>
+              <span class="ops-mono ops-delta" [class.ops-delta--pos]="scoreDelta >= 0" [class.ops-delta--neg]="scoreDelta < 0">
+                {{ scoreDelta >= 0 ? '+' : '' }}{{ scoreDelta }} pts · 8 semanas
+              </span>
+            </div>
+
+            <!-- DIAL RADIAL DEL SCORE EN SVG -->
+            <svg
+              class="score-dial"
+              viewBox="0 0 64 64"
+              width="64"
+              height="64"
+              aria-hidden="true">
+              <circle cx="32" cy="32" r="28" class="score-dial-bg"></circle>
+              <circle
+                cx="32"
+                cy="32"
+                r="28"
+                class="score-arc"
+                data-len="176"
+                stroke-dasharray="176"
+                [attr.stroke-dashoffset]="176 - (176 * privacyScore / 100)"></circle>
+            </svg>
+          </div>
+
+          <!-- SPARKLINE 8 SEMANAS -->
+          <div class="ops-spark" *ngIf="scoreHistory.length > 0">
+            <svg viewBox="0 0 200 56" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="currentColor" stop-opacity="0.22"/>
+                  <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path class="spark-area" [attr.d]="sparklineArea()" fill="url(#sparkGrad)"></path>
+              <path class="spark-line" [attr.d]="sparklinePath()"></path>
+            </svg>
+            <div class="ops-spark-axis">
+              <span class="ops-mono">S-8</span>
+              <span class="ops-mono">S-1</span>
+            </div>
           </div>
         </div>
-        <div class="score-mascot">
-          <app-argus [size]="86" mood="happy"></app-argus>
-        </div>
-      </div>
-    </div>
+      </section>
 
-    <!-- STATS GRID -->
-    <div class="stats-grid">
-      <div class="stat-card surface interactive">
-        <div class="stat-icon stat-icon-fire">
-          <ph-fire weight="fill" size="22" class="streak-fire"></ph-fire>
+      <!-- TELEMETRIA RAPIDA — TRES CELDAS DE METRICA -->
+      <section class="ops-cell ops-tele ops-cell--ok" aria-labelledby="tele-vault">
+        <div class="ops-tele-head">
+          <span class="ops-stencil" id="tele-vault">BÓVEDA</span>
+          <span class="ops-dot ops-dot--ok"></span>
         </div>
-        <div class="stat-num number-display">{{streak}}</div>
-        <div class="label-caps">Racha</div>
-      </div>
-      <div class="stat-card surface interactive">
-        <div class="stat-icon stat-icon-xp">
-          <ph-star weight="fill" size="22"></ph-star>
+        <div *ngIf="vaultState === 'loading'" class="ops-skeleton" style="height: 36px"></div>
+        <div *ngIf="vaultState === 'ready' || vaultState === 'empty'">
+          <span class="ops-metric ops-metric--md">{{ vaultItems }}</span>
+          <span class="ops-mono"> items · {{ vaultFolders }} carpetas</span>
         </div>
-        <div class="stat-num number-display">{{xp}}</div>
-        <div class="label-caps">XP</div>
-      </div>
-      <div class="stat-card surface interactive">
-        <div class="stat-icon stat-icon-level">
-          <ph-trophy weight="fill" size="22"></ph-trophy>
+        <div *ngIf="vaultState === 'error'" class="ops-mono ops-error">
+          BLOB_LOCKED · reinicia sesión
         </div>
-        <div class="stat-num number-display">{{level}}</div>
-        <div class="label-caps">Nivel</div>
-      </div>
-      <div class="stat-card surface interactive">
-        <div class="stat-icon stat-icon-medal">
-          <ph-medal weight="fill" size="22"></ph-medal>
-        </div>
-        <div class="stat-num number-display">{{achievements}}</div>
-        <div class="label-caps">Logros</div>
-      </div>
-    </div>
+        <button class="ops-link ops-focus" (click)="goTo('/vault')" aria-label="Abrir bóveda">
+          abrir
+          <ph-arrow-up-right size="12" weight="bold"></ph-arrow-up-right>
+        </button>
+      </section>
 
-    <!-- SECTION HEADER -->
-    <div class="section-head">
-      <div>
-        <div class="text-h3">Tus módulos</div>
-        <div class="label-caps" style="margin-top:2px">¿Por dónde empezamos hoy?</div>
-      </div>
-    </div>
-
-    <!-- MODULES GRID -->
-    <div class="modules-grid">
-      <div *ngFor="let m of modules; let i = index"
-        class="module-card surface interactive"
-        [class.module-wide]="i === 4"
-        (click)="goTo(m.route)">
-        <div class="module-top">
-          <div class="module-icon-wrap" [style.background]="m.color + '1F'">
-            <ph-vault *ngIf="m.route==='/vault'" weight="fill" size="24" [style.color]="m.color"></ph-vault>
-            <ph-chart-bar *ngIf="m.route==='/auditor'" weight="fill" size="24" [style.color]="m.color"></ph-chart-bar>
-            <ph-fish-simple *ngIf="m.route==='/phishing'" weight="fill" size="24" [style.color]="m.color"></ph-fish-simple>
-            <ph-map-trifold *ngIf="m.route==='/roadmap'" weight="fill" size="24" [style.color]="m.color"></ph-map-trifold>
-            <ph-bell-ringing *ngIf="m.route==='/news'" weight="fill" size="24" [style.color]="m.color"></ph-bell-ringing>
-          </div>
-          <span class="module-badge" [style.background]="m.color + '22'" [style.color]="m.color">→</span>
+      <section class="ops-cell ops-tele" aria-labelledby="tele-cve"
+        [class.ops-cell--danger]="(newsStats?.cves_today ?? 0) > 0"
+        [class.ops-cell--ok]="(newsStats?.cves_today ?? 0) === 0 && newsState === 'ready'">
+        <div class="ops-tele-head">
+          <span class="ops-stencil" id="tele-cve">CVE / HOY</span>
+          <span class="ops-dot"
+            [class.ops-dot--ok]="(newsStats?.cves_today ?? 0) === 0"
+            [class.ops-dot--danger]="(newsStats?.cves_today ?? 0) > 0"></span>
         </div>
-        <div class="module-text">
-          <div class="module-label">{{m.label}}</div>
-          <div class="module-desc">{{m.desc}}</div>
+        <div *ngIf="newsState === 'loading'" class="ops-skeleton" style="height: 36px"></div>
+        <div *ngIf="newsState === 'ready' || newsState === 'empty'">
+          <span class="ops-metric ops-metric--md">{{ newsStats?.cves_today ?? 0 }}</span>
+          <span class="ops-mono"> críticos · cvss {{ (newsStats?.cvss_average ?? 0) | number:'1.1-1' }}</span>
         </div>
-      </div>
-    </div>
+        <div *ngIf="newsState === 'error'" class="ops-mono ops-error">FEED_DOWN</div>
+        <button class="ops-link ops-focus" (click)="goTo('/news')" aria-label="Abrir noticias">
+          abrir
+          <ph-arrow-up-right size="12" weight="bold"></ph-arrow-up-right>
+        </button>
+      </section>
 
-    <div style="height:140px"></div>
+      <section class="ops-cell ops-tele" aria-labelledby="tele-sources">
+        <div class="ops-tele-head">
+          <span class="ops-stencil" id="tele-sources">FUENTES ACTIVAS</span>
+          <span class="ops-dot ops-dot--ok"></span>
+        </div>
+        <div *ngIf="newsState === 'loading'" class="ops-skeleton" style="height: 36px"></div>
+        <div *ngIf="newsState === 'ready' || newsState === 'empty'">
+          <span class="ops-metric ops-metric--md">{{ newsStats?.sources_active ?? 0 }}</span>
+          <span class="ops-mono"> · NVD · INCIBE · BleepingComputer</span>
+        </div>
+        <div *ngIf="newsState === 'error'" class="ops-mono ops-error">FEED_DOWN</div>
+      </section>
+
+      <!-- BREAKING CVE — BANNER OPCIONAL -->
+      <section
+        *ngIf="breakingNews"
+        class="ops-cell ops-breaking ops-cell--danger"
+        aria-labelledby="breaking-title">
+        <div class="ops-breaking-head">
+          <span class="ops-chip ops-chip--danger">
+            <ph-warning weight="fill" size="12"></ph-warning>
+            BREAKING
+          </span>
+          <span class="ops-mono">{{ breakingNews.source }} · cvss {{ breakingNews.cvss_score ?? '—' }}</span>
+        </div>
+        <a
+          class="ops-breaking-link ops-focus"
+          [href]="breakingNews.url"
+          target="_blank"
+          rel="noopener"
+          id="breaking-title">
+          <span class="ops-breaking-title">{{ breakingNews.title }}</span>
+          <ph-arrow-up-right size="14" weight="bold"></ph-arrow-up-right>
+        </a>
+        <span class="ops-mono ops-breaking-meta">
+          {{ breakingNews.cve_id ?? '—' }} · {{ breakingNews.affected_product ?? 'producto no especificado' }}
+        </span>
+      </section>
+
+      <!-- FEED DE CVES CRITICOS RECIENTES -->
+      <section class="ops-cell ops-feed" aria-labelledby="feed-title">
+        <header class="ops-feed-head">
+          <span class="ops-stencil" id="feed-title">FEED / CRÍTICOS RECIENTES</span>
+          <button class="ops-link ops-focus" (click)="goTo('/news')">
+            ver todo
+            <ph-arrow-up-right size="12" weight="bold"></ph-arrow-up-right>
+          </button>
+        </header>
+        <ul *ngIf="newsState === 'ready' && criticalFeed.length > 0" class="ops-feed-list">
+          <li *ngFor="let item of criticalFeed" class="ops-feed-row">
+            <span [class]="newsChipClass(item)">{{ item.severity }}</span>
+            <a class="ops-feed-title ops-focus" [href]="item.url" target="_blank" rel="noopener">
+              {{ item.title }}
+            </a>
+            <span class="ops-mono ops-feed-meta">{{ item.cve_id ?? item.source }}</span>
+          </li>
+        </ul>
+        <div *ngIf="newsState === 'loading'" aria-busy="true">
+          <div class="ops-skeleton" style="height: 20px; margin-bottom: 8px"></div>
+          <div class="ops-skeleton" style="height: 20px; margin-bottom: 8px"></div>
+          <div class="ops-skeleton" style="height: 20px"></div>
+        </div>
+        <div *ngIf="newsState === 'empty'" class="ops-mono ops-feed-empty">
+          Sin alertas críticas en las últimas 24 h. Sistema en silencio.
+        </div>
+        <div *ngIf="newsState === 'error'" class="ops-mono ops-error">
+          NO se pudo recuperar el feed. Reintenta en unos minutos.
+        </div>
+      </section>
+
+      <!-- MAPA DE MODULOS — UNA FILA POR MODULO CON CODIGO Y RANGO -->
+      <section class="ops-cell ops-modules" aria-labelledby="modules-title">
+        <header class="ops-feed-head">
+          <span class="ops-stencil" id="modules-title">MÓDULOS · STACK OPERATIVO</span>
+        </header>
+        <ul class="ops-mod-list">
+          <li *ngFor="let m of modules">
+            <button
+              class="ops-mod-row ops-focus"
+              (click)="goTo(m.route)"
+              [attr.aria-label]="'Abrir ' + m.label">
+              <span class="ops-mod-rank ops-mono">[{{ m.rank }}]</span>
+              <span class="ops-mod-code ops-mono">{{ m.code }}</span>
+              <span class="ops-mod-icon" aria-hidden="true">
+                <ph-vault          *ngIf="m.icon === 'vault'"          weight="regular" size="16"></ph-vault>
+                <ph-chart-bar      *ngIf="m.icon === 'chart-bar'"      weight="regular" size="16"></ph-chart-bar>
+                <ph-fish-simple    *ngIf="m.icon === 'fish-simple'"    weight="regular" size="16"></ph-fish-simple>
+                <ph-bell-ringing   *ngIf="m.icon === 'bell-ringing'"   weight="regular" size="16"></ph-bell-ringing>
+                <ph-map-trifold    *ngIf="m.icon === 'map-trifold'"    weight="regular" size="16"></ph-map-trifold>
+              </span>
+              <span class="ops-mod-text">
+                <span class="ops-mod-label">{{ m.label }}</span>
+                <span class="ops-mono ops-mod-summary">{{ m.summary }}</span>
+              </span>
+              <ph-arrow-right size="14" weight="bold" class="ops-mod-arrow"></ph-arrow-right>
+            </button>
+          </li>
+        </ul>
+      </section>
+
+    </main>
+
+    <!-- ESPACIO RESERVADO PARA EVITAR QUE EL TAB-BAR TAPE EL ULTIMO MODULO -->
+    <div class="dash-bottom-spacer"></div>
   </div>
 </ion-content>
 
 <ion-tab-bar class="dash-tabbar">
-  <ion-tab-button (click)="goTo('/dashboard')" class="tab-active">
-    <ph-house weight="fill" size="22"></ph-house>
+  <ion-tab-button (click)="goTo('/dashboard')" class="tab-active" aria-label="Inicio">
+    <ph-house weight="bold" size="18"></ph-house>
     <span>Inicio</span>
   </ion-tab-button>
-  <ion-tab-button (click)="goTo('/vault')">
-    <ph-vault weight="bold" size="22"></ph-vault>
+  <ion-tab-button (click)="goTo('/vault')" aria-label="Bóveda">
+    <ph-vault weight="bold" size="18"></ph-vault>
     <span>Bóveda</span>
   </ion-tab-button>
-  <ion-tab-button (click)="goTo('/roadmap')">
-    <ph-map-trifold weight="bold" size="22"></ph-map-trifold>
-    <span>Roadmap</span>
+  <ion-tab-button (click)="goTo('/auditor')" aria-label="Auditor">
+    <ph-chart-bar weight="bold" size="18"></ph-chart-bar>
+    <span>Auditor</span>
   </ion-tab-button>
-  <ion-tab-button (click)="goTo('/profile')">
-    <ph-user-circle weight="bold" size="22"></ph-user-circle>
+  <ion-tab-button (click)="goTo('/news')" aria-label="Noticias">
+    <ph-bell-ringing weight="bold" size="18"></ph-bell-ringing>
+    <span>Noticias</span>
+  </ion-tab-button>
+  <ion-tab-button (click)="goTo('/profile')" aria-label="Perfil">
+    <ph-user-circle weight="bold" size="18"></ph-user-circle>
     <span>Perfil</span>
   </ion-tab-button>
 </ion-tab-bar>
