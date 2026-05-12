@@ -6,10 +6,18 @@
 // SUBTIPOS LOGIN/CARD/IDENTITY/APIKEY/SEED/NOTE/FILE VIVEN EN payload.kind
 // Y NUNCA SALEN AL SERVIDOR EN CLARO — SOLO DENTRO DEL BLOB CIFRADO.
 
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonContent } from '@ionic/angular';
 import { gsap } from 'gsap';
+// PLUGINS GSAP DISPONIBLES SIN COSTE EN GSAP 3.13+:
+// Flip = TRANSICION SUAVE ENTRE ESTADOS DOM (PARA REORDER DE FAVORITOS)
+// SplitText = REVELAR TEXTO CARACTER A CARACTER (PARA ONBOARDING)
+// CustomBounce = EASE CON BOUNCE CONTROLADO (SOLO PARA LOGROS DESBLOQUEADOS)
+import { Flip } from 'gsap/Flip';
+import { SplitText } from 'gsap/SplitText';
+import { CustomBounce } from 'gsap/CustomBounce';
+import { CustomEase } from 'gsap/CustomEase';
 import { AuthService } from '../services/auth.service';
 import {
   VaultService,
@@ -68,7 +76,7 @@ interface AccentPreset {
   styleUrls: ['./vault.page.scss'],
   standalone: false
 })
-export class VaultPage implements OnInit, OnDestroy {
+export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
 
   // REFERENCIA AL INPUT OCULTO PARA SUBIR ICONO PERSONALIZADO
   @ViewChild('iconInput') iconInput!: ElementRef<HTMLInputElement>;
@@ -263,12 +271,36 @@ export class VaultPage implements OnInit, OnDestroy {
     symbols: true,
   };
 
+  // SET DE IDS DE LOGROS YA DESBLOQUEADOS PARA DETECTAR TRANSICIONES
+  private prevUnlockedIds = new Set<string>();
+  // INSTANCIA ACTIVA DE SPLITTEXT EN EL ONBOARDING (PARA REVERT)
+  private onboardSplit: SplitText | null = null;
+  // FLAG QUE INDICA SI EL USUARIO PREFIERE REDUCED MOTION
+  private reducedMotion = false;
+  // FLAG QUE INDICA QUE LA VISTA YA SE INICIALIZO (PARA EVITAR SPLITTEXT TEMPRANO)
+  private viewReady = false;
+
   // CONSTRUCTOR QUE INYECTA VaultService, AuthService Y Router
   constructor(
     private vault: VaultService,
     private auth: AuthService,
     private router: Router,
-  ) {}
+  ) {
+    // REGISTRO UNICO DE PLUGINS GSAP — IDEMPOTENTE
+    gsap.registerPlugin(Flip, SplitText, CustomBounce, CustomEase);
+    // CREA UN BOUNCE PERSONALIZADO PARA CELEBRACIONES DE LOGRO
+    if (!(gsap as any).effects?.vaultBounceRegistered) {
+      CustomBounce.create('vault-bounce', { strength: 0.5, squash: 1.6, squashID: 'vault-bounce-squash' });
+      (gsap as any).effects = (gsap as any).effects || {};
+      (gsap as any).effects.vaultBounceRegistered = true;
+    }
+    // DETECTA LA PREFERENCIA DEL USUARIO UNA SOLA VEZ
+    try {
+      this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch {
+      this.reducedMotion = false;
+    }
+  }
 
   // INICIALIZACION DE LA PAGINA: CARGA SEED + DATOS REALES
   async ngOnInit() {
@@ -320,9 +352,51 @@ export class VaultPage implements OnInit, OnDestroy {
     this.recomputeHealth();
   }
 
+  // HOOK QUE FIJA viewReady PARA QUE LAS ANIMACIONES PUEDAN USAR EL DOM
+  ngAfterViewInit() {
+    this.viewReady = true;
+  }
+
   // CALLBACK DE IONIC AL ENTRAR EN LA VISTA, DISPARA ANIMACIONES
   ionViewDidEnter() {
     this.animateEntrance();
+  }
+
+  // ── ANIMACIONES GSAP ESPECIFICAS ────────────────────────────────────
+  // REVELA EL TITULO DEL ONBOARDING CARACTER A CARACTER CON SPLITTEXT
+  private animateOnboardingTitle() {
+    if (this.reducedMotion || !this.viewReady) return;
+    const el = document.querySelector('.onboard-title') as HTMLElement | null;
+    if (!el) return;
+    // LIMPIA EL SPLIT ANTERIOR PARA EVITAR HOJAS DESCOLGADAS
+    if (this.onboardSplit) { try { this.onboardSplit.revert(); } catch {} this.onboardSplit = null; }
+    this.onboardSplit = new SplitText(el, { type: 'chars,words' });
+    gsap.from(this.onboardSplit.chars, {
+      opacity: 0, y: 8, duration: 0.42,
+      stagger: { amount: 0.32, from: 'start' },
+      ease: 'power2.out',
+    });
+  }
+  // ANIMA EL DESBLOQUEO DE UN LOGRO CON BOUNCE CONTROLADO
+  private animateAchievementUnlock(achievementId: string) {
+    if (this.reducedMotion || !this.viewReady) return;
+    requestAnimationFrame(() => {
+      const el = document.querySelector(`[data-achv-id="${achievementId}"]`) as HTMLElement | null;
+      if (!el) return;
+      gsap.fromTo(el,
+        { scale: 0.6, rotate: -6 },
+        { scale: 1, rotate: 0, duration: 0.85, ease: 'vault-bounce' });
+    });
+  }
+  // REORDENA LOS FAVORITOS CON FLIP — SUAVE EN VEZ DE CORTE BRUSCO
+  private animateFavoriteReorder(beforeState: any) {
+    if (this.reducedMotion || !beforeState) return;
+    Flip.from(beforeState, {
+      duration: 0.5,
+      ease: 'power3.out',
+      stagger: 0.04,
+      absolute: true,
+    });
   }
 
   // ORQUESTA LAS ANIMACIONES GSAP DE ENTRADA RESPETANDO REDUCED-MOTION
@@ -863,6 +937,8 @@ export class VaultPage implements OnInit, OnDestroy {
   isFavorite(item: VaultItem): boolean { return this.favoriteIds.includes(item.id); }
   toggleFavorite(item: VaultItem, event: Event) {
     event.stopPropagation();
+    // CAPTURA EL ESTADO ANTERIOR PARA QUE FLIP ANIME LA REORDENACION
+    const before = this.reducedMotion ? null : Flip.getState('.bento-favorite, .vault-item');
     if (this.isFavorite(item)) {
       this.favoriteIds = this.favoriteIds.filter(id => id !== item.id);
     } else {
@@ -870,6 +946,8 @@ export class VaultPage implements OnInit, OnDestroy {
       this.favoriteIds = [item.id, ...this.favoriteIds];
     }
     this.saveFavorites();
+    // FLIP ANIMA LA DIFERENCIA TRAS EL NEXT FRAME (CUANDO ANGULAR REPINTA)
+    requestAnimationFrame(() => this.animateFavoriteReorder(before));
   }
   private saveFavorites() {
     localStorage.setItem('argos-vault-favs', JSON.stringify(this.favoriteIds));
@@ -942,6 +1020,9 @@ export class VaultPage implements OnInit, OnDestroy {
     this.healthBreakdown = { strong, unique, noLeak, fresh };
     this.healthScore = Math.round(strong * 0.35 + unique * 0.30 + noLeak * 0.20 + fresh * 0.15);
 
+    // GUARDA EL SET ANTERIOR PARA DETECTAR NUEVOS DESBLOQUEOS Y CELEBRAR
+    const prev = this.prevUnlockedIds;
+
     // LOGROS — TODOS SON ACCIONES DE SEGURIDAD REALES, NO DE VANITY
     this.achievements = [
       {
@@ -966,6 +1047,18 @@ export class VaultPage implements OnInit, OnDestroy {
         hint: 'Tu boveda esta en buen estado general',
       },
     ];
+
+    // DETECTA Y CELEBRA NUEVOS DESBLOQUEOS (NO LOS QUE YA ESTABAN UNLOCKED)
+    const nextUnlocked = new Set<string>();
+    for (const a of this.achievements) {
+      if (a.unlocked) {
+        nextUnlocked.add(a.id);
+        if (!prev.has(a.id) && this.viewReady) {
+          this.animateAchievementUnlock(a.id);
+        }
+      }
+    }
+    this.prevUnlockedIds = nextUnlocked;
   }
 
   // ── ONBOARDING ──────────────────────────────────────────────────────
@@ -973,23 +1066,32 @@ export class VaultPage implements OnInit, OnDestroy {
     const seen = localStorage.getItem('argos-vault-onboarded');
     if (seen === '1') return;
     this.onboardingStep = 0;
+    // ESPERA UN FRAME PARA QUE EL DOM DEL OVERLAY EXISTA ANTES DEL SPLIT
+    requestAnimationFrame(() => this.animateOnboardingTitle());
   }
   nextOnboarding() {
-    if (this.onboardingStep < this.onboardingSteps.length - 1) this.onboardingStep++;
-    else this.finishOnboarding();
+    if (this.onboardingStep < this.onboardingSteps.length - 1) {
+      this.onboardingStep++;
+      requestAnimationFrame(() => this.animateOnboardingTitle());
+    } else this.finishOnboarding();
   }
   prevOnboarding() {
-    if (this.onboardingStep > 0) this.onboardingStep--;
+    if (this.onboardingStep > 0) {
+      this.onboardingStep--;
+      requestAnimationFrame(() => this.animateOnboardingTitle());
+    }
   }
   skipOnboarding() { this.finishOnboarding(); }
   private finishOnboarding() {
     localStorage.setItem('argos-vault-onboarded', '1');
     this.onboardingStep = -1;
+    if (this.onboardSplit) { try { this.onboardSplit.revert(); } catch {} this.onboardSplit = null; }
   }
   // PERMITE REABRIR EL TOUR DESDE EL PANEL DE PERSONALIZACION
   restartOnboarding() {
     this.closeCustomize();
     this.onboardingStep = 0;
+    requestAnimationFrame(() => this.animateOnboardingTitle());
   }
 
   // ── PASSWORD GENERATOR ──────────────────────────────────────────────
@@ -1016,6 +1118,7 @@ export class VaultPage implements OnInit, OnDestroy {
   // DESTRUCTOR: LIMPIA TWEENS Y TIMERS PARA EVITAR FUGAS
   ngOnDestroy() {
     this.clearCopyTimer();
-    gsap.killTweensOf('.vault-health-card, .stat-pill, .folder-card, .vault-item, .tab-pill, .bento-favorite');
+    if (this.onboardSplit) { try { this.onboardSplit.revert(); } catch {} this.onboardSplit = null; }
+    gsap.killTweensOf('.vault-health-card, .stat-pill, .folder-card, .vault-item, .tab-pill, .bento-favorite, .onboard-title, .achv-pill');
   }
 }

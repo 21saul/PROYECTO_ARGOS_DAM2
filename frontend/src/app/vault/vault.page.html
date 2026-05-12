@@ -86,6 +86,7 @@
         <div class="health-achievements">
           <span *ngFor="let a of achievements" class="achv-pill"
             [class.achv-locked]="!a.unlocked"
+            [attr.data-achv-id]="a.id"
             [attr.title]="a.hint">
             <ph-shield-check *ngIf="a.icon === 'shield-check'" weight="fill" size="11"></ph-shield-check>
             <ph-check-circle *ngIf="a.icon === 'check-circle'" weight="fill" size="11"></ph-check-circle>
