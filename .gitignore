@@ -69,3 +69,7 @@ README.md
 
 # DATOS LOCALES DE N8N
 automation/n8n/data/
+
+# ARTEFACTOS DE GRAPHIFY (HERRAMIENTA LOCAL)
+.graphify_detect.json
+graphify-out/
