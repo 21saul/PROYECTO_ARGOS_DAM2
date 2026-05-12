@@ -1,149 +1,308 @@
+<!-- HEADER NATIVO DE IONIC CON BOTON DE RETROCESO -->
 <ion-header>
   <ion-toolbar>
     <ion-buttons slot="start">
       <ion-back-button defaultHref="/dashboard" text=""></ion-back-button>
     </ion-buttons>
     <ion-title>Mi Progreso</ion-title>
-    <ion-buttons slot="end">
-      <ion-button>
-        <ph-trophy weight="fill" size="24"></ph-trophy>
-      </ion-button>
-    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
+<!-- CONTENEDOR PRINCIPAL — TODA LA ANIMACION GSAP SE SCOPEA A #pageRoot -->
 <ion-content>
+  <div class="roadmap-root" #pageRoot>
 
-  <!-- STATS BAR -->
-  <div class="stats-bar">
-    <div class="stat-item">
-      <span class="stat-val"><ph-fire weight="fill"></ph-fire> {{stats.streak}}</span>
-      <span class="stat-lbl">RACHA</span>
+    <!-- ═══════════════════════════════════════════════════════════
+         PARTICULAS DE FONDO — PARALLAX SUTIL SCROLL-LINKED
+         (LAS DESACTIVA prefers-reduced-motion VIA CSS)
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="bg-particles" aria-hidden="true">
+      <span
+        *ngFor="let p of bgParticles"
+        class="bg-particle"
+        [style.left.%]="p.x"
+        [style.top.%]="p.y"
+        [style.width.px]="p.size"
+        [style.height.px]="p.size"
+        [style.background]="p.color"
+        [style.opacity]="p.opacity"></span>
     </div>
-    <div class="stat-divider"></div>
-    <div class="stat-item">
-      <span class="stat-val"><ph-star weight="fill"></ph-star> {{stats.xp}}</span>
-      <span class="stat-lbl">XP</span>
-    </div>
-    <div class="stat-divider"></div>
-    <div class="stat-item">
-      <span class="stat-val"><ph-trophy weight="fill"></ph-trophy> {{stats.level}}</span>
-      <span class="stat-lbl">NIVEL</span>
-    </div>
-  </div>
 
-  <!-- SELECTOR DE ITINERARIOS -->
-  <div class="itinerary-scroll">
-    <div class="itinerary-pills">
-      <button
-        *ngFor="let it of itineraries"
-        class="itinerary-pill"
-        [class.active]="activeItinerary.id === it.id"
-        (click)="selectItinerary(it)">
-        <ng-container [ngSwitch]="it.id">
-          <ph-leaf             *ngSwitchCase="'beginner'" weight="fill" size="20"></ph-leaf>
-          <ph-globe            *ngSwitchCase="'pentest'"  weight="fill" size="20"></ph-globe>
-          <ph-terminal-window  *ngSwitchCase="'linux'"    weight="fill" size="20"></ph-terminal-window>
-          <ph-shield-check     *ngSwitchCase="'soc'"      weight="fill" size="20"></ph-shield-check>
-          <ph-skull            *ngSwitchCase="'redteam'"  weight="fill" size="20"></ph-skull>
-        </ng-container>
-        {{it.label}}
-      </button>
-    </div>
-  </div>
-
-  <!-- CARD DE PROGRESO -->
-  <div class="progress-card gradient-primary">
-    <div class="progress-card-top">
-      <div>
-        <div class="progress-card-title">{{activeItinerary.label}}</div>
-        <div class="progress-card-sub">{{activeItinerary.completed}} de {{activeItinerary.total}} nodos</div>
-      </div>
-      <div class="progress-pct">{{activeItinerary.progress}}%</div>
-    </div>
-    <div class="progress-track">
-      <div class="progress-fill" [style.width]="activeItinerary.progress + '%'"></div>
-    </div>
-  </div>
-
-  <!-- MAPA DE NODOS -->
-  <div class="nodes-map">
-    <ng-container *ngFor="let node of activeItinerary.nodes; let i = index">
-
-      <div class="node-row"
-        [class.row-left]="i % 4 === 0"
-        [class.row-mid-left]="i % 4 === 1"
-        [class.row-mid-right]="i % 4 === 2"
-        [class.row-right]="i % 4 === 3">
-
-        <!-- TOOLTIP EMPEZAR -->
-        <div *ngIf="node.status === 'active'" class="start-tooltip">
-          <span>EMPEZAR</span>
-          <div class="tooltip-arrow"></div>
+    <!-- ═══════════════════════════════════════════════════════════
+         STATS BAR — HUD DE JUEGO CON COUNT-UP ANIMADO
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="hud-stats">
+      <!-- RACHA — FUEGO QUE PARPADEA EN BUCLE -->
+      <div class="hud-stat hud-stat--streak"
+        [attr.aria-label]="'Racha de ' + stats.streak + ' días'">
+        <div class="hud-stat-icon">
+          <ph-fire weight="fill" size="20"></ph-fire>
         </div>
+        <div class="hud-stat-body">
+          <span class="hud-stat-val number-display">{{ displayStats.streak }}</span>
+          <span class="hud-stat-lbl">RACHA</span>
+        </div>
+      </div>
 
-        <!-- CHIP NODO -->
-        <div class="node-chip"
-          [class]="'chip-' + node.status + ' type-' + node.nodeType"
-          (click)="onNodeTap(node)">
-          <div class="chip-shadow"></div>
-          <div class="chip-base"></div>
-          <div class="chip-top">
+      <!-- XP — ESTRELLA CON PULSO LIGERO -->
+      <div class="hud-stat hud-stat--xp"
+        [attr.aria-label]="stats.xp + ' puntos de experiencia'">
+        <div class="hud-stat-icon">
+          <ph-star weight="fill" size="20"></ph-star>
+        </div>
+        <div class="hud-stat-body">
+          <span class="hud-stat-val number-display">{{ displayStats.xp }}</span>
+          <span class="hud-stat-lbl">XP</span>
+        </div>
+      </div>
 
-            <!-- LESSON: estrella si activo, check si completado, lock si bloqueado -->
-            <ng-container *ngIf="node.nodeType === 'lesson'">
-              <ph-star *ngIf="node.status === 'active'" weight="fill" size="38" class="chip-icon"></ph-star>
-              <ph-check *ngIf="node.status === 'completed'" weight="bold" size="34" class="chip-icon"></ph-check>
-              <ph-lock *ngIf="node.status === 'locked'" weight="fill" size="28" class="chip-icon"></ph-lock>
-            </ng-container>
+      <!-- NIVEL — TROFEO CON HALO VIOLETA DETRAS -->
+      <div class="hud-stat hud-stat--level"
+        [attr.aria-label]="'Nivel ' + stats.level">
+        <div class="hud-stat-icon">
+          <ph-trophy weight="fill" size="20"></ph-trophy>
+        </div>
+        <div class="hud-stat-body">
+          <span class="hud-stat-val number-display">{{ displayStats.level }}</span>
+          <span class="hud-stat-lbl">NIVEL</span>
+        </div>
+      </div>
+    </div>
 
-            <!-- PRACTICE: mancuerna -->
-            <ng-container *ngIf="node.nodeType === 'practice'">
-              <ph-barbell *ngIf="node.status !== 'locked'" weight="fill" size="34" class="chip-icon"></ph-barbell>
-              <ph-lock *ngIf="node.status === 'locked'" weight="fill" size="28" class="chip-icon"></ph-lock>
-            </ng-container>
+    <!-- ═══════════════════════════════════════════════════════════
+         SELECTOR DE ITINERARIOS — PILLS CON MINI PROGRESS-RING
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="itinerary-scroll">
+      <div class="itinerary-pills">
+        <button
+          *ngFor="let it of itineraries"
+          type="button"
+          class="itinerary-pill"
+          [ngClass]="['color-' + it.color, activeItinerary.id === it.id ? 'active' : '']"
+          [attr.aria-pressed]="activeItinerary.id === it.id"
+          [attr.aria-label]="it.label + ' — ' + it.progress + '% completado'"
+          (click)="selectItinerary(it)">
 
-            <!-- REVIEW: velocímetro -->
-            <ng-container *ngIf="node.nodeType === 'review'">
-              <ph-gauge *ngIf="node.status !== 'locked'" weight="fill" size="34" class="chip-icon"></ph-gauge>
-              <ph-lock *ngIf="node.status === 'locked'" weight="fill" size="28" class="chip-icon"></ph-lock>
-            </ng-container>
+          <!-- MINI PROGRESS-RING SVG (SOLO PILLS INACTIVOS) -->
+          <span *ngIf="activeItinerary.id !== it.id" class="pill-ring" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 14 14">
+              <!-- ANILLO DE FONDO -->
+              <circle cx="7" cy="7" r="5"
+                fill="none" stroke="currentColor" stroke-opacity="0.18" stroke-width="2"/>
+              <!-- PROGRESO REAL — ROTADO -90 PARA EMPEZAR ARRIBA -->
+              <circle cx="7" cy="7" r="5"
+                fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round"
+                [attr.stroke-dasharray]="2 * 3.14159 * 5"
+                [attr.stroke-dashoffset]="pillRingDashoffset(it.progress)"
+                transform="rotate(-90 7 7)"/>
+            </svg>
+          </span>
 
-            <!-- CHEST: cofre -->
-            <ng-container *ngIf="node.nodeType === 'chest'">
-              <ph-treasure-chest weight="fill" size="36" class="chip-icon"></ph-treasure-chest>
-            </ng-container>
+          <!-- ICONO DE FAMILIA DEL ITINERARIO -->
+          <ng-container [ngSwitch]="it.id">
+            <ph-leaf            *ngSwitchCase="'beginner'" weight="fill" size="18"></ph-leaf>
+            <ph-globe           *ngSwitchCase="'pentest'"  weight="fill" size="18"></ph-globe>
+            <ph-terminal-window *ngSwitchCase="'linux'"    weight="fill" size="18"></ph-terminal-window>
+            <ph-shield-check    *ngSwitchCase="'soc'"      weight="fill" size="18"></ph-shield-check>
+            <ph-skull           *ngSwitchCase="'redteam'"  weight="fill" size="18"></ph-skull>
+          </ng-container>
+          <span class="pill-label">{{ it.label }}</span>
+        </button>
+      </div>
+    </div>
 
-            <!-- BOSS: corona/llama -->
-            <ng-container *ngIf="node.nodeType === 'boss'">
-              <ph-crown *ngIf="node.status !== 'locked'" weight="fill" size="36" class="chip-icon"></ph-crown>
-              <ph-lock *ngIf="node.status === 'locked'" weight="fill" size="28" class="chip-icon"></ph-lock>
-            </ng-container>
+    <!-- ═══════════════════════════════════════════════════════════
+         SEASON BANNER — PROGRESO DEL ITINERARIO ACTIVO
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="season-banner"
+      [ngClass]="'color-' + activeItinerary.color">
+      <div class="season-banner-aurora" aria-hidden="true"></div>
+      <div class="season-banner-content">
+        <div class="season-banner-meta">
+          <div class="season-banner-title">{{ activeItinerary.label }}</div>
+          <div class="season-banner-sub">
+            <span class="number-display">{{ activeItinerary.completed }}</span>
+            <span class="season-banner-sub-sep">/</span>
+            <span class="number-display">{{ activeItinerary.total }}</span>
+            <span class="season-banner-sub-lbl">nodos</span>
+          </div>
+        </div>
+        <div class="season-banner-pct number-display">{{ activeItinerary.progress }}%</div>
+      </div>
 
+      <!-- TRACK SEGMENTADO — UN SEGMENTO POR NODO -->
+      <div class="season-progress-track"
+        [style.--season-progress]="activeItinerary.progress + '%'">
+        <!-- BARRA CONTINUA POR DEBAJO -->
+        <div class="season-progress-fill"></div>
+        <!-- SEPARADORES VERTICALES POR ENCIMA — UNO POR NODO -->
+        <ng-container *ngIf="activeItinerary.nodes.length > 0">
+          <span
+            *ngFor="let n of activeItinerary.nodes; let i = index"
+            class="season-progress-tick"
+            [style.left.%]="((i + 1) / activeItinerary.nodes.length) * 100"></span>
+        </ng-container>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         MAPA DE NODOS — SVG CONECTOR + CHIPS + MASCOTAS
+         ═══════════════════════════════════════════════════════════ -->
+    <div *ngIf="activeItinerary.nodes.length > 0; else emptyItinerary"
+      class="nodes-map" #mapHost>
+
+      <!-- CONECTOR SVG ABSOLUTO DETRAS DE LOS CHIPS -->
+      <svg #connectorSvg class="connector-svg"
+        aria-hidden="true" preserveAspectRatio="none"></svg>
+
+      <!-- LISTA DE NODOS — RECORRE EL ITINERARIO ACTIVO -->
+      <ng-container *ngFor="let node of activeItinerary.nodes; let i = index; trackBy: trackByNodeId">
+
+        <!-- FILA INDIVIDUAL DEL NODO — SE OFFSETEA EN X SEGUN i % 4 -->
+        <div class="node-row"
+          [class.row-left]="i % 4 === 0"
+          [class.row-mid-left]="i % 4 === 1"
+          [class.row-mid-right]="i % 4 === 2"
+          [class.row-right]="i % 4 === 3"
+          [attr.data-node-id]="node.id">
+
+          <!-- TOOLTIP "EMPEZAR" SOLO PARA EL NODO ACTIVO -->
+          <div *ngIf="node.status === 'active'" class="start-tooltip">
+            <div class="start-tooltip-glow" aria-hidden="true"></div>
+            <span>EMPEZAR</span>
+            <div class="tooltip-arrow"></div>
+          </div>
+
+          <!-- CHIP DEL NODO — BOTON CON ROLES ARIA Y ESTADOS -->
+          <div class="node-chip"
+            [ngClass]="['chip-' + node.status, 'type-' + node.nodeType]"
+            role="button"
+            tabindex="0"
+            [attr.aria-disabled]="node.status === 'locked'"
+            [attr.aria-label]="node.title + ' — ' + node.subtitle"
+            (click)="onNodeTap(node)"
+            (keydown.enter)="onNodeTap(node)"
+            (keydown.space)="onNodeTap(node); $event.preventDefault()">
+
+            <!-- ANILLO SVG DE PROGRESO — VIVE DENTRO DEL CHIP PARA QUE
+                 50/50 + translate -50% LO AUTOCENTREN SOBRE LA CARA SUPERIOR
+                 SIN INVADIR LA FILA SUPERIOR (COFRE DE XP) NI LA CAPTION -->
+            <div *ngIf="node.status === 'active'" class="active-ring" aria-hidden="true">
+              <svg width="92" height="92" viewBox="0 0 92 92">
+                <circle cx="46" cy="46" r="38"
+                  fill="none" stroke="var(--color-surface-2)"
+                  stroke-width="4"/>
+                <circle cx="46" cy="46" r="38"
+                  fill="none" stroke="var(--color-primary)"
+                  stroke-width="4" stroke-linecap="round"
+                  [attr.stroke-dasharray]="2 * 3.14159 * 38"
+                  [attr.stroke-dashoffset]="(2 * 3.14159 * 38) * (1 - (node.progress || 0) / 100)"
+                  transform="rotate(-90 46 46)"/>
+              </svg>
+            </div>
+
+            <!-- SOMBRA DURA INFERIOR (PROFUNDIDAD 3D) -->
+            <div class="chip-shadow"></div>
+            <!-- "ZOCALO" 3D DEL CHIP — TONO MAS OSCURO -->
+            <div class="chip-base"></div>
+
+            <!-- CARA SUPERIOR DEL CHIP CON EL ICONO -->
+            <div class="chip-top">
+
+              <!-- LESSON: ESTRELLA / CHECK / LOCK SEGUN ESTADO -->
+              <ng-container *ngIf="node.nodeType === 'lesson'">
+                <ph-star *ngIf="node.status === 'active'" weight="fill" size="38" class="chip-icon"></ph-star>
+                <ph-check *ngIf="node.status === 'completed'" weight="bold" size="34" class="chip-icon"></ph-check>
+                <ph-lock *ngIf="node.status === 'locked'" weight="fill" size="28" class="chip-icon"></ph-lock>
+              </ng-container>
+
+              <!-- PRACTICE: MANCUERNA O LOCK -->
+              <ng-container *ngIf="node.nodeType === 'practice'">
+                <ph-barbell *ngIf="node.status !== 'locked'" weight="fill" size="34" class="chip-icon"></ph-barbell>
+                <ph-lock *ngIf="node.status === 'locked'" weight="fill" size="28" class="chip-icon"></ph-lock>
+              </ng-container>
+
+              <!-- REVIEW: VELOCIMETRO O LOCK -->
+              <ng-container *ngIf="node.nodeType === 'review'">
+                <ph-gauge *ngIf="node.status !== 'locked'" weight="fill" size="34" class="chip-icon"></ph-gauge>
+                <ph-lock *ngIf="node.status === 'locked'" weight="fill" size="28" class="chip-icon"></ph-lock>
+              </ng-container>
+
+              <!-- CHEST: COFRE (SIEMPRE VISIBLE; LOCKED VIENE DESATURADO POR CSS) -->
+              <ng-container *ngIf="node.nodeType === 'chest'">
+                <ph-treasure-chest weight="fill" size="36" class="chip-icon"></ph-treasure-chest>
+              </ng-container>
+
+              <!-- BOSS: CORONA O LOCK -->
+              <ng-container *ngIf="node.nodeType === 'boss'">
+                <ph-crown *ngIf="node.status !== 'locked'" weight="fill" size="36" class="chip-icon"></ph-crown>
+                <ph-lock *ngIf="node.status === 'locked'" weight="fill" size="28" class="chip-icon"></ph-lock>
+              </ng-container>
+            </div>
+
+            <!-- PARTICULAS ASCENDENTES — SOLO PARA BOSS NO BLOQUEADO -->
+            <div *ngIf="node.nodeType === 'boss' && node.status !== 'locked'"
+              class="boss-particles" aria-hidden="true">
+              <span></span><span></span><span></span><span></span>
+            </div>
+
+            <!-- MEDALLA FLOTANTE — SOLO EN NODOS COMPLETADOS -->
+            <div *ngIf="node.status === 'completed'" class="chip-medal" aria-hidden="true">
+              <ph-medal weight="fill" size="14"></ph-medal>
+            </div>
+          </div>
+
+          <!-- CAPTION (TITULO + XP) DEBAJO DEL CHIP -->
+          <div class="node-caption" [class.locked]="node.status === 'locked'">
+            <div class="node-caption-title">{{ node.title }}</div>
+            <div *ngIf="node.status !== 'locked'" class="node-caption-xp">+{{ node.xp }} XP</div>
+          </div>
+
+          <!-- TOAST INLINE DE BLOQUEO — APARECE 2s AL TOCAR UN LOCKED -->
+          <div *ngIf="lockedToastId === node.id" class="locked-toast" role="status">
+            <ph-lock-key weight="fill" size="14"></ph-lock-key>
+            <span>Completa el nodo anterior</span>
           </div>
         </div>
 
-        <!-- CAPTION -->
-        <div class="node-caption" [class.locked]="node.status === 'locked'">
-          <div class="node-caption-title">{{node.title}}</div>
-          <div *ngIf="node.status !== 'locked'" class="node-caption-xp">+{{node.xp}} XP</div>
+        <!-- ESCENA DE MASCOTA — APARECE TRAS LOS NODOS ESPECIFICADOS -->
+        <ng-container *ngFor="let scene of mascotScenes">
+          <div *ngIf="scene.afterIndex === i" class="scene-mascot"
+            [class.scene-left]="scene.side === 'left'"
+            [class.scene-right]="scene.side === 'right'"
+            aria-hidden="true">
+            <app-argus-cub [size]="104" [mood]="scene.mood"></app-argus-cub>
+          </div>
+        </ng-container>
+
+      </ng-container>
+
+      <!-- ESPACIO INFERIOR PARA NO COLISIONAR CON LA TAB BAR -->
+      <div class="map-bottom-spacer"></div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         ESTADO VACIO — ITINERARIOS SIN NODOS DEFINIDOS AUN
+         ═══════════════════════════════════════════════════════════ -->
+    <ng-template #emptyItinerary>
+      <div class="itinerary-empty">
+        <div class="itinerary-empty-mascot">
+          <app-argus-cub [size]="132" mood="sleeping"></app-argus-cub>
         </div>
-
+        <h2 class="itinerary-empty-title font-display">Próximamente</h2>
+        <p class="itinerary-empty-desc">
+          El itinerario <strong>{{ activeItinerary.label }}</strong>
+          aún está en desarrollo. Avanza en
+          <strong>Principiante</strong> mientras lo terminamos.
+        </p>
+        <button type="button" class="itinerary-empty-cta"
+          (click)="selectItinerary(itineraries[0])">
+          <ph-arrow-left weight="bold" size="16"></ph-arrow-left>
+          Volver a Principiante
+        </button>
       </div>
+    </ng-template>
 
-      <!-- ESCENA MASCOTA DURMIENTE cada 5 nodos -->
-      <div *ngIf="i === 4 || i === 9" class="scene-mascot"
-        [class.scene-left]="i === 4"
-        [class.scene-right]="i === 9">
-        <div class="zzz">z<span>z</span><span>z</span></div>
-        <div class="sleep-bubble">
-          <ph-moon weight="fill" size="24" style="color:var(--color-secondary)"></ph-moon>
-        </div>
-      </div>
-
-    </ng-container>
-
-    <div style="height:80px"></div>
   </div>
-
 </ion-content>
