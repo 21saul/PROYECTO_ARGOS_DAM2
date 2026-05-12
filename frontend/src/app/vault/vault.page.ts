@@ -6,7 +6,7 @@
 // SUBTIPOS LOGIN/CARD/IDENTITY/APIKEY/SEED/NOTE/FILE VIVEN EN payload.kind
 // Y NUNCA SALEN AL SERVIDOR EN CLARO — SOLO DENTRO DEL BLOB CIFRADO.
 
-import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonContent } from '@ionic/angular';
 import { gsap } from 'gsap';
@@ -355,6 +355,19 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
   // HOOK QUE FIJA viewReady PARA QUE LAS ANIMACIONES PUEDAN USAR EL DOM
   ngAfterViewInit() {
     this.viewReady = true;
+  }
+
+  // ESCAPE GLOBAL: CIERRA EL OVERLAY ABIERTO MAS RECIENTE EN ORDEN DE PRIORIDAD
+  // PRIORIDAD: ONBOARDING > CONFIRM-DELETE > CUSTOMIZE > PASSWORD > NOTE > FOLDER > FAB
+  @HostListener('document:keydown.escape')
+  onEscape() {
+    if (this.onboardingStep >= 0) return this.skipOnboarding();
+    if (this.confirmDelete) return this.cancelDelete();
+    if (this.customizeOpen) return this.closeCustomize();
+    if (this.addPasswordOpen) return this.cancelAddPassword();
+    if (this.addNoteOpen) return this.cancelAddNote();
+    if (this.addFolderOpen) return this.cancelAddFolder();
+    if (this.fabOpen) this.fabOpen = false;
   }
 
   // CALLBACK DE IONIC AL ENTRAR EN LA VISTA, DISPARA ANIMACIONES
@@ -718,7 +731,14 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
     this.showPasswordInForm = false;
     this.addPasswordOpen = true;
   }
-  cancelAddPassword() { this.addPasswordOpen = false; this.editingItem = null; }
+  cancelAddPassword() {
+    this.addPasswordOpen = false;
+    this.editingItem = null;
+    // LIMPIA EXPLICITAMENTE LA CONTRASENA Y EL TOGGLE DE VISIBILIDAD AL SALIR
+    this.formPassword.password = '';
+    this.showPasswordInForm = false;
+    this.generatorOpen = false;
+  }
 
   async submitAddPassword() {
     if (!this.formPassword.title.trim()) return;
@@ -1115,9 +1135,12 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
     this.showPasswordInForm = true;
   }
 
-  // DESTRUCTOR: LIMPIA TWEENS Y TIMERS PARA EVITAR FUGAS
+  // DESTRUCTOR: LIMPIA TWEENS, TIMERS Y CUALQUIER CONTRASENA EN FORMS ABIERTOS
   ngOnDestroy() {
     this.clearCopyTimer();
+    // BORRA CUALQUIER CONTRASENA QUE QUEDARA EN MEMORIA DEL FORM AL NAVEGAR
+    this.formPassword.password = '';
+    this.showPasswordInForm = false;
     if (this.onboardSplit) { try { this.onboardSplit.revert(); } catch {} this.onboardSplit = null; }
     gsap.killTweensOf('.vault-health-card, .stat-pill, .folder-card, .vault-item, .tab-pill, .bento-favorite, .onboard-title, .achv-pill');
   }
