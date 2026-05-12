@@ -1,8 +1,9 @@
-import { Component, AfterViewInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
+import { Component, AfterViewInit, OnDestroy, OnInit, ElementRef, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { gsap } from 'gsap';
 import { Chart, RadarController, RadialLinearScale, PointElement,
   LineElement, Filler, Tooltip, LineController, CategoryScale, LinearScale } from 'chart.js';
+import { AuditorService, HibpCheckResult, PrivacyScoreRecord } from '../services/auditor.service';
 
 Chart.register(RadarController, RadialLinearScale, PointElement,
   LineElement, Filler, Tooltip, LineController, CategoryScale, LinearScale);
@@ -26,29 +27,43 @@ interface Threat {
   styleUrls: ['./auditor.page.scss'],
   standalone: false
 })
-export class AuditorPage implements AfterViewInit, OnDestroy {
+export class AuditorPage implements OnInit, AfterViewInit, OnDestroy {
 
   @ViewChild('radarCanvas') radarCanvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('trendCanvas') trendCanvas!: ElementRef<HTMLCanvasElement>;
 
-  privacyScore = 78;
-  scoreLastMonth = 64;
+  // PUNTUACION GLOBAL ACTUAL Y DE REFERENCIA HISTORICA
+  privacyScore = 0;
+  scoreLastMonth = 0;
   percentileRank = 73;
   protectionValue = 2840;
   hoursSaved = 12;
   scansThisMonth = 47;
 
+  // ESTADO DE LA CARGA DE DATOS REALES DEL BACKEND
+  loading = true;
+
+  // ULTIMO SCORE RECUPERADO DEL BACKEND
+  latestScore: PrivacyScoreRecord | null = null;
+  // HISTORICO DE LAS ULTIMAS 8 SEMANAS
+  history: PrivacyScoreRecord[] = [];
+
+  // ESTADO DE LA VERIFICACION DE CONTRASENA EN HIBP
+  passwordCheckResult: HibpCheckResult | null = null;
+  checkingPassword = false;
+  passwordInput = '';
+
   radarChart: Chart | null = null;
   trendChart: Chart | null = null;
 
   pillars: ScorePillar[] = [
-    { label: 'Identidad', icon: 'identification-card', score: 60, max: 100,
+    { label: 'Identidad', icon: 'identification-card', score: 0, max: 100,
       color: 'var(--color-secondary)', desc: '2 filtraciones activas',
       status: 'medium', improvement: 18 },
-    { label: 'Contraseñas', icon: 'key', score: 85, max: 100,
+    { label: 'Contraseñas', icon: 'key', score: 0, max: 100,
       color: 'var(--color-primary)', desc: '1 reutilizada en 3 sitios',
       status: 'good', improvement: 8 },
-    { label: 'Dispositivo', icon: 'device-mobile', score: 90, max: 100,
+    { label: 'Dispositivo', icon: 'device-mobile', score: 0, max: 100,
       color: 'var(--color-success)', desc: 'Biometría y bloqueo activos',
       status: 'good', improvement: 4 },
   ];
@@ -65,8 +80,9 @@ export class AuditorPage implements AfterViewInit, OnDestroy {
   radarLabels = ['Linux', 'Web', 'Redes', 'Cripto', 'OSINT'];
   radarData = [65, 45, 80, 55, 30];
 
-  trendLabels = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'Hoy'];
-  trendData = [52, 58, 61, 64, 67, 72, 75, 78];
+  // LABELS Y DATOS DEL GRAFICO DE TENDENCIA (SE RELLENAN AL CARGAR EL HISTORICO)
+  trendLabels: string[] = [];
+  trendData: number[] = [];
 
   topAction = {
     title: 'Activa 2FA en tu Gmail',
@@ -76,7 +92,69 @@ export class AuditorPage implements AfterViewInit, OnDestroy {
     icon: 'shield-check'
   };
 
-  constructor(private router: Router) {}
+  // CONSTRUCTOR QUE INYECTA EL ROUTER Y EL SERVICIO DEL AUDITOR
+  constructor(private router: Router, private auditor: AuditorService) {}
+
+  // CARGA INICIAL DE DATOS REALES DEL BACKEND
+  async ngOnInit() {
+    try {
+      // SEMILLA DE 8 PUNTOS SI EL HISTORICO ESTA VACIO
+      await this.auditor.seedDemoHistory();
+      // REFRESCO DE PROPIEDADES CON LOS DATOS DEL BACKEND
+      await this.refresh();
+    } catch (err) {
+      // SI ALGO FALLA SE REGISTRA Y LA UI MUESTRA FALLBACKS
+      console.error('Error cargando auditor:', err);
+    } finally {
+      // FIN DEL ESTADO DE CARGA AUNQUE HAYA HABIDO ERRORES
+      this.loading = false;
+    }
+  }
+
+  // REFRESCA latestScore, history Y DERIVADOS PARA LA UI
+  async refresh() {
+    // RECUPERA EL ULTIMO REGISTRO DE PRIVACY SCORE
+    this.latestScore = await this.auditor.getLatestScore();
+    // RECUPERA EL HISTORICO DE LAS ULTIMAS 8 SEMANAS
+    this.history = await this.auditor.getScoreHistory(8);
+
+    // ACTUALIZA LOS VALORES NUMERICOS QUE USAN LAS ANIMACIONES
+    if (this.latestScore) {
+      this.privacyScore = this.latestScore.score;
+      // ACTUALIZA EL SCORE DE LOS 3 PILARES CON LOS DATOS REALES
+      this.pillars[0].score = this.latestScore.identity_score;
+      this.pillars[1].score = this.latestScore.passwords_score;
+      this.pillars[2].score = this.latestScore.device_score;
+    }
+
+    // USA EL PRIMER PUNTO DEL HISTORICO COMO REFERENCIA PARA EL DELTA
+    if (this.history.length > 0) {
+      this.scoreLastMonth = this.history[0].score;
+    }
+
+    // ALIMENTA EL GRAFICO DE TENDENCIA CON LOS PUNTOS REALES
+    // LAS ETIQUETAS SE NUMERAN COMO S1..SN PARA QUE SEA LEGIBLE
+    this.trendData = this.history.map(h => h.score);
+    this.trendLabels = this.history.map((_, i) => `S${i + 1}`);
+  }
+
+  // HANDLER DEL BOTON VERIFICAR CONTRASENA
+  async onCheckPassword(passwordInput: string) {
+    // IGNORA SI EL INPUT ESTA VACIO
+    if (!passwordInput) return;
+    // ACTIVA EL ESTADO DE CARGA DEL CHECK
+    this.checkingPassword = true;
+    try {
+      // CONSULTA HIBP A TRAVES DEL SERVICIO (K-ANONYMITY)
+      this.passwordCheckResult = await this.auditor.checkPassword(passwordInput);
+    } catch (err) {
+      // REGISTRA EL ERROR SIN ROMPER LA UI
+      console.error('Error verificando contrasena:', err);
+    } finally {
+      // FIN DEL ESTADO DE CARGA DEL CHECK
+      this.checkingPassword = false;
+    }
+  }
 
   ionViewDidEnter() {
     this.animateEntrance();
