@@ -109,9 +109,6 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
   // ORDEN PERSONALIZADO DE FAVORITOS (IDS DE ITEM, MAX 6, PERSISTIDO)
   favoriteIds: number[] = [];
 
-  // TAMANO TOTAL ASIGNADO A LA BOVEDA (CONSTANTE DE PRESENTACION)
-  storageTotalMb = 50;
-
   // ── ESTADO FORMULARIOS ──────────────────────────────────────────────
   // FLAGS DE APERTURA DE LOS MODALES PERSONALIZADOS
   addPasswordOpen = false;
@@ -414,7 +411,7 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
 
   // ORQUESTA LAS ANIMACIONES GSAP DE ENTRADA RESPETANDO REDUCED-MOTION
   animateEntrance() {
-    gsap.killTweensOf('.vault-health-card, .stat-pill, .folder-card, .vault-item, .tab-pill, .bento-favorite');
+    gsap.killTweensOf('.vault-health-card, .folder-card, .vault-item, .tab-pill, .bento-favorite');
 
     // matchMedia ASEGURA QUE prefers-reduced-motion APAGA LOS BOUNCES
     const mm = gsap.matchMedia();
@@ -446,27 +443,8 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
   labelForItem(item: VaultItem): string { return this.kindMeta[this.itemKind(item)].label; }
 
   // ── FILTRADO ────────────────────────────────────────────────────────
-  // NUMERO TOTAL DE ITEMS PARA EL BANNER
+  // NUMERO TOTAL DE ITEMS PARA EL HEADER
   get totalEntries(): number { return this.items.length; }
-
-  // PORCENTAJE DE CONTRASENAS FUERTES SOBRE EL TOTAL DE CONTRASENAS
-  get strongPercent(): number {
-    const passwords = this.items.filter(i => i.item_type === 'password');
-    if (passwords.length === 0) return 0;
-    const strong = passwords.filter(i => this.itemStrength(i) === 'strong').length;
-    return Math.round((strong / passwords.length) * 100);
-  }
-
-  // CONSUMO ACTUAL DE LA BOVEDA EN MEGABYTES
-  get storageUsedMb(): number {
-    const totalBytes = this.items.reduce((acc, i) => acc + (i.size_bytes || 0), 0);
-    return Math.round((totalBytes / (1024 * 1024)) * 10) / 10;
-  }
-
-  // PORCENTAJE DE USO DE ALMACENAMIENTO PARA LA BARRA
-  getStorageProgress(): number {
-    return (this.storageUsedMb / this.storageTotalMb) * 100;
-  }
 
   // LISTA DE ITEMS FILTRADOS POR PESTANA, CARPETA Y BUSQUEDA
   // BUSQUEDA AMPLIADA: TITULO + USERNAME + URL + NOTES + NOMBRE DE CARPETA
@@ -1142,6 +1120,6 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
     this.formPassword.password = '';
     this.showPasswordInForm = false;
     if (this.onboardSplit) { try { this.onboardSplit.revert(); } catch {} this.onboardSplit = null; }
-    gsap.killTweensOf('.vault-health-card, .stat-pill, .folder-card, .vault-item, .tab-pill, .bento-favorite, .onboard-title, .achv-pill');
+    gsap.killTweensOf('.vault-health-card, .folder-card, .vault-item, .tab-pill, .bento-favorite, .onboard-title, .achv-pill');
   }
 }
