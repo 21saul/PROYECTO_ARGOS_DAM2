@@ -1,4 +1,6 @@
 // COMPONENTE STANDALONE QUE RENDERIZA LA MASCOTA ARGUS EN SVG
+// REDISENO INSPIRADO EN UN TITAN-CHIBI: PELO REVUELTO, OREJAS PUNTIAGUDAS,
+// OJOS VERDES BRILLANTES Y DIENTES EXPUESTOS EN SONRISA GUARDIANA.
 import { Component, Input } from '@angular/core';
 // MODULO COMUN DE ANGULAR PARA DIRECTIVAS BASICAS
 import { CommonModule } from '@angular/common';
@@ -11,91 +13,192 @@ import { CommonModule } from '@angular/common';
     <div class="argus-wrap" [style.width.px]="size" [style.height.px]="size">
       <svg [attr.width]="size" [attr.height]="size" viewBox="0 0 120 120"
         fill="none" xmlns="http://www.w3.org/2000/svg"
-        class="argus-svg" [class.argus-idle]="mood === 'idle'"
+        class="argus-svg"
+        [class.argus-idle]="mood === 'idle'"
         [class.argus-happy]="mood === 'happy'"
-        [class.argus-alert]="mood === 'alert'">
+        [class.argus-alert]="mood === 'alert'"
+        aria-hidden="true">
 
-        <!-- FILTRO GLOW PARA GEMAS — DEFINIDO PRIMERO PARA QUE EXISTA AL REFERENCIARLO -->
+        <!-- DEFINICIONES — FILTROS Y GRADIENTES -->
         <defs>
-          <filter id="gemGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="2" result="blur"/>
+          <!-- GLOW INTENSO PARA LOS OJOS BRILLANTES -->
+          <filter id="argusEyeGlow" x="-100%" y="-100%" width="300%" height="300%">
+            <feGaussianBlur stdDeviation="1.6" result="blur"/>
             <feMerge>
               <feMergeNode in="blur"/>
               <feMergeNode in="SourceGraphic"/>
             </feMerge>
           </filter>
+          <!-- GRADIENTE DE PIEL — TONO MAS CLARO ARRIBA, SOMBRA ABAJO -->
+          <linearGradient id="argusSkin" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#F2C9AC"/>
+            <stop offset="100%" stop-color="#D49B7A"/>
+          </linearGradient>
+          <!-- GRADIENTE DE PELO — CASTANO OSCURO CON BRILLOS -->
+          <linearGradient id="argusHair" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#5C3A1F"/>
+            <stop offset="60%" stop-color="#3D2412"/>
+            <stop offset="100%" stop-color="#2A1810"/>
+          </linearGradient>
         </defs>
 
-        <!-- CUERPO PRINCIPAL — TITAN CHIBI RECHONCHO -->
-        <ellipse cx="60" cy="75" rx="32" ry="28" fill="var(--color-primary)"/>
+        <!-- SOMBRA BASE EN EL SUELO BAJO LA MASCOTA -->
+        <ellipse cx="60" cy="116" rx="22" ry="3" fill="rgba(0,0,0,0.25)"/>
 
-        <!-- CABEZA -->
-        <circle cx="60" cy="44" r="26" fill="var(--color-primary)"/>
+        <!-- ════════ CUERPO ════════ -->
+        <!-- PIERNAS — CHIBI RECHONCHAS Y FIRMES -->
+        <ellipse cx="50" cy="106" rx="8" ry="9" fill="url(#argusSkin)"/>
+        <ellipse cx="70" cy="106" rx="8" ry="9" fill="url(#argusSkin)"/>
+        <!-- PIES -->
+        <ellipse cx="49" cy="113" rx="7" ry="2.6" fill="#B8825F"/>
+        <ellipse cx="71" cy="113" rx="7" ry="2.6" fill="#B8825F"/>
 
-        <!-- SOMBRA INTERNA CABEZA -->
-        <circle cx="60" cy="48" r="24"
-          fill="color-mix(in srgb, var(--color-primary) 85%, black)"/>
+        <!-- TORSO MUSCULADO CHIBI -->
+        <path d="M 43 78
+                 Q 60 74 77 78
+                 L 79 100
+                 Q 60 104 41 100 Z"
+              fill="url(#argusSkin)"/>
+        <!-- SOMBREADO DE ABDOMINALES — LINEAS SUTILES -->
+        <line x1="60" y1="80" x2="60" y2="100"
+              stroke="#B8825F" stroke-width="0.8" opacity="0.55"/>
+        <path d="M 52 84 Q 60 82 68 84" stroke="#B8825F"
+              stroke-width="0.7" fill="none" opacity="0.45"/>
+        <path d="M 51 91 Q 60 89 69 91" stroke="#B8825F"
+              stroke-width="0.7" fill="none" opacity="0.45"/>
+        <!-- CLAVICULAS -->
+        <path d="M 46 79 Q 53 76 58 78" stroke="#B8825F"
+              stroke-width="0.7" fill="none" opacity="0.55"/>
+        <path d="M 74 79 Q 67 76 62 78" stroke="#B8825F"
+              stroke-width="0.7" fill="none" opacity="0.55"/>
 
-        <!-- OJO GRANDE — CARACTERISTICA PRINCIPAL DE ARGUS -->
-        <ellipse cx="60" cy="44" rx="16" ry="13" fill="white"/>
-        <!-- IRIS -->
-        <circle cx="60" cy="44" r="9"
-          fill="color-mix(in srgb, var(--color-secondary) 90%, black)"/>
-        <!-- PUPILA -->
-        <circle cx="60" cy="44" r="5" fill="#0F0F1A"/>
-        <!-- BRILLO DEL OJO -->
-        <circle cx="55" cy="39" r="3" fill="white" opacity="0.9"/>
-        <circle cx="64" cy="47" r="1.5" fill="white" opacity="0.6"/>
+        <!-- BRAZO IZQUIERDO + PUNO -->
+        <ellipse cx="34" cy="86" rx="6.5" ry="10"
+                 fill="url(#argusSkin)" transform="rotate(-12 34 86)"/>
+        <circle cx="30" cy="96" r="5.5" fill="url(#argusSkin)"/>
+        <!-- NUDILLOS PUNO IZQUIERDO -->
+        <path d="M 27 94 L 27 96 M 30 93 L 30 95 M 33 94 L 33 96"
+              stroke="#B8825F" stroke-width="0.6" opacity="0.6"/>
 
-        <!-- PARPADO SUPERIOR -->
-        <path class="eyelid-top"
-          d="M44 37 Q60 28 76 37" stroke="var(--color-primary)"
-          stroke-width="4" stroke-linecap="round" fill="none"/>
+        <!-- BRAZO DERECHO + PUNO -->
+        <ellipse cx="86" cy="86" rx="6.5" ry="10"
+                 fill="url(#argusSkin)" transform="rotate(12 86 86)"/>
+        <circle cx="90" cy="96" r="5.5" fill="url(#argusSkin)"/>
+        <!-- NUDILLOS PUNO DERECHO -->
+        <path d="M 87 94 L 87 96 M 90 93 L 90 95 M 93 94 L 93 96"
+              stroke="#B8825F" stroke-width="0.6" opacity="0.6"/>
 
-        <!-- CEJAS DINAMICAS SEGUN ESTADO -->
-        <path class="eyebrow" [attr.d]="eyebrowPath"
-          stroke="color-mix(in srgb, var(--color-primary) 60%, black)"
-          stroke-width="3.5" stroke-linecap="round" fill="none"/>
+        <!-- ════════ CABEZA Y CARA ════════ -->
+        <!-- PELO TRASERO — SILUETA DETRAS DE LA CABEZA -->
+        <path d="M 30 50
+                 Q 24 18 60 16
+                 Q 96 18 90 50
+                 Q 92 64 84 68
+                 L 36 68
+                 Q 28 64 30 50 Z"
+              fill="url(#argusHair)"/>
 
-        <!-- MEJILLAS RUBORIZADAS -->
-        <ellipse cx="42" cy="52" rx="7" ry="4"
-          fill="var(--color-secondary)" opacity="0.35"/>
-        <ellipse cx="78" cy="52" rx="7" ry="4"
-          fill="var(--color-secondary)" opacity="0.35"/>
+        <!-- CARA — OVALO DE PIEL VISIBLE -->
+        <ellipse cx="60" cy="46" rx="22" ry="22" fill="url(#argusSkin)"/>
 
-        <!-- BOCA DINAMICA SEGUN ESTADO -->
-        <path class="mouth" [attr.d]="mouthPath"
-          stroke="color-mix(in srgb, var(--color-primary) 50%, black)"
-          stroke-width="2.5" stroke-linecap="round" fill="none"/>
+        <!-- OREJAS PUNTIAGUDAS A AMBOS LADOS -->
+        <path d="M 38 46 L 30 50 L 36 56 Z" fill="url(#argusSkin)"/>
+        <path d="M 82 46 L 90 50 L 84 56 Z" fill="url(#argusSkin)"/>
+        <!-- SOMBRA INTERIOR OREJA -->
+        <path d="M 36 50 L 33 52 L 36 55 Z" fill="#B8825F" opacity="0.6"/>
+        <path d="M 84 50 L 87 52 L 84 55 Z" fill="#B8825F" opacity="0.6"/>
 
-        <!-- ARMADURA — PETO CON GEMAS -->
-        <rect x="34" y="80" width="52" height="28"
-          rx="12" fill="color-mix(in srgb, var(--color-primary) 70%, black)"/>
-        <!-- GEMA CENTRAL CON GLOW -->
-        <ellipse cx="60" cy="90" rx="6" ry="5"
-          fill="var(--color-accent)"
-          filter="url(#gemGlow)"/>
-        <!-- GEMAS LATERALES -->
-        <circle cx="44" cy="87" r="3.5"
-          fill="var(--color-secondary)" opacity="0.9"/>
-        <circle cx="76" cy="87" r="3.5"
-          fill="var(--color-secondary)" opacity="0.9"/>
+        <!-- MECHONES FRONTALES — FLECOS PUNTIAGUDOS SOBRE LA FRENTE -->
+        <path d="M 32 30
+                 L 36 46
+                 L 40 32
+                 L 45 48
+                 L 50 34
+                 L 55 46
+                 L 60 30
+                 L 65 46
+                 L 70 34
+                 L 75 48
+                 L 80 32
+                 L 84 46
+                 L 88 30
+                 Q 88 18 60 16
+                 Q 32 18 32 30 Z"
+              fill="url(#argusHair)"/>
 
-        <!-- BRAZO IZQUIERDO -->
-        <ellipse cx="26" cy="82" rx="9" ry="14"
-          fill="color-mix(in srgb, var(--color-primary) 80%, black)"
-          transform="rotate(-15 26 82)"/>
-        <!-- BRAZO DERECHO -->
-        <ellipse cx="94" cy="82" rx="9" ry="14"
-          fill="color-mix(in srgb, var(--color-primary) 80%, black)"
-          transform="rotate(15 94 82)"/>
+        <!-- MECHONES LATERALES — CAEN POR LOS COSTADOS DE LA CARA -->
+        <path d="M 32 38
+                 Q 24 52 28 64
+                 Q 33 70 38 64
+                 L 40 50
+                 Q 36 44 32 38 Z"
+              fill="url(#argusHair)"/>
+        <path d="M 88 38
+                 Q 96 52 92 64
+                 Q 87 70 82 64
+                 L 80 50
+                 Q 84 44 88 38 Z"
+              fill="url(#argusHair)"/>
 
-        <!-- PIERNA IZQUIERDA -->
-        <ellipse cx="47" cy="110" rx="10" ry="8"
-          fill="color-mix(in srgb, var(--color-primary) 65%, black)"/>
-        <!-- PIERNA DERECHA -->
-        <ellipse cx="73" cy="110" rx="10" ry="8"
-          fill="color-mix(in srgb, var(--color-primary) 65%, black)"/>
+        <!-- MECHON SUPERIOR — ANTENA ICONICA -->
+        <path d="M 56 18 L 58 8 L 62 14 L 64 8 L 66 18 Z"
+              fill="url(#argusHair)"/>
+
+        <!-- BRILLOS DE PELO — LINEAS CLARAS PARA TEXTURA -->
+        <path d="M 40 26 L 44 38" stroke="#7A5230"
+              stroke-width="1.1" stroke-linecap="round" opacity="0.55"/>
+        <path d="M 54 24 L 56 36" stroke="#7A5230"
+              stroke-width="1.1" stroke-linecap="round" opacity="0.55"/>
+        <path d="M 66 24 L 64 36" stroke="#7A5230"
+              stroke-width="1.1" stroke-linecap="round" opacity="0.55"/>
+        <path d="M 78 26 L 76 38" stroke="#7A5230"
+              stroke-width="1.1" stroke-linecap="round" opacity="0.55"/>
+
+        <!-- HUECOS DE OJOS — SOMBRA OSCURA DEBAJO DEL FLEQUILLO -->
+        <ellipse class="eye-socket" cx="48" cy="44" rx="6" ry="3.5"
+                 fill="#1A0E08"/>
+        <ellipse class="eye-socket" cx="72" cy="44" rx="6" ry="3.5"
+                 fill="#1A0E08"/>
+
+        <!-- OJOS GLOWING VERDE — SLITS BRILLANTES SOBRE EL HUECO OSCURO -->
+        <ellipse class="eye-glow" cx="48" cy="44" rx="4.2" ry="2.2"
+                 fill="#10B981" filter="url(#argusEyeGlow)"/>
+        <ellipse class="eye-glow" cx="72" cy="44" rx="4.2" ry="2.2"
+                 fill="#10B981" filter="url(#argusEyeGlow)"/>
+        <!-- PUNTO BLANCO BRILLANTE — DESTELLO INTERIOR -->
+        <ellipse class="eye-hotspot" cx="48" cy="43.5" rx="1.8" ry="1.1"
+                 fill="#E0FFE5"/>
+        <ellipse class="eye-hotspot" cx="72" cy="43.5" rx="1.8" ry="1.1"
+                 fill="#E0FFE5"/>
+
+        <!-- CEJA / SOMBRA SUPERIOR DEL OJO — DA EXPRESION SEGUN MOOD -->
+        <path class="brow" [attr.d]="browLeftPath" fill="#2A1810"/>
+        <path class="brow" [attr.d]="browRightPath" fill="#2A1810"/>
+
+        <!-- ════════ BOCA — DIENTES EXPUESTOS ════════ -->
+        <!-- CAVIDAD ROJA OSCURA DE LA BOCA -->
+        <path d="M 42 56
+                 Q 60 54 78 56
+                 L 76 68
+                 Q 60 74 44 68 Z"
+              fill="#3A0F0F"/>
+        <!-- LENGUA INTERIOR -->
+        <ellipse cx="60" cy="66" rx="7" ry="2.6" fill="#C8455F"/>
+        <ellipse cx="60" cy="65" rx="5" ry="1.4" fill="#E36A82" opacity="0.7"/>
+        <!-- DIENTES SUPERIORES — ZIGZAG DE COLMILLOS -->
+        <path d="M 42 56
+                 L 45 60 L 48 56 L 51 60 L 54 56 L 57 60 L 60 56
+                 L 63 60 L 66 56 L 69 60 L 72 56 L 75 60 L 78 56
+                 L 78 62 L 42 62 Z"
+              fill="#F5EFE0" stroke="#C9B98A" stroke-width="0.4"/>
+        <!-- DIENTES INFERIORES — ZIGZAG INVERSO -->
+        <path d="M 44 68
+                 L 47 64 L 50 68 L 53 64 L 56 68 L 59 64 L 62 68
+                 L 65 64 L 68 68 L 71 64 L 74 68 L 76 64 L 76 68 Z"
+              fill="#F5EFE0" stroke="#C9B98A" stroke-width="0.4"/>
+        <!-- LABIO SUPERIOR — LINEA SUTIL ENCIMA -->
+        <path d="M 41 56 Q 60 54 79 56" stroke="#B8825F"
+              stroke-width="0.7" fill="none" opacity="0.6"/>
 
       </svg>
     </div>
@@ -108,51 +211,70 @@ import { CommonModule } from '@angular/common';
     }
     .argus-svg {
       transition: transform 0.3s ease;
+      will-change: transform;
     }
-    /* ANIMACION IDLE — FLOTACION SUAVE */
+    /* IDLE — FLOTACION SUAVE */
     .argus-idle {
       animation: argusFloat 3s ease-in-out infinite;
     }
     @keyframes argusFloat {
       0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-6px); }
+      50%      { transform: translateY(-6px); }
     }
-    /* ANIMACION HAPPY — SALTO */
+    /* HAPPY — SALTO RITMICO */
     .argus-happy {
-      animation: argusHappy 0.6s ease infinite;
+      animation: argusHappy 0.9s ease-in-out infinite;
     }
     @keyframes argusHappy {
       0%, 100% { transform: scale(1) translateY(0); }
-      50% { transform: scale(1.08) translateY(-8px); }
+      50%      { transform: scale(1.06) translateY(-8px); }
     }
-    /* ANIMACION ALERT — VIBRACION */
+    /* ALERT — VIBRACION INTENSA */
     .argus-alert {
-      animation: argusAlert 0.3s ease infinite;
+      animation: argusAlert 0.35s ease-in-out infinite;
     }
     @keyframes argusAlert {
       0%, 100% { transform: rotate(0deg); }
-      25% { transform: rotate(-4deg); }
-      75% { transform: rotate(4deg); }
+      25%      { transform: rotate(-4deg); }
+      75%      { transform: rotate(4deg); }
+    }
+    /* PULSO DEL GLOW DE LOS OJOS — MAS RAPIDO EN ALERT */
+    .eye-glow {
+      animation: eyePulse 2.4s ease-in-out infinite;
+      transform-origin: center;
+    }
+    .argus-alert .eye-glow {
+      animation: eyePulse 0.6s ease-in-out infinite;
+    }
+    @keyframes eyePulse {
+      0%, 100% { opacity: 1;   transform: scale(1); }
+      50%      { opacity: 0.7; transform: scale(0.85); }
+    }
+    /* RESPETO DE PREFERENCIA DE MOTION REDUCIDA */
+    @media (prefers-reduced-motion: reduce) {
+      .argus-idle, .argus-happy, .argus-alert, .eye-glow {
+        animation: none;
+      }
     }
   `]
 })
 export class ArgusComponent {
-  // TAMAÑO EN PIXELES DEL CUADRADO QUE OCUPA LA MASCOTA
+  // TAMANO EN PIXELES DEL CUADRADO QUE OCUPA LA MASCOTA
   @Input() size = 80;
-  // ESTADO DE ANIMO QUE CONTROLA ANIMACION Y EXPRESION
+  // ESTADO DE ANIMO QUE CONTROLA ANIMACION Y EXPRESION DE LAS CEJAS
   @Input() mood: 'idle' | 'happy' | 'alert' = 'idle';
 
-  // PATH DE LAS CEJAS SEGUN EL ESTADO DE ANIMO
-  get eyebrowPath(): string {
-    if (this.mood === 'happy')  return 'M46 33 Q60 27 74 33';
-    if (this.mood === 'alert')  return 'M46 30 Q60 34 74 30';
-    return 'M46 32 Q60 28 74 32';
+  // SOMBRA / CEJA IZQUIERDA — ANGULO SEGUN EL ESTADO DE ANIMO
+  // ALERT: BAJA HACIA EL CENTRO (RABIA). HAPPY: SUBE ARRIBA. IDLE: NEUTRA.
+  get browLeftPath(): string {
+    if (this.mood === 'alert') return 'M 40 38 L 56 44 L 54 42 L 40 40 Z';
+    if (this.mood === 'happy') return 'M 40 40 Q 48 36 56 40 L 56 41 Q 48 38 40 41 Z';
+    return 'M 40 40 L 56 40 L 56 42 L 40 42 Z';
   }
-
-  // PATH DE LA BOCA SEGUN EL ESTADO DE ANIMO
-  get mouthPath(): string {
-    if (this.mood === 'happy')  return 'M51 56 Q60 63 69 56';
-    if (this.mood === 'alert')  return 'M51 60 Q60 55 69 60';
-    return 'M53 57 Q60 61 67 57';
+  // SOMBRA / CEJA DERECHA — ESPEJO DE LA IZQUIERDA
+  get browRightPath(): string {
+    if (this.mood === 'alert') return 'M 80 38 L 64 44 L 66 42 L 80 40 Z';
+    if (this.mood === 'happy') return 'M 80 40 Q 72 36 64 40 L 64 41 Q 72 38 80 41 Z';
+    return 'M 80 40 L 64 40 L 64 42 L 80 42 Z';
   }
 }
