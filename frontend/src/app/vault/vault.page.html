@@ -40,10 +40,16 @@
 
     <!-- ── HEADER PERSONAL CON SALUDO ──────────────────────────────── -->
     <div class="vault-greeting">
-      <button class="vault-avatar" (click)="openCustomize()"
-        [attr.aria-label]="'Editar personalizacion (' + userInitial + ')'">
-        <span class="vault-avatar-letter">{{ userInitial }}</span>
+      <button class="vault-avatar"
+        [class.vault-avatar-photo]="!!userAvatarPhoto"
+        (click)="openCustomize()"
+        [attr.aria-label]="'Editar personalizacion (' + (userAvatarPhoto ? 'avatar personalizado' : userInitial) + ')'">
+        <img *ngIf="userAvatarPhoto" [src]="userAvatarPhoto" alt="Avatar">
+        <span *ngIf="!userAvatarPhoto" class="vault-avatar-letter">{{ userInitial }}</span>
         <span class="vault-avatar-dot"></span>
+        <span class="vault-avatar-edit" aria-hidden="true">
+          <ph-camera weight="fill" size="11"></ph-camera>
+        </span>
       </button>
       <div class="vault-greeting-text">
         <div class="vault-greeting-hi">
@@ -125,7 +131,7 @@
           class="bento-favorite"
           [id]="'fav-' + item.id"
           [style.--card-accent]="itemColor(item)"
-          (click)="copyPassword(item, $event)">
+          (click)="primaryAction(item, $event)">
           <div class="bento-icon">
             <ph-key *ngIf="iconForItem(item) === 'key'" weight="fill" size="22"></ph-key>
             <ph-credit-card *ngIf="iconForItem(item) === 'credit-card'" weight="fill" size="22"></ph-credit-card>
@@ -256,6 +262,16 @@
           </div>
           <div class="section-sub">{{ filteredItems.length }} resultados</div>
         </div>
+        <!-- ACCIONES DE LA CARPETA ACTIVA: ELIMINAR. SOLO VISIBLE CUANDO HAY UNA
+             CARPETA SELECCIONADA — LOS ITEMS DENTRO QUEDAN SIN CARPETA, NO SE PIERDEN. -->
+        <ng-container *ngIf="getFolderById(activeFolderId) as activeFolder">
+          <button class="folder-delete-btn" type="button"
+            (click)="askDeleteFolder(activeFolder, $event)"
+            aria-label="Eliminar carpeta">
+            <ph-trash weight="bold" size="13"></ph-trash>
+            <span>Eliminar carpeta</span>
+          </button>
+        </ng-container>
       </div>
 
       <div class="vault-list">
@@ -263,26 +279,35 @@
           [id]="'item-' + item.id"
           [style.--card-accent]="itemColor(item)">
 
-          <button class="item-avatar interactive" type="button"
-            [style.background]="customIcons[item.id] ? 'transparent' : itemColor(item)"
-            (click)="openIconPicker(item, $event)"
-            [attr.aria-label]="'Cambiar icono de ' + item.payload.title">
-            <img *ngIf="customIcons[item.id]" [src]="customIcons[item.id]" [alt]="item.payload.title">
-            <ng-container *ngIf="!customIcons[item.id]">
-              <ph-key *ngIf="iconForItem(item) === 'key'" weight="fill" size="20" style="color:white"></ph-key>
-              <ph-credit-card *ngIf="iconForItem(item) === 'credit-card'" weight="fill" size="20" style="color:white"></ph-credit-card>
-              <ph-terminal-window *ngIf="iconForItem(item) === 'terminal-window'" weight="fill" size="20" style="color:white"></ph-terminal-window>
-              <ph-wallet *ngIf="iconForItem(item) === 'wallet'" weight="fill" size="20" style="color:white"></ph-wallet>
-              <ph-identification-card *ngIf="iconForItem(item) === 'identification-card'" weight="fill" size="20" style="color:white"></ph-identification-card>
-              <ph-note *ngIf="iconForItem(item) === 'note'" weight="fill" size="20" style="color:white"></ph-note>
-              <ph-file *ngIf="iconForItem(item) === 'file'" weight="fill" size="20" style="color:white"></ph-file>
-            </ng-container>
-            <span class="item-edit-badge">
+          <div class="item-avatar-wrap">
+            <button class="item-avatar interactive" type="button"
+              [style.background]="customIcons[item.id] ? 'transparent' : itemColor(item)"
+              (click)="openIconPicker(item, $event)"
+              [attr.aria-label]="'Cambiar icono de ' + item.payload.title">
+              <img *ngIf="customIcons[item.id]" [src]="customIcons[item.id]" [alt]="item.payload.title">
+              <ng-container *ngIf="!customIcons[item.id]">
+                <ph-key *ngIf="iconForItem(item) === 'key'" weight="fill" size="20" style="color:white"></ph-key>
+                <ph-credit-card *ngIf="iconForItem(item) === 'credit-card'" weight="fill" size="20" style="color:white"></ph-credit-card>
+                <ph-terminal-window *ngIf="iconForItem(item) === 'terminal-window'" weight="fill" size="20" style="color:white"></ph-terminal-window>
+                <ph-wallet *ngIf="iconForItem(item) === 'wallet'" weight="fill" size="20" style="color:white"></ph-wallet>
+                <ph-identification-card *ngIf="iconForItem(item) === 'identification-card'" weight="fill" size="20" style="color:white"></ph-identification-card>
+                <ph-note *ngIf="iconForItem(item) === 'note'" weight="fill" size="20" style="color:white"></ph-note>
+                <ph-file *ngIf="iconForItem(item) === 'file'" weight="fill" size="20" style="color:white"></ph-file>
+              </ng-container>
+            </button>
+            <span class="item-edit-badge" aria-hidden="true">
               <ph-pencil-simple weight="fill" size="9"></ph-pencil-simple>
             </span>
-          </button>
+          </div>
 
-          <div class="item-info">
+          <!-- ZONA CLICKABLE PRINCIPAL: TITULO + METADATOS. EL CLICK AQUI EJECUTA
+               LA ACCION PRIMARIA (COPIAR / VER / DESCARGAR). ANTES EL CLICK ESTABA
+               EN TODA LA FILA Y EL HIT ZONE TRAGABA LOS BOTONES DE 32PX DE EDITAR/
+               ELIMINAR EN TACTIL. AHORA LOS BOTONES TIENEN SU PROPIO ESPACIO. -->
+          <button class="item-info" type="button"
+            (click)="primaryAction(item, $event)"
+            [attr.aria-label]="(item.item_type === 'password' ? 'Copiar contrasena de ' :
+                                item.item_type === 'note' ? 'Abrir nota ' : 'Descargar ') + item.payload.title">
             <div class="item-top-row">
               <span class="item-name">{{ item.payload.title }}</span>
               <span *ngIf="item.item_type === 'password'" class="strength-pill"
@@ -322,30 +347,30 @@
               </span>
               <span class="item-date">{{ itemDate(item) }}</span>
             </div>
-          </div>
+          </button>
 
           <div class="item-actions">
-            <button class="item-action item-fav"
+            <button class="item-action item-fav" type="button"
               [class.active]="isFavorite(item)"
               (click)="toggleFavorite(item, $event)"
               [attr.aria-label]="isFavorite(item) ? 'Quitar de favoritos' : 'Anadir a favoritos'">
               <ph-star [attr.weight]="isFavorite(item) ? 'fill' : 'bold'" size="16"></ph-star>
             </button>
-            <button class="item-action item-edit-btn"
+            <button class="item-action item-edit-btn" type="button"
               (click)="editItem(item, $event)"
               *ngIf="item.item_type !== 'file'"
               aria-label="Editar item">
               <ph-pencil-simple weight="bold" size="16"></ph-pencil-simple>
             </button>
-            <button class="item-action item-action-primary"
-              (click)="copyPassword(item, $event)"
+            <button class="item-action item-action-primary" type="button"
+              (click)="primaryAction(item, $event)"
               [attr.aria-label]="item.item_type === 'password' ? 'Copiar contrasena' :
                                   item.item_type === 'note' ? 'Ver nota' : 'Descargar fichero'">
               <ph-copy *ngIf="item.item_type === 'password'" weight="bold" size="16"></ph-copy>
               <ph-eye *ngIf="item.item_type === 'note'" weight="bold" size="16"></ph-eye>
               <ph-download-simple *ngIf="item.item_type === 'file'" weight="bold" size="16"></ph-download-simple>
             </button>
-            <button class="item-action item-delete"
+            <button class="item-action item-delete" type="button"
               (click)="deleteItem(item, $event)"
               aria-label="Eliminar item">
               <ph-trash weight="bold" size="16"></ph-trash>
@@ -747,7 +772,7 @@
     </div>
   </div>
 
-  <!-- ── MODAL DE BORRADO CON CHECKLIST DIDACTICA ─────────────── -->
+  <!-- ── MODAL DE BORRADO DE ITEM ─────────────────────────────── -->
   <div *ngIf="confirmDelete" class="form-overlay" (click)="cancelDelete()"
     role="dialog" aria-modal="true">
     <div class="form-modal form-modal-confirm" (click)="$event.stopPropagation()">
@@ -765,24 +790,118 @@
           Vas a eliminar <strong>"{{ confirmDelete.payload.title }}"</strong>.
           El bloque cifrado se borra del servidor para siempre — no hay papelera.
         </p>
-        <label class="check-row">
-          <input type="checkbox" [(ngModel)]="confirmDeleteChecks.exported">
-          <span>Ya guarde una copia fuera si la necesito</span>
-        </label>
-        <label class="check-row">
-          <input type="checkbox" [(ngModel)]="confirmDeleteChecks.understood">
-          <span>Entiendo que es irrecuperable</span>
-        </label>
       </div>
       <div class="form-actions">
         <button type="button" class="form-btn form-btn-ghost" (click)="cancelDelete()">
           Cancelar
         </button>
         <button type="button" class="form-btn form-btn-danger"
-          [disabled]="saving || !canConfirmDelete"
+          [disabled]="saving"
           (click)="confirmDeleteAction()">
           <ph-trash weight="bold" size="16"></ph-trash>
           <span>{{ saving ? 'Eliminando...' : 'Eliminar' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MODAL DE CONFIRMACION DE BORRADO DE CARPETA ──────────── -->
+  <div *ngIf="confirmFolderDelete" class="form-overlay" (click)="cancelDeleteFolder()"
+    role="dialog" aria-modal="true">
+    <div class="form-modal form-modal-confirm" (click)="$event.stopPropagation()">
+      <div class="form-header">
+        <div class="form-header-icon"
+          [style.background]="'linear-gradient(135deg, var(--color-danger), ' + (confirmFolderDelete.color || '#C026D3') + ')'">
+          <ph-folder-minus weight="fill" size="22"></ph-folder-minus>
+        </div>
+        <div class="form-header-text">
+          <div class="form-title">Eliminar carpeta</div>
+          <div class="form-sub">Los items dentro quedan sin carpeta</div>
+        </div>
+      </div>
+      <div class="form-body">
+        <p class="confirm-text">
+          Vas a eliminar la carpeta <strong>"{{ confirmFolderDelete.name }}"</strong>.
+          Los <strong>{{ confirmFolderDelete.item_count }}</strong> elementos que contiene
+          NO se borran &mdash; quedan listados en "Todo" para que los reasignes.
+        </p>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="form-btn form-btn-ghost" (click)="cancelDeleteFolder()">
+          Cancelar
+        </button>
+        <button type="button" class="form-btn form-btn-danger"
+          [disabled]="saving"
+          (click)="confirmDeleteFolderAction()">
+          <ph-trash weight="bold" size="16"></ph-trash>
+          <span>{{ saving ? 'Eliminando...' : 'Eliminar carpeta' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── VISOR DE NOTA / ARCHIVO ──────────────────────────────── -->
+  <div *ngIf="viewingItem" class="form-overlay" (click)="closeItemViewer()"
+    role="dialog" aria-modal="true">
+    <div class="form-modal viewer-modal" (click)="$event.stopPropagation()">
+      <div class="form-header">
+        <div class="form-header-icon"
+          [style.background]="'linear-gradient(135deg, var(--vault-accent), color-mix(in srgb, var(--vault-accent) 55%, var(--color-secondary)))'">
+          <ph-note *ngIf="viewingItem.item_type === 'note'" weight="fill" size="22"></ph-note>
+          <ph-file *ngIf="viewingItem.item_type === 'file'" weight="fill" size="22"></ph-file>
+        </div>
+        <div class="form-header-text">
+          <div class="form-title">{{ viewingItem.payload.title }}</div>
+          <div class="form-sub">
+            {{ viewingItem.item_type === 'note' ? 'Contenido cifrado · descifrado en este dispositivo' : 'Archivo cifrado · descarga local' }}
+          </div>
+        </div>
+        <button class="form-close" type="button" (click)="closeItemViewer()" aria-label="Cerrar">
+          <ph-x weight="bold" size="18"></ph-x>
+        </button>
+      </div>
+      <div class="form-body">
+        <ng-container *ngIf="viewingItem.item_type === 'note'">
+          <div class="viewer-note" [class.revealed]="viewerRevealed">
+            <ng-container *ngIf="viewerRevealed; else hiddenNote">{{ viewingItem.payload.notes }}</ng-container>
+            <ng-template #hiddenNote>
+              <div class="viewer-note-hidden">
+                <ph-eye-slash weight="bold" size="22"></ph-eye-slash>
+                <span>Contenido oculto. Pulsa <strong>Mostrar</strong> para revelarlo.</span>
+              </div>
+            </ng-template>
+          </div>
+        </ng-container>
+        <ng-container *ngIf="viewingItem.item_type === 'file'">
+          <div class="viewer-file">
+            <div class="viewer-file-icon">
+              <ph-file weight="fill" size="40"></ph-file>
+            </div>
+            <div class="viewer-file-meta">
+              <div class="viewer-file-name">{{ viewingItem.payload.fileName || viewingItem.payload.title }}</div>
+              <div class="viewer-file-info">{{ fileSize(viewingItem) }} &middot; {{ fileExt(viewingItem) }}</div>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+      <div class="form-actions">
+        <button *ngIf="viewingItem.item_type === 'note'"
+          type="button" class="form-btn form-btn-ghost" (click)="toggleViewerReveal()">
+          <ph-eye *ngIf="!viewerRevealed" weight="bold" size="16"></ph-eye>
+          <ph-eye-slash *ngIf="viewerRevealed" weight="bold" size="16"></ph-eye-slash>
+          <span>{{ viewerRevealed ? 'Ocultar' : 'Mostrar' }}</span>
+        </button>
+        <button *ngIf="viewingItem.item_type === 'note'"
+          type="button" class="form-btn form-btn-primary"
+          (click)="copyViewingContent($event)">
+          <ph-copy weight="bold" size="16"></ph-copy>
+          <span>Copiar</span>
+        </button>
+        <button *ngIf="viewingItem.item_type === 'file'"
+          type="button" class="form-btn form-btn-primary"
+          (click)="downloadFile(viewingItem); closeItemViewer()">
+          <ph-download-simple weight="bold" size="16"></ph-download-simple>
+          <span>Descargar</span>
         </button>
       </div>
     </div>
@@ -806,19 +925,89 @@
         </button>
       </div>
       <div class="form-body">
+        <!-- AVATAR — FOTO O ICONO PERSONALIZADO PARA EL HEADER DE LA BOVEDA -->
         <div class="form-field">
-          <span class="form-label">Acento</span>
+          <span class="form-label">Tu avatar</span>
+          <div class="avatar-editor">
+            <div class="avatar-preview" [class.avatar-preview-photo]="!!userAvatarPhoto">
+              <img *ngIf="userAvatarPhoto" [src]="userAvatarPhoto" alt="Avatar">
+              <span *ngIf="!userAvatarPhoto" class="avatar-preview-letter">{{ userInitial }}</span>
+            </div>
+            <div class="avatar-editor-actions">
+              <button type="button" class="avatar-action" (click)="openAvatarPicker($event)">
+                <ph-camera weight="fill" size="14"></ph-camera>
+                <span>{{ userAvatarPhoto ? 'Cambiar foto' : 'Subir foto' }}</span>
+              </button>
+              <button *ngIf="userAvatarPhoto" type="button"
+                class="avatar-action avatar-action-ghost"
+                (click)="clearAvatar($event)">
+                <ph-x weight="bold" size="13"></ph-x>
+                <span>Quitar</span>
+              </button>
+            </div>
+          </div>
+          <p class="form-hint">Se guarda solo en este dispositivo (no sale cifrada al servidor).</p>
+        </div>
+
+        <!-- ACENTO GENERAL — GRADIENTES, FOCUS RINGS Y BOTONES PRIMARIOS -->
+        <div class="form-field">
+          <span class="form-label">Acento general</span>
           <div class="accent-grid">
             <button *ngFor="let a of accentPresets" type="button"
               class="accent-swatch"
               [class.active]="accentKey === a.key"
               [style.background]="a.hex"
               (click)="pickAccent(a.key)"
-              [attr.aria-label]="'Acento ' + a.label">
+              [attr.aria-label]="'Acento general ' + a.label">
               <ph-check *ngIf="accentKey === a.key" weight="bold" size="14"></ph-check>
             </button>
           </div>
         </div>
+
+        <!-- ICONOS — AVATARES, ICONOS DE FAVORITOS E ITEMS -->
+        <div class="form-field">
+          <span class="form-label">Color de iconos</span>
+          <div class="accent-grid accent-grid-with-auto">
+            <button type="button"
+              class="accent-swatch accent-swatch-auto"
+              [class.active]="iconAccentKey === 'auto'"
+              (click)="pickIconAccent('auto')"
+              aria-label="Iconos: seguir acento general">
+              <ph-link weight="bold" size="14"></ph-link>
+            </button>
+            <button *ngFor="let a of accentPresets" type="button"
+              class="accent-swatch"
+              [class.active]="iconAccentKey === a.key"
+              [style.background]="a.hex"
+              (click)="pickIconAccent(a.key)"
+              [attr.aria-label]="'Iconos ' + a.label">
+              <ph-check *ngIf="iconAccentKey === a.key" weight="bold" size="14"></ph-check>
+            </button>
+          </div>
+        </div>
+
+        <!-- SOMBRAS — HALO Y BRILLO SUAVE EN CARDS, BENTO Y FAB -->
+        <div class="form-field">
+          <span class="form-label">Color de sombras</span>
+          <div class="accent-grid accent-grid-with-auto">
+            <button type="button"
+              class="accent-swatch accent-swatch-auto"
+              [class.active]="shadowAccentKey === 'auto'"
+              (click)="pickShadowAccent('auto')"
+              aria-label="Sombras: seguir acento general">
+              <ph-link weight="bold" size="14"></ph-link>
+            </button>
+            <button *ngFor="let a of accentPresets" type="button"
+              class="accent-swatch"
+              [class.active]="shadowAccentKey === a.key"
+              [style.background]="a.hex"
+              (click)="pickShadowAccent(a.key)"
+              [attr.aria-label]="'Sombras ' + a.label">
+              <ph-check *ngIf="shadowAccentKey === a.key" weight="bold" size="14"></ph-check>
+            </button>
+          </div>
+        </div>
+
         <div class="form-field">
           <span class="form-label">Densidad</span>
           <div class="density-toggle">
@@ -894,9 +1083,21 @@
     </div>
   </div>
 
+  <!-- TOAST DE FEEDBACK BREVE PARA ACCIONES (COPY / DELETE / ERRORES). SE
+       AUTO-OCULTA A LOS 2.4S. SE COLOCA POR ENCIMA DE TODOS LOS OVERLAYS. -->
+  <div *ngIf="toast" class="vault-toast" [class]="'toast-' + toast.kind"
+    role="status" aria-live="polite">
+    <ph-check-circle *ngIf="toast.kind === 'success'" weight="fill" size="16"></ph-check-circle>
+    <ph-warning *ngIf="toast.kind === 'error'" weight="fill" size="16"></ph-warning>
+    <ph-info *ngIf="toast.kind === 'info'" weight="fill" size="16"></ph-info>
+    <span>{{ toast.text }}</span>
+  </div>
+
   <input #iconInput type="file" accept="image/*"
     style="display:none" (change)="onIconSelected($event)">
   <input #fileInput type="file"
     style="display:none" (change)="onFileSelected($event)">
+  <input #avatarInput type="file" accept="image/*"
+    style="display:none" (change)="onAvatarSelected($event)">
 
 </ion-content>

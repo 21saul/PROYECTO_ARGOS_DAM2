@@ -237,11 +237,9 @@
   z-index: 1;
 }
 .score-mascot {
-  /* FUERZA LA PALETA DE LA MASCOTA AL TONO HERO PARA QUE NO SE TIÑA */
-  --color-primary: #A78BFA;
-  --color-secondary: #F472B6;
-  --color-accent: #06B6D4;
-  filter: drop-shadow(0 6px 14px rgba(15, 23, 42, 0.4));
+  /* DEJAMOS QUE EL COMPONENTE GESTIONE SU PROPIO HALO Y NO DUPLICAMOS
+     FILTROS NI VARIABLES QUE ARGUS NO LEE (USA --mascot-* INTERNAS). */
+  display: inline-block;
 }
 .score-pill {
   display: inline-flex;

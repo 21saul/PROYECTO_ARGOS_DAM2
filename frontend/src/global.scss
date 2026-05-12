@@ -496,8 +496,8 @@ ion-router-outlet {
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
   --shadow-vault-flat: 0 1px 2px rgba(0, 0, 0, 0.18);
   --shadow-vault-halo:
-    0 14px 38px color-mix(in srgb, var(--vault-accent) 30%, transparent),
-    0 4px 12px color-mix(in srgb, var(--vault-accent) 14%, transparent);
+    0 14px 38px color-mix(in srgb, var(--vault-shadow) 30%, transparent),
+    0 4px 12px color-mix(in srgb, var(--vault-shadow) 14%, transparent);
 
   /* MOTION BOVEDA — DURACIONES MAS LARGAS QUE EL DASHBOARD */
   --dur-vault-base: 240ms;
@@ -509,10 +509,15 @@ ion-router-outlet {
   --vault-health-mid:  var(--color-warning);
   --vault-health-bad:  var(--color-danger);
 
-  /* ACENTO PERSONALIZABLE — DEFAULT VIOLETA FIJO (NO ATADO A --color-primary
-     PORQUE PRIMARY VARIA SEGUN TEMA Y ROMPERIA LA COHERENCIA CROMATICA
-     DEFINIDA EN VAULT_DIRECTION.MD). EL USUARIO LO CAMBIA VIA PRESETS. */
+  /* TRIPLETE DE ACENTOS — CADA UNO PERSONALIZABLE POR SEPARADO POR EL USUARIO.
+     --vault-accent  = color GENERAL (gradientes, focus rings, botones primarios)
+     --vault-icons   = color de ICONOS de items y favoritos (sigue al accent por defecto)
+     --vault-shadow  = color de SOMBRAS suaves halo (sigue al accent por defecto)
+     CADA ONE SE SOBRESCRIBE VIA data-vault-accent / data-vault-icons / data-vault-shadow.
+     EL DEFAULT VIOLETA NO ESTA ATADO A --color-primary PORQUE PRIMARY VARIA SEGUN TEMA. */
   --vault-accent: #7C3AED;
+  --vault-icons: var(--vault-accent);
+  --vault-shadow: var(--vault-accent);
   --vault-accent-soft: color-mix(in srgb, var(--vault-accent) 16%, transparent);
   --vault-accent-ring: color-mix(in srgb, var(--vault-accent) 28%, transparent);
 
@@ -521,12 +526,28 @@ ion-router-outlet {
   --vault-row-gap: 10px;
 }
 
-/* PRESETS DE ACENTO — APLICA AL <body> VIA data-vault-accent="<key>" */
+/* PRESETS DE ACENTO GENERAL — APLICA AL <body> VIA data-vault-accent="<key>" */
 body[data-vault-accent="rosa"]   { --vault-accent: #EC4899; }
 body[data-vault-accent="cyan"]   { --vault-accent: #06B6D4; }
 body[data-vault-accent="verde"]  { --vault-accent: #10B981; }
 body[data-vault-accent="ambar"]  { --vault-accent: #F59E0B; }
 body[data-vault-accent="rojo"]   { --vault-accent: #EF4444; }
+
+/* PRESETS DE ICONOS — SOBRESCRIBEN --vault-icons SIN TOCAR LOS DEMAS ACENTOS */
+body[data-vault-icons="default"] { --vault-icons: #7C3AED; }
+body[data-vault-icons="rosa"]    { --vault-icons: #EC4899; }
+body[data-vault-icons="cyan"]    { --vault-icons: #06B6D4; }
+body[data-vault-icons="verde"]   { --vault-icons: #10B981; }
+body[data-vault-icons="ambar"]   { --vault-icons: #F59E0B; }
+body[data-vault-icons="rojo"]    { --vault-icons: #EF4444; }
+
+/* PRESETS DE SOMBRAS — SOBRESCRIBEN --vault-shadow SIN TOCAR LOS DEMAS ACENTOS */
+body[data-vault-shadow="default"] { --vault-shadow: #7C3AED; }
+body[data-vault-shadow="rosa"]    { --vault-shadow: #EC4899; }
+body[data-vault-shadow="cyan"]    { --vault-shadow: #06B6D4; }
+body[data-vault-shadow="verde"]   { --vault-shadow: #10B981; }
+body[data-vault-shadow="ambar"]   { --vault-shadow: #F59E0B; }
+body[data-vault-shadow="rojo"]    { --vault-shadow: #EF4444; }
 
 /* MODO DENSIDAD COMPACTA — APLICA AL <body> VIA .vault-density-compact */
 body.vault-density-compact {

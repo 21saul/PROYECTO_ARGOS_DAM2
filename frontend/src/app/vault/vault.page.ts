@@ -78,10 +78,12 @@ interface AccentPreset {
 })
 export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
 
-  // REFERENCIA AL INPUT OCULTO PARA SUBIR ICONO PERSONALIZADO
+  // REFERENCIA AL INPUT OCULTO PARA SUBIR ICONO PERSONALIZADO DE ITEM
   @ViewChild('iconInput') iconInput!: ElementRef<HTMLInputElement>;
   // REFERENCIA AL INPUT OCULTO PARA SUBIR FICHEROS A LA BOVEDA
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+  // REFERENCIA AL INPUT OCULTO PARA SUBIR FOTO DEL AVATAR DEL HEADER
+  @ViewChild('avatarInput') avatarInput!: ElementRef<HTMLInputElement>;
   // REFERENCIA AL CONTENEDOR ION-CONTENT PARA CONTROLAR EL SCROLL
   @ViewChild(IonContent) content!: IonContent;
 
@@ -118,10 +120,12 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
   editingItem: VaultItem | null = null;
   // ITEM PENDIENTE DE CONFIRMAR ELIMINACION
   confirmDelete: VaultItem | null = null;
-  // CHECKLIST DEL MODAL DE BORRADO (REQUIERE 2 CONFIRMACIONES EXPLICITAS)
-  confirmDeleteChecks = { exported: false, understood: false };
   // FLAG GENERAL DE GUARDADO PARA DESHABILITAR BOTONES MIENTRAS SE PROCESA
   saving = false;
+  // TOAST EFIMERO PARA FEEDBACK DE ACCIONES (COPY / DELETE / ETC).
+  // null = NO HAY TOAST VISIBLE; SE OCULTA A LOS 2.4S CON setTimeout
+  toast: { text: string; kind: 'success' | 'error' | 'info' } | null = null;
+  private toastTimer: any = null;
   // FLAG DE MOSTRAR/OCULTAR CONTRASENA EN EL FORMULARIO
   showPasswordInForm = false;
 
@@ -190,16 +194,29 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
     { key: 'ambar',   label: 'Ambar',   hex: '#F59E0B' },
     { key: 'rojo',    label: 'Rojo',    hex: '#EF4444' },
   ];
-  // KEY ACTIVA DEL ACENTO (PERSISTIDA EN LOCALSTORAGE)
+  // KEY ACTIVA DEL ACENTO GENERAL (PERSISTIDA EN LOCALSTORAGE)
   accentKey = 'default';
+  // KEY ACTIVA DEL COLOR DE ICONOS — 'auto' = SIGUE AL ACENTO GENERAL
+  iconAccentKey: 'auto' | string = 'auto';
+  // KEY ACTIVA DEL COLOR DE SOMBRAS — 'auto' = SIGUE AL ACENTO GENERAL
+  shadowAccentKey: 'auto' | string = 'auto';
   // MODO DENSIDAD (COMODO POR DEFECTO, COMPACTO OPCIONAL)
   density: 'comfortable' | 'compact' = 'comfortable';
   // INICIAL DEL USUARIO PARA EL AVATAR DEL HEADER (DERIVADA DEL EMAIL)
   userInitial = 'A';
+  // FOTO/ICONO PERSONALIZADO DEL AVATAR (DATA URL EN LOCALSTORAGE).
+  // SI ES null SE MUESTRA LA INICIAL DERIVADA DEL EMAIL.
+  userAvatarPhoto: string | null = null;
   // NOMBRE CORTO DEL USUARIO PARA EL SALUDO
   userDisplay = '';
   // FLAG DE APERTURA DEL PANEL DE PERSONALIZACION
   customizeOpen = false;
+  // CARPETA PENDIENTE DE CONFIRMAR ELIMINACION
+  confirmFolderDelete: VaultFolder | null = null;
+  // ITEM DE NOTA O ARCHIVO EN VISOR (NULL = VISOR CERRADO)
+  viewingItem: VaultItem | null = null;
+  // FLAG QUE INDICA QUE EL CONTENIDO DEL VISOR ESTA REVELADO EN CLARO
+  viewerRevealed = false;
 
   // ── CLIPBOARD AUTOCLEAR ─────────────────────────────────────────────
   // ID DEL ITEM CUYA PASSWORD ESTA AHORA MISMO EN EL PORTAPAPELES
@@ -305,6 +322,8 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
     this.loadCustomIcons();
     this.loadFavorites();
     this.loadAccent();
+    this.loadIconAccent();
+    this.loadShadowAccent();
     this.loadDensity();
     this.loadUserIdentity();
 
@@ -355,11 +374,14 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
   }
 
   // ESCAPE GLOBAL: CIERRA EL OVERLAY ABIERTO MAS RECIENTE EN ORDEN DE PRIORIDAD
-  // PRIORIDAD: ONBOARDING > CONFIRM-DELETE > CUSTOMIZE > PASSWORD > NOTE > FOLDER > FAB
+  // PRIORIDAD: ONBOARDING > VIEWER > CONFIRM-DELETE > CONFIRM-FOLDER-DEL >
+  //            CUSTOMIZE > PASSWORD > NOTE > FOLDER > FAB
   @HostListener('document:keydown.escape')
   onEscape() {
     if (this.onboardingStep >= 0) return this.skipOnboarding();
+    if (this.viewingItem) return this.closeItemViewer();
     if (this.confirmDelete) return this.cancelDelete();
+    if (this.confirmFolderDelete) return this.cancelDeleteFolder();
     if (this.customizeOpen) return this.closeCustomize();
     if (this.addPasswordOpen) return this.cancelAddPassword();
     if (this.addNoteOpen) return this.cancelAddNote();
@@ -413,16 +435,26 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
   animateEntrance() {
     gsap.killTweensOf('.vault-health-card, .folder-card, .vault-item, .tab-pill, .bento-favorite');
 
+    // HELPER: SOLO ANIMA SI EL SELECTOR ENCUENTRA AL MENOS UN ELEMENTO.
+    // EVITA EL WARNING "GSAP target not found" CUANDO LA BOVEDA ESTA
+    // VACIA, EL TAB ACTIVO NO RENDERIZA ITEMS O EL FRAME AUN NO HA
+    // PINTADO LOS *ngFor.
+    const animate = (selector: string, from: gsap.TweenVars, to: gsap.TweenVars) => {
+      const targets = document.querySelectorAll(selector);
+      if (targets.length === 0) return;
+      gsap.fromTo(targets, from, to);
+    };
+
     // matchMedia ASEGURA QUE prefers-reduced-motion APAGA LOS BOUNCES
     const mm = gsap.matchMedia();
     mm.add('(prefers-reduced-motion: no-preference)', () => {
-      gsap.fromTo('.vault-health-card', { y: -16 }, { y: 0, duration: 0.55, ease: 'power3.out' });
-      gsap.fromTo('.bento-favorite',
+      animate('.vault-health-card', { y: -16 }, { y: 0, duration: 0.55, ease: 'power3.out' });
+      animate('.bento-favorite',
         { scale: 0.88, y: 8 },
         { scale: 1, y: 0, duration: 0.45, stagger: 0.07, ease: 'back.out(1.4)', delay: 0.15 });
-      gsap.fromTo('.tab-pill', { y: 12 }, { y: 0, duration: 0.3, stagger: 0.05, ease: 'power2.out', delay: 0.3 });
-      gsap.fromTo('.folder-card', { x: -20 }, { x: 0, duration: 0.4, stagger: 0.06, ease: 'power2.out', delay: 0.35 });
-      gsap.fromTo('.vault-item', { y: 14 }, { y: 0, duration: 0.32, stagger: 0.05, ease: 'power2.out', delay: 0.45 });
+      animate('.tab-pill', { y: 12 }, { y: 0, duration: 0.3, stagger: 0.05, ease: 'power2.out', delay: 0.3 });
+      animate('.folder-card', { x: -20 }, { x: 0, duration: 0.4, stagger: 0.06, ease: 'power2.out', delay: 0.35 });
+      animate('.vault-item', { y: 14 }, { y: 0, duration: 0.32, stagger: 0.05, ease: 'power2.out', delay: 0.45 });
     });
     mm.add('(prefers-reduced-motion: reduce)', () => {
       gsap.set('.vault-health-card, .bento-favorite, .tab-pill, .folder-card, .vault-item', { clearProps: 'transform' });
@@ -517,6 +549,12 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
   }
 
   // ── METADATOS DE CARPETA ────────────────────────────────────────────
+  // DEVUELVE EL OBJETO CARPETA POR ID — USADO POR EL TEMPLATE PORQUE ANGULAR
+  // NO PERMITE EXPRESIONES CON FLECHA EN PLANTILLAS (find(...) NO COMPILA).
+  getFolderById(id: number | null): VaultFolder | null {
+    if (id === null) return null;
+    return this.folders.find(f => f.id === id) || null;
+  }
   getFolderName(id: number | null): string {
     if (id === null) return '';
     return this.folders.find(f => f.id === id)?.name || '';
@@ -620,13 +658,17 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
     return this.reusedSet.has(p);
   }
 
-  // DEVUELVE EL COLOR DE FONDO DEL AVATAR (USA EL COLOR DEL KIND)
+  // DEVUELVE EL COLOR DE FONDO DEL AVATAR DEL ITEM.
+  // PRIORIDAD: COLOR DE LA CARPETA (SI EXISTE) > ACENTO DE ICONOS DEL USUARIO.
+  // YA NO USAMOS kindMeta PARA EL COLOR PORQUE EL USUARIO QUIERE QUE EL ACENTO
+  // PROPAGUE A LOS ICONOS Y SOMBRAS. LA DISTINCION POR KIND SE MANTIENE EN LA
+  // FORMA DEL ICONO (key, credit-card, etc.) Y EN LOS CHIPS DE LABEL.
   itemColor(item: VaultItem): string {
     if (item.folder_id !== null && item.folder_id !== undefined) {
       const f = this.folders.find(fo => fo.id === item.folder_id);
       if (f) return f.color;
     }
-    return this.colorForItem(item);
+    return 'var(--vault-icons)';
   }
 
   // EXTRAE UN SNIPPET DE LA NOTA PARA EL LISTADO
@@ -666,21 +708,71 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
   }
 
   // ── COPY AL PORTAPAPELES CON AUTOCLEAR DE 30S ───────────────────────
+  // EL navigator.clipboard SOLO ESTA EXPUESTO EN CONTEXTOS SEGUROS (HTTPS O
+  // localhost). EN DESARROLLO POR LAN (http://192.168...) O EN WEBVIEWS
+  // ANTIGUOS LANZA ERROR Y EL USUARIO VEIA QUE "NO PASABA NADA". POR ESO
+  // CAEMOS A document.execCommand('copy') COMO FALLBACK GENERICO.
   async copyPassword(item: VaultItem, event: Event) {
-    event.stopPropagation();
-    // ANIMA EL ITEM CON UN PULSO MINIMO
-    gsap.fromTo(`#item-${item.id}`,
-      { scale: 1 }, { scale: 0.96, duration: 0.1, yoyo: true, repeat: 1 });
-    // COPIA AL PORTAPAPELES SI HAY CONTENIDO
+    if (event && event.stopPropagation) event.stopPropagation();
+    console.log('[vault] copyPassword click', item?.id, 'len=', (item?.payload?.password || '').length);
+    // FEEDBACK INMEDIATO ANTES DE CUALQUIER ASYNC PARA CONFIRMAR EL CLICK
+    this.showToast('Copiando…', 'info');
+    // ANIMA EL ITEM CON UN PULSO MINIMO PARA FEEDBACK VISUAL
+    if (!this.reducedMotion) {
+      try {
+        gsap.fromTo(`#item-${item.id}`,
+          { scale: 1 }, { scale: 0.96, duration: 0.1, yoyo: true, repeat: 1 });
+      } catch {}
+    }
     const pwd = item.payload.password || '';
-    if (!pwd || !navigator.clipboard) return;
-    try {
-      await navigator.clipboard.writeText(pwd);
-    } catch {
+    if (!pwd) {
+      this.showToast('Esta cuenta no tiene contrasena guardada', 'info');
       return;
     }
-    // ARRANCA EL AUTOCLEAR
+    const ok = await this.writeClipboard(pwd);
+    console.log('[vault] writeClipboard result', ok);
+    if (!ok) {
+      this.showToast('No se pudo copiar al portapapeles', 'error');
+      return;
+    }
     this.startCopyCountdown(item.id);
+    this.showToast('Contrasena copiada · se borra en 30s', 'success');
+  }
+
+  // ESCRIBE AL PORTAPAPELES CON FALLBACK A execCommand. DEVUELVE true SI OK.
+  private async writeClipboard(text: string): Promise<boolean> {
+    // CAMINO MODERNO: navigator.clipboard (REQUIERE CONTEXTO SEGURO)
+    if (navigator.clipboard && (window as any).isSecureContext !== false) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        // CAE AL FALLBACK
+      }
+    }
+    // FALLBACK CLASICO: TEXTAREA OCULTO + execCommand('copy')
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+
+  // MUESTRA UN TOAST EFIMERO DE 2.4S CON UN MENSAJE BREVE
+  showToast(text: string, kind: 'success' | 'error' | 'info' = 'info') {
+    this.toast = { text, kind };
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => { this.toast = null; }, 2400);
   }
   private startCopyCountdown(itemId: number) {
     this.clearCopyTimer();
@@ -693,10 +785,8 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
   }
   private async expireClipboard() {
     this.clearCopyTimer();
-    // SOBREESCRIBE EL CLIPBOARD CON UNA CADENA INOCUA
-    try {
-      if (navigator.clipboard) await navigator.clipboard.writeText('');
-    } catch {}
+    // SOBREESCRIBE EL CLIPBOARD CON UNA CADENA INOCUA (USA EL FALLBACK GENERICO)
+    await this.writeClipboard('');
     this.copiedItemId = null;
     this.copyCountdown = 0;
   }
@@ -884,33 +974,140 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
     input.value = '';
   }
 
-  // ── BORRADO CON CHECKLIST DIDACTICA ─────────────────────────────────
+  // ── BORRADO DE ITEM ─────────────────────────────────────────────────
+  // FLUJO SIMPLIFICADO: ABRE EL MODAL Y CON UN SOLO CLICK EN "ELIMINAR" SE
+  // CONFIRMA. ANTES EXIGIA DOS CHECKBOXES (EXPORTED + UNDERSTOOD) Y EL BOTON
+  // QUEDABA DESHABILITADO, LO QUE DABA LA SENSACION DE QUE "NO FUNCIONABA".
   deleteItem(item: VaultItem, event: Event) {
-    event.stopPropagation();
+    if (event && event.stopPropagation) event.stopPropagation();
+    console.log('[vault] deleteItem click', item?.id, item?.payload?.title);
     this.confirmDelete = item;
-    this.confirmDeleteChecks = { exported: false, understood: false };
+    // FEEDBACK INMEDIATO PARA QUE EL USUARIO VEA QUE EL CLICK ENTRA
+    this.showToast('Confirmar eliminacion…', 'info');
   }
   cancelDelete() { this.confirmDelete = null; }
-  get canConfirmDelete(): boolean {
-    return this.confirmDeleteChecks.understood;
-  }
   async confirmDeleteAction() {
-    if (!this.canConfirmDelete) return;
     const item = this.confirmDelete;
-    if (!item) return;
+    console.log('[vault] confirmDeleteAction start', item?.id);
+    if (!item) {
+      this.showToast('Sin item seleccionado', 'error');
+      return;
+    }
     this.saving = true;
     try {
       await this.vault.deleteItem(item.id);
+      console.log('[vault] backend DELETE OK', item.id);
       delete this.customIcons[item.id];
       this.favoriteIds = this.favoriteIds.filter(id => id !== item.id);
       this.saveCustomIcons();
       this.saveFavorites();
       this.confirmDelete = null;
+      this.showToast('Elemento eliminado', 'success');
       await this.refresh();
-    } catch (err) {
-      console.error('Error eliminando item:', err);
+    } catch (err: any) {
+      console.error('[vault] Error eliminando item:', err);
+      // SURFACE EL MENSAJE DEL BACKEND SI EXISTE — ASI EL USUARIO VE EL MOTIVO
+      const msg = err?.message || err?.error?.message || 'No se pudo eliminar';
+      this.showToast(msg, 'error');
     } finally {
       this.saving = false;
+    }
+  }
+
+  // ── BORRADO DE CARPETA ──────────────────────────────────────────────
+  // ABRE LA CONFIRMACION DE BORRADO DE UNA CARPETA. LOS ITEMS DENTRO NO SE
+  // PIERDEN: EL BACKEND LOS DEJA EN folder_id=null TRAS BORRAR LA CARPETA.
+  askDeleteFolder(folder: VaultFolder, event?: Event) {
+    if (event) event.stopPropagation();
+    this.confirmFolderDelete = folder;
+  }
+  cancelDeleteFolder() { this.confirmFolderDelete = null; }
+  async confirmDeleteFolderAction() {
+    const folder = this.confirmFolderDelete;
+    if (!folder) return;
+    this.saving = true;
+    try {
+      await this.vault.deleteFolder(folder.id);
+      // SI ESTABAMOS DENTRO DE LA CARPETA BORRADA, VOLVEMOS A "TODOS"
+      if (this.activeFolderId === folder.id) this.activeFolderId = null;
+      this.confirmFolderDelete = null;
+      await this.refresh();
+    } catch (err) {
+      console.error('Error eliminando carpeta:', err);
+    } finally {
+      this.saving = false;
+    }
+  }
+
+  // ── ACCION PRIMARIA POR TIPO DE ITEM ────────────────────────────────
+  // password → COPIA AL PORTAPAPELES CON AUTOCLEAR (yA EXISTENTE)
+  // note     → ABRE EL VISOR DE NOTA CON OPCION DE COPIAR
+  // file     → DESCARGA EL ARCHIVO DESCIFRADO
+  primaryAction(item: VaultItem, event: Event) {
+    if (event && event.stopPropagation) event.stopPropagation();
+    console.log('[vault] primaryAction', item?.item_type, item?.id);
+    if (item.item_type === 'password') return this.copyPassword(item, event);
+    if (item.item_type === 'note') return this.openItemViewer(item);
+    if (item.item_type === 'file') return this.downloadFile(item);
+  }
+
+  // ABRE EL VISOR DE UNA NOTA. EL CONTENIDO YA ESTA DESCIFRADO EN MEMORIA.
+  openItemViewer(item: VaultItem) {
+    this.viewingItem = item;
+    this.viewerRevealed = false;
+  }
+  closeItemViewer() {
+    this.viewingItem = null;
+    this.viewerRevealed = false;
+  }
+  toggleViewerReveal() { this.viewerRevealed = !this.viewerRevealed; }
+  // COPIA EL CONTENIDO DE LA NOTA AL PORTAPAPELES CON AUTOCLEAR DE 30S,
+  // REUTILIZANDO LA INFRAESTRUCTURA DE COUNTDOWN DE LAS CONTRASENAS.
+  async copyViewingContent(event?: Event) {
+    if (event) event.stopPropagation();
+    const item = this.viewingItem;
+    if (!item) return;
+    const text = item.payload.notes || '';
+    if (!text) {
+      this.showToast('La nota esta vacia', 'info');
+      return;
+    }
+    const ok = await this.writeClipboard(text);
+    if (!ok) {
+      this.showToast('No se pudo copiar al portapapeles', 'error');
+      return;
+    }
+    this.startCopyCountdown(item.id);
+    this.showToast('Nota copiada · se borra en 30s', 'success');
+  }
+
+  // DESCARGA UN FICHERO CIFRADO. EL PAYLOAD YA TRAE EL fileData EN BASE64
+  // PORQUE listItems DESCIFRA EN CLIENTE. CONVERTIMOS A BLOB Y FORZAMOS DESCARGA.
+  downloadFile(item: VaultItem) {
+    const base64 = item.payload.fileData;
+    const name = item.payload.fileName || item.payload.title || 'archivo';
+    if (!base64) {
+      console.warn('Item file sin fileData en payload');
+      return;
+    }
+    try {
+      // DECODIFICA BASE64 → Uint8Array → Blob → URL OBJECT → ANCHOR
+      const binary = atob(base64);
+      const len = binary.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes]);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      // LIBERA LA URL EN EL SIGUIENTE TICK PARA NO INTERRUMPIR EL DOWNLOAD
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      console.error('Error descargando archivo:', err);
     }
   }
 
@@ -926,14 +1123,21 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
     if (!input.files || input.files.length === 0) return;
     if (this.currentEditingItemId === null) return;
     const file = input.files[0];
-    if (file.size > 1024 * 1024) { alert('Imagen demasiado grande (max 1MB)'); return; }
+    if (file.size > 1024 * 1024) {
+      this.showToast('Imagen demasiado grande (max 1MB)', 'error');
+      return;
+    }
+    const itemId = this.currentEditingItemId;
     const reader = new FileReader();
     reader.onload = (e: any) => {
-      if (this.currentEditingItemId !== null) {
-        this.customIcons[this.currentEditingItemId] = e.target.result;
-        this.saveCustomIcons();
-      }
+      // SE REASIGNA EL MAP CON NUEVA REFERENCIA PARA QUE ANGULAR DETECTE EL
+      // CAMBIO CON SEGURIDAD (LA MUTACION IN-PLACE A VECES NO GATILLABA CD
+      // EN COMPONENTES PEQUENOS COMO ESTE Y EL USUARIO NO VEIA SU ICONO).
+      this.customIcons = { ...this.customIcons, [itemId]: e.target.result };
+      this.saveCustomIcons();
+      this.showToast('Icono actualizado', 'success');
     };
+    reader.onerror = () => this.showToast('No se pudo leer la imagen', 'error');
     reader.readAsDataURL(file);
     input.value = '';
   }
@@ -976,10 +1180,12 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
   // ── PERSONALIZACION: ACENTO / DENSIDAD / IDENTIDAD ──────────────────
   openCustomize() { this.customizeOpen = true; }
   closeCustomize() { this.customizeOpen = false; }
+
+  // ACENTO GENERAL — AFECTA GRADIENTES, FOCUS RINGS Y BOTONES PRIMARIOS
   pickAccent(key: string) {
     this.accentKey = key;
-    document.body.setAttribute('data-vault-accent', key === 'default' ? '' : key);
     if (key === 'default') document.body.removeAttribute('data-vault-accent');
+    else document.body.setAttribute('data-vault-accent', key);
     localStorage.setItem('argos-vault-accent', key);
   }
   private loadAccent() {
@@ -987,6 +1193,34 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
     this.accentKey = saved;
     if (saved === 'default') document.body.removeAttribute('data-vault-accent');
     else document.body.setAttribute('data-vault-accent', saved);
+  }
+
+  // ACENTO DE ICONOS — AFECTA AVATARES Y ICONOS DE ITEMS/FAVORITOS
+  pickIconAccent(key: 'auto' | string) {
+    this.iconAccentKey = key;
+    if (key === 'auto') document.body.removeAttribute('data-vault-icons');
+    else document.body.setAttribute('data-vault-icons', key);
+    localStorage.setItem('argos-vault-icons', key);
+  }
+  private loadIconAccent() {
+    const saved = (localStorage.getItem('argos-vault-icons') as any) || 'auto';
+    this.iconAccentKey = saved;
+    if (saved === 'auto') document.body.removeAttribute('data-vault-icons');
+    else document.body.setAttribute('data-vault-icons', saved);
+  }
+
+  // ACENTO DE SOMBRAS — AFECTA HALOS DE CARDS, BENTO Y BOTONES FLOTANTES
+  pickShadowAccent(key: 'auto' | string) {
+    this.shadowAccentKey = key;
+    if (key === 'auto') document.body.removeAttribute('data-vault-shadow');
+    else document.body.setAttribute('data-vault-shadow', key);
+    localStorage.setItem('argos-vault-shadow', key);
+  }
+  private loadShadowAccent() {
+    const saved = (localStorage.getItem('argos-vault-shadow') as any) || 'auto';
+    this.shadowAccentKey = saved;
+    if (saved === 'auto') document.body.removeAttribute('data-vault-shadow');
+    else document.body.setAttribute('data-vault-shadow', saved);
   }
   toggleDensity() {
     this.density = this.density === 'comfortable' ? 'compact' : 'comfortable';
@@ -1005,11 +1239,59 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
       if (email) {
         this.userInitial = (email[0] || 'A').toUpperCase();
         this.userDisplay = email.split('@')[0];
-        return;
+      } else {
+        this.userInitial = 'A';
+        this.userDisplay = '';
       }
-    } catch {}
-    this.userInitial = 'A';
-    this.userDisplay = '';
+    } catch {
+      this.userInitial = 'A';
+      this.userDisplay = '';
+    }
+    // CARGA LA FOTO PERSONALIZADA DEL AVATAR (DATA URL) SI EXISTE
+    const photo = localStorage.getItem('argos-vault-avatar');
+    this.userAvatarPhoto = photo && photo.length > 0 ? photo : null;
+  }
+
+  // ABRE EL SELECTOR DE FICHEROS PARA LA FOTO DEL AVATAR DEL HEADER.
+  // STOP-PROPAGATION PARA QUE NO REABRA EL PANEL DE PERSONALIZACION QUE LE INVOCA.
+  openAvatarPicker(event?: Event) {
+    if (event) event.stopPropagation();
+    this.avatarInput.nativeElement.click();
+  }
+  // CALLBACK DEL INPUT FILE OCULTO PARA EL AVATAR. LIMITA TAMANO A 1MB.
+  onAvatarSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    if (file.size > 1024 * 1024) {
+      this.showToast('Imagen demasiado grande (max 1MB)', 'error');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e: any) => {
+      this.userAvatarPhoto = e.target.result;
+      localStorage.setItem('argos-vault-avatar', this.userAvatarPhoto!);
+      this.showToast('Avatar actualizado', 'success');
+    };
+    reader.onerror = () => this.showToast('No se pudo leer la imagen', 'error');
+    reader.readAsDataURL(file);
+    input.value = '';
+  }
+  // QUITA EL ICONO PERSONALIZADO DE UN ITEM Y VUELVE A USAR EL ICONO DE KIND.
+  removeCustomIcon(item: VaultItem, event: Event) {
+    event.stopPropagation();
+    if (!this.customIcons[item.id]) return;
+    const next = { ...this.customIcons };
+    delete next[item.id];
+    this.customIcons = next;
+    this.saveCustomIcons();
+    this.showToast('Icono original restaurado', 'success');
+  }
+  // BORRA LA FOTO DEL AVATAR Y VUELVE A LA INICIAL.
+  clearAvatar(event?: Event) {
+    if (event) event.stopPropagation();
+    this.userAvatarPhoto = null;
+    localStorage.removeItem('argos-vault-avatar');
   }
 
   // ── HEALTH SCORE + LOGROS ───────────────────────────────────────────
@@ -1132,6 +1414,7 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
   // DESTRUCTOR: LIMPIA TWEENS, TIMERS Y CUALQUIER CONTRASENA EN FORMS ABIERTOS
   ngOnDestroy() {
     this.clearCopyTimer();
+    if (this.toastTimer) { clearTimeout(this.toastTimer); this.toastTimer = null; }
     // CANCELA SETTIMEOUTS DIFERIDOS PARA QUE NO DISPAREN gsap.fromTo SOBRE
     // SELECTORES DE LA BOVEDA UNA VEZ EL USUARIO HA NAVEGADO FUERA.
     this.pendingAnimTimeouts.forEach(h => clearTimeout(h));

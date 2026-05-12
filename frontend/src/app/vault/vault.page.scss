@@ -76,8 +76,8 @@
 .vault-avatar {
   width: 48px; height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--vault-accent),
-    color-mix(in srgb, var(--vault-accent) 45%, var(--color-secondary)));
+  /* SOLIDO — SE QUITO EL LINEAR-GRADIENT POR PETICION DEL USUARIO */
+  background: var(--vault-accent);
   color: white;
   font-family: 'Bricolage Grotesque', sans-serif !important;
   font-size: 1.3rem;
@@ -86,18 +86,56 @@
   position: relative;
   cursor: pointer;
   border: none;
-  box-shadow: var(--shadow-vault-halo);
+  padding: 0;
+  /* SOMBRA NEUTRA + LEVE TINTE DE --vault-shadow PARA QUE EL PICKER PROPAGUE */
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.22),
+    0 8px 22px color-mix(in srgb, var(--vault-shadow) 18%, transparent);
   transition: transform var(--dur-vault-base) var(--ease-vault-bounce);
+  /* overflow:hidden CORTARIA EL BADGE DE EDICION; LO APLICAMOS SOLO A LA IMG. */
 }
 .vault-avatar:hover { transform: scale(1.05); }
 .vault-avatar:active { transform: scale(0.94); }
 .vault-avatar-letter { line-height: 1; }
+.vault-avatar img {
+  width: 100%; height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+  display: block;
+}
+/* CUANDO HAY FOTO, ELIMINAMOS EL FONDO DE GRADIENTE PARA QUE NO TRASLUZCA */
+.vault-avatar.vault-avatar-photo { background: var(--color-surface); }
 .vault-avatar-dot {
   position: absolute; bottom: 2px; right: 2px;
   width: 12px; height: 12px;
   border-radius: 50%;
   background: var(--color-success);
   border: 2px solid var(--color-bg);
+}
+/* BADGE "CAMARA" QUE INDICA QUE EL AVATAR ES EDITABLE.
+   AL ESTAR FUERA DEL OVERFLOW DEL CIRCULO INTERNO NO QUEDA RECORTADO. */
+.vault-avatar-edit {
+  position: absolute;
+  top: -3px; right: -3px;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--vault-accent);
+  color: white;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--color-bg);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity var(--dur-vault-base) ease,
+              transform var(--dur-vault-base) var(--ease-vault-bounce);
+}
+.vault-avatar:hover .vault-avatar-edit,
+.vault-avatar:focus-visible .vault-avatar-edit {
+  opacity: 1; transform: scale(1);
+}
+@media (hover: none) {
+  .vault-avatar-edit { opacity: 1; transform: scale(1); }
 }
 .vault-greeting-text { min-width: 0; flex: 1; }
 .vault-greeting-hi {
@@ -114,22 +152,30 @@
   margin-top: 2px;
 }
 
-/* ── HEALTH CARD CLAYMORPHIC ────────────────────────────────────── */
+/* ── HEALTH CARD — FLAT, SIN GRADIENT NI SOMBRA ─────────────────── */
+/* PETICION DEL USUARIO: NI GRADIENT NI SOMBRA. SOLO FONDO SURFACE PLANO,
+   BORDE TENIDO Y UNA FRANJA SOLIDA DE 5PX A LA IZQUIERDA PARA APORTAR COLOR. */
 .vault-health-card {
+  position: relative;
   margin: 0 16px 14px;
-  padding: 18px;
+  padding: 18px 18px 18px 22px;
   border-radius: var(--r-vault-blob);
-  background:
-    radial-gradient(120% 80% at 0% 0%,
-      color-mix(in srgb, var(--vault-accent) 18%, transparent) 0%,
-      transparent 55%),
-    color-mix(in srgb, var(--color-surface) 92%, white 4%);
-  border: 1px solid color-mix(in srgb, white 6%, transparent);
-  box-shadow: var(--shadow-vault-lifted), var(--shadow-vault-halo);
+  background: var(--color-surface);
+  border: 1px solid color-mix(in srgb, var(--vault-accent) 22%, transparent);
+  box-shadow: none;
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 16px;
   align-items: center;
+  overflow: hidden;
+}
+.vault-health-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+  background: var(--vault-accent);
+  border-radius: var(--r-vault-blob) 0 0 var(--r-vault-blob);
 }
 .health-ring-wrap {
   position: relative;
@@ -197,18 +243,21 @@
 }
 .hb-chip {
   display: inline-flex; align-items: center; gap: 4px;
-  padding: 4px 9px;
+  padding: 4px 10px;
   border-radius: var(--r-vault-pill);
-  font-size: 0.68rem;
-  font-weight: 700;
-  background: color-mix(in srgb, var(--color-text) 8%, transparent);
-  color: var(--color-text-muted);
-  border: 1px solid transparent;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  /* CHIP "PENDIENTE" — TINTE ROJO SUAVE PARA LLAMAR ACCION */
+  background: color-mix(in srgb, var(--vault-health-bad) 14%, transparent);
+  color: var(--vault-health-bad);
+  border: 1px solid color-mix(in srgb, var(--vault-health-bad) 30%, transparent);
 }
 .hb-chip.hb-ok {
-  background: color-mix(in srgb, var(--vault-health-good) 14%, transparent);
+  /* CHIP "OK" — VERDE BIEN SATURADO PARA CELEBRACION */
+  background: color-mix(in srgb, var(--vault-health-good) 18%, transparent);
   color: var(--vault-health-good);
-  border-color: color-mix(in srgb, var(--vault-health-good) 30%, transparent);
+  border-color: color-mix(in srgb, var(--vault-health-good) 38%, transparent);
 }
 .health-achievements {
   display: flex; flex-wrap: wrap; gap: 6px;
@@ -234,15 +283,20 @@
 }
 
 /* ── CLIPBOARD COUNTDOWN BANNER ─────────────────────────────────── */
+/* NOTA: ANTES `.clipboard-banner > *` APLICABA position:relative A TODOS LOS
+   HIJOS INCLUIDO .cb-progress, ANULANDO SU ABSOLUTE Y ROMPIENDO EL LAYOUT
+   (LA BARRA DE PROGRESO SE COLOCABA COMO UN FLEX ITEM Y APRETABA EL TEXTO).
+   AHORA SUBIMOS LA ESPECIFICIDAD DE .cb-progress Y EXCLUIMOS LA REGLA
+   DE STACKING. */
 .clipboard-banner {
   position: relative;
   margin: 0 16px 12px;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-radius: var(--r-vault-pill);
   background: color-mix(in srgb, var(--vault-accent) 14%, var(--color-surface));
   border: 1px solid color-mix(in srgb, var(--vault-accent) 35%, transparent);
   color: var(--vault-accent);
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: 12px;
   overflow: hidden;
   animation: cbIn var(--dur-vault-base) var(--ease-vault-bounce) backwards;
 }
@@ -250,36 +304,51 @@
   from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.cb-progress {
-  position: absolute; left: 0; top: 0; bottom: 0;
-  background: color-mix(in srgb, var(--vault-accent) 18%, transparent);
+.clipboard-banner .cb-progress {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: color-mix(in srgb, var(--vault-accent) 22%, transparent);
   transition: width 1s linear;
   z-index: 0;
+  pointer-events: none;
 }
-.clipboard-banner > * { position: relative; z-index: 1; }
+.clipboard-banner > *:not(.cb-progress) {
+  position: relative;
+  z-index: 1;
+}
+.clipboard-banner > ph-copy { color: var(--vault-accent); flex-shrink: 0; }
 .cb-text {
-  flex: 1;
-  font-size: 0.8rem;
+  flex: 1; min-width: 0;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-text);
+  line-height: 1.35;
+  letter-spacing: 0.005em;
 }
 .cb-text strong {
   font-family: 'Bricolage Grotesque', sans-serif !important;
   color: var(--vault-accent);
   font-weight: 800;
   font-feature-settings: 'tnum' on;
+  font-size: 0.95rem;
+  white-space: nowrap;
 }
 .cb-cancel {
   background: color-mix(in srgb, var(--vault-accent) 18%, transparent);
   border: none;
   color: var(--vault-accent);
-  width: 26px; height: 26px;
+  width: 28px; height: 28px;
   border-radius: var(--r-vault-chip);
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  transition: transform var(--dur-vault-base) var(--ease-vault-bounce);
+  flex-shrink: 0;
+  transition: transform var(--dur-vault-base) var(--ease-vault-bounce),
+              background var(--dur-vault-base) ease;
 }
-.cb-cancel:hover { transform: scale(1.08); }
+.cb-cancel:hover {
+  transform: scale(1.08);
+  background: color-mix(in srgb, var(--vault-accent) 28%, transparent);
+}
 
 /* ── SECCIONES GENERICAS ────────────────────────────────────────── */
 .section-header {
@@ -316,26 +385,23 @@
 .bento-favorite {
   --card-accent: var(--vault-accent);
   position: relative;
-  background:
-    radial-gradient(140% 100% at 0% 0%,
-      color-mix(in srgb, var(--card-accent) 22%, transparent) 0%,
-      transparent 60%),
-    color-mix(in srgb, var(--color-surface) 95%, white 4%);
-  border: 1px solid color-mix(in srgb, var(--card-accent) 18%, transparent);
+  /* FAVORITOS — FLAT POR PETICION DEL USUARIO. SIN GRADIENT, SIN SOMBRA.
+     EL COLOR SE INTRODUCE SOLO POR EL ICONO Y EL BORDE TENIDO. */
+  background: var(--color-surface);
+  border: 1px solid color-mix(in srgb, var(--card-accent) 22%, transparent);
   border-radius: var(--r-vault-card);
   padding: 14px 12px;
   text-align: left;
   cursor: pointer;
   color: var(--color-text);
-  box-shadow: var(--shadow-vault-flat);
+  box-shadow: none;
   transition: transform var(--dur-vault-base) var(--ease-vault-bounce),
-              box-shadow var(--dur-vault-base) ease,
               border-color var(--dur-vault-base) ease;
 }
 .bento-favorite:hover {
+  /* HOVER FLAT: SOLO ELEVACION SUTIL Y BORDE MAS SATURADO. SIN HALOS COLOREADOS. */
   transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--card-accent) 45%, transparent);
-  box-shadow: 0 10px 28px color-mix(in srgb, var(--card-accent) 25%, transparent);
+  border-color: color-mix(in srgb, var(--card-accent) 50%, transparent);
 }
 .bento-favorite:active { transform: translateY(0) scale(0.97); }
 .bento-icon {
@@ -427,10 +493,13 @@
 .tab-pill:hover { color: var(--color-text); }
 .tab-pill:active { transform: scale(0.97); }
 .tab-pill.active {
+  /* TAB ACTIVA: COLOR PLANO DEL ACENTO, SOMBRA NEUTRA SIN HALO COLOREADO */
   background: var(--vault-accent);
   color: white;
   border-color: var(--vault-accent);
-  box-shadow: var(--shadow-vault-halo);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 4px 10px color-mix(in srgb, var(--vault-shadow) 12%, transparent);
 }
 
 /* ── CARPETAS ───────────────────────────────────────────────────── */
@@ -459,9 +528,13 @@
 .folder-card:hover { transform: translateY(-2px); }
 .folder-card:active { transform: translateY(0) scale(0.97); }
 .folder-card.active {
+  /* SELECCION LIMPIA — SOLO BORDE COLOREADO + LEVE TINTE DE FONDO. SIN HALO
+     DESENFOCADO QUE EN MOBILE PARECIA UN GRADIENTE FUERA DE LA CARTA. */
   border-color: var(--vault-accent);
-  box-shadow: 0 0 0 3px var(--vault-accent-ring),
-              0 6px 20px color-mix(in srgb, var(--vault-accent) 20%, transparent);
+  background: color-mix(in srgb, var(--vault-accent) 10%, var(--color-surface));
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.18),
+    inset 0 0 0 1px color-mix(in srgb, var(--vault-accent) 35%, transparent);
 }
 .folder-icon-wrap {
   width: 40px; height: 40px;
@@ -532,30 +605,51 @@
   padding: var(--vault-row-y) 12px;
   display: flex; align-items: center; gap: 12px;
   border: 1px solid color-mix(in srgb, white 6%, transparent);
-  box-shadow: var(--shadow-vault-flat);
+  /* SOMBRA BASE QUE YA USA --vault-shadow PARA QUE EL PICKER DE COLOR DE
+     SOMBRAS SEA VISIBLE SIN NECESIDAD DE HOVER. EN MOVIL EL HOVER NO EXISTE. */
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.18),
+    0 4px 14px color-mix(in srgb, var(--vault-shadow) 12%, transparent);
   transition: transform var(--dur-vault-base) var(--ease-vault-bounce),
               border-color var(--dur-vault-base) ease,
               box-shadow var(--dur-vault-base) ease;
 }
 .vault-item:hover {
   border-color: color-mix(in srgb, var(--card-accent) 30%, transparent);
-  box-shadow: 0 6px 18px color-mix(in srgb, var(--card-accent) 14%, transparent);
+  /* SOMBRA HALO QUE SIGUE LA PERSONALIZACION DEL USUARIO (CAPA --vault-shadow),
+     CON UN MATIZ DEL ACENTO DE LA CARPETA SI EL ITEM ESTA EN UNA */
+  box-shadow:
+    0 8px 22px color-mix(in srgb, var(--vault-shadow) 18%, transparent),
+    0 2px 8px color-mix(in srgb, var(--card-accent) 12%, transparent);
 }
 .vault-item:active { transform: scale(0.985); }
 
-.item-avatar {
+/* WRAPPER POSICIONAL DEL AVATAR + BADGE. ANTES EL BADGE VIVIA DENTRO DEL
+   .item-avatar Y EL overflow:hidden DEL CIRCULO LO RECORTABA POR LA MITAD,
+   QUEDANDO COMO UN MEDIO LAPIZ SOBRE EL ICONO. AHORA EL BADGE ES HERMANO
+   DEL AVATAR Y FLOTA POR ENCIMA DEL CIRCULO SIN SUFRIR EL CLIP. */
+.item-avatar-wrap {
+  position: relative;
   width: 44px; height: 44px;
+  flex-shrink: 0;
+}
+.item-avatar {
+  width: 100%; height: 100%;
   border-radius: var(--r-vault-pill);
   display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
   position: relative;
   overflow: hidden;
   cursor: pointer;
   border: none;
   padding: 0;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.08),
-              0 2px 8px rgba(0,0,0,0.18);
+              0 2px 8px rgba(0,0,0,0.22),
+              0 4px 14px color-mix(in srgb, var(--vault-shadow) 18%, transparent);
+  transition: transform var(--dur-vault-base) var(--ease-vault-bounce),
+              box-shadow var(--dur-vault-base) ease;
 }
+.item-avatar:hover { transform: scale(1.05); }
+.item-avatar:active { transform: scale(0.94); }
 .item-avatar img {
   width: 100%; height: 100%;
   object-fit: cover;
@@ -563,23 +657,51 @@
 }
 .item-edit-badge {
   position: absolute;
-  bottom: -2px; right: -2px;
-  width: 16px; height: 16px;
+  bottom: -4px; right: -4px;
+  width: 18px; height: 18px;
   border-radius: 50%;
   background: var(--vault-accent);
   color: white;
   display: flex; align-items: center; justify-content: center;
   border: 2px solid var(--color-surface);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
+  pointer-events: none;
   opacity: 0;
-  transition: opacity var(--dur-vault-base) ease;
+  transform: scale(0.6);
+  transition: opacity var(--dur-vault-base) ease,
+              transform var(--dur-vault-base) var(--ease-vault-bounce);
 }
-.vault-item:hover .item-edit-badge { opacity: 1; }
-@media (max-width: 768px) { .item-edit-badge { opacity: 1; } }
+.vault-item:hover .item-edit-badge,
+.item-avatar:focus-visible + .item-edit-badge {
+  opacity: 1; transform: scale(1);
+}
+@media (hover: none) {
+  .item-edit-badge { opacity: 1; transform: scale(1); }
+}
 
+/* AHORA ES UN <button> PARA QUE TODA LA ZONA TITULO+META SEA UN HIT
+   ZONE ACCESIBLE QUE EJECUTA LA ACCION PRIMARIA (COPIAR/VER/DESCARGAR).
+   RESETEAMOS LOS ESTILOS NATIVOS DE BUTTON Y MANTENEMOS EL LAYOUT. */
 .item-info {
   flex: 1; min-width: 0;
   display: flex; flex-direction: column; gap: 3px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  align-self: stretch;
+  justify-content: center;
 }
+.item-info:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--vault-accent) 60%, transparent);
+  outline-offset: 2px;
+  border-radius: var(--r-vault-chip);
+}
+.item-info:active { transform: scale(0.99); }
 .item-top-row {
   display: flex; align-items: center; gap: 8px;
   flex-wrap: wrap;
@@ -670,18 +792,35 @@
 .item-actions {
   display: flex; gap: 4px;
   flex-shrink: 0;
+  /* AISLAR EL HIT TESTING DE LOS BOTONES — SE EVITA QUE LA ZONA TITULO
+     (.item-info) "TRAGUE" CLICKS DESLIZANTES EN LOS BOTONES PEQUENOS. */
+  position: relative;
+  z-index: 2;
 }
 .item-action {
   background: color-mix(in srgb, var(--color-text) 6%, transparent);
   border: none;
-  width: 32px; height: 32px;
+  width: 34px; height: 34px;
   border-radius: var(--r-vault-chip);
   color: var(--color-text);
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
+  padding: 0;
+  /* HIT AREA EXTENDIDA EN TACTIL — 44PX MINIMOS DE TARGETING APPLE/MD3 */
+  position: relative;
   transition: transform var(--dur-vault-base) var(--ease-vault-bounce),
               background var(--dur-vault-base) ease,
               color var(--dur-vault-base) ease;
+}
+.item-action::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  /* AREA INVISIBLE QUE AMPLIA EL TARGET TACTIL SIN CAMBIAR EL VISUAL */
+}
+.item-action:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--vault-accent) 60%, transparent);
+  outline-offset: 2px;
 }
 .item-action:active { transform: scale(0.9); }
 .item-action:hover { background: color-mix(in srgb, var(--vault-accent) 16%, transparent); }
@@ -708,7 +847,7 @@ body.vault-density-compact .item-avatar { width: 36px; height: 36px; border-radi
 body.vault-density-compact .item-name { font-size: 0.86rem; }
 body.vault-density-compact .item-meta { font-size: 0.7rem; }
 body.vault-density-compact .item-bottom-row { display: none; }
-body.vault-density-compact .item-action { width: 28px; height: 28px; }
+body.vault-density-compact .item-action { width: 30px; height: 30px; }
 
 /* ── EMPTY STATES DIFERENCIADOS ─────────────────────────────────── */
 .empty-state {
@@ -1426,4 +1565,221 @@ select.form-input {
 }
 .onboard-nav {
   display: flex; gap: 10px;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   AMPLIACIONES — AVATAR EDITOR, BORRADO DE CARPETAS, VISOR, AUTO-SWATCH
+   ════════════════════════════════════════════════════════════════════ */
+
+/* SECTION HEADER PERMITE ALOJAR EL BOTON "ELIMINAR CARPETA" A LA DERECHA */
+.section-header { gap: 12px; align-items: center; }
+
+/* BOTON DE ELIMINAR CARPETA ACTIVA — DISCRETO, COLOR DE PELIGRO PERO SOFT */
+.folder-delete-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 11px 6px 9px;
+  background: color-mix(in srgb, var(--color-danger) 14%, transparent);
+  color: var(--color-danger);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 32%, transparent);
+  border-radius: var(--r-vault-pill);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--dur-vault-base) ease,
+              transform var(--dur-vault-base) var(--ease-vault-bounce);
+}
+.folder-delete-btn:hover {
+  background: color-mix(in srgb, var(--color-danger) 22%, transparent);
+}
+.folder-delete-btn:active { transform: scale(0.96); }
+
+/* SWATCH AUTO — REPRESENTA "SEGUIR ACENTO GENERAL".
+   USA UN GRADIENTE PARA DESTACAR QUE NO ES UN COLOR FIJO. */
+.accent-grid-with-auto { grid-template-columns: repeat(7, 1fr); }
+.accent-swatch-auto {
+  background:
+    conic-gradient(from 220deg,
+      #7C3AED 0%, #EC4899 18%, #F59E0B 36%,
+      #10B981 54%, #06B6D4 72%, #7C3AED 100%);
+  color: white;
+  position: relative;
+}
+.accent-swatch-auto ph-link,
+.accent-swatch-auto ph-link svg {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+}
+
+/* AVATAR EDITOR — FOTO ACTUAL + ACCIONES (SUBIR / QUITAR) */
+.avatar-editor {
+  display: flex; align-items: center; gap: 14px;
+}
+.avatar-preview {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  /* SOLIDO TAMBIEN EN EL EDITOR — CONSISTENCIA CON EL AVATAR DEL HEADER */
+  background: var(--vault-accent);
+  color: white;
+  font-family: 'Bricolage Grotesque', sans-serif !important;
+  font-size: 1.6rem;
+  font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 2px solid color-mix(in srgb, white 14%, transparent);
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.22),
+    0 8px 22px color-mix(in srgb, var(--vault-shadow) 18%, transparent);
+}
+.avatar-preview.avatar-preview-photo { background: var(--color-bg); }
+.avatar-preview img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.avatar-editor-actions {
+  display: flex; flex-direction: column; gap: 6px;
+  flex: 1; min-width: 0;
+}
+.avatar-action {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 14px;
+  border-radius: var(--r-vault-pill);
+  background: var(--vault-accent-soft);
+  color: var(--vault-accent);
+  border: 1px solid color-mix(in srgb, var(--vault-accent) 35%, transparent);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background var(--dur-vault-base) ease,
+              transform var(--dur-vault-base) var(--ease-vault-bounce);
+}
+.avatar-action:hover {
+  background: color-mix(in srgb, var(--vault-accent) 28%, transparent);
+}
+.avatar-action:active { transform: scale(0.97); }
+.avatar-action-ghost {
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+  color: var(--color-text-muted);
+  border-color: color-mix(in srgb, var(--color-text) 16%, transparent);
+}
+.avatar-action-ghost:hover {
+  background: color-mix(in srgb, var(--color-danger) 14%, transparent);
+  color: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+}
+.form-hint {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+/* VISOR DE NOTA / ARCHIVO */
+.viewer-modal { max-width: 520px; }
+.viewer-note {
+  background: var(--color-bg);
+  border: 1px solid color-mix(in srgb, white 8%, transparent);
+  border-radius: var(--r-vault-chip);
+  padding: 14px 16px;
+  min-height: 140px;
+  max-height: 50vh;
+  overflow-y: auto;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--color-text);
+  transition: border-color var(--dur-vault-base) ease;
+}
+.viewer-note.revealed {
+  border-color: color-mix(in srgb, var(--vault-accent) 35%, transparent);
+}
+.viewer-note-hidden {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px;
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+.viewer-note-hidden strong { color: var(--vault-accent); font-weight: 800; }
+.viewer-file {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px;
+  background: var(--color-bg);
+  border: 1px solid color-mix(in srgb, white 8%, transparent);
+  border-radius: var(--r-vault-chip);
+}
+.viewer-file-icon {
+  width: 56px; height: 56px;
+  border-radius: var(--r-vault-pill);
+  background: color-mix(in srgb, var(--vault-icons) 22%, transparent);
+  color: var(--vault-icons);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.viewer-file-meta { min-width: 0; flex: 1; }
+.viewer-file-name {
+  font-family: 'Bricolage Grotesque', sans-serif !important;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.viewer-file-info {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  font-feature-settings: 'tnum' on;
+}
+
+/* ── TOAST EFIMERO PARA ACCIONES (COPY / DELETE / ERRORES) ─────────── */
+.vault-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(160px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 1500;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 14px;
+  border-radius: var(--r-vault-pill);
+  background: color-mix(in srgb, var(--color-text) 92%, var(--color-bg));
+  color: var(--color-bg);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+  max-width: calc(100% - 32px);
+  pointer-events: none;
+  animation: toastIn 0.24s cubic-bezier(0.34, 1.6, 0.64, 1) backwards;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+.vault-toast.toast-success {
+  background: color-mix(in srgb, var(--color-success) 92%, black 6%);
+  color: white;
+}
+.vault-toast.toast-error {
+  background: color-mix(in srgb, var(--color-danger) 92%, black 6%);
+  color: white;
+}
+.vault-toast.toast-info {
+  background: color-mix(in srgb, var(--vault-accent) 92%, black 6%);
+  color: white;
 }
