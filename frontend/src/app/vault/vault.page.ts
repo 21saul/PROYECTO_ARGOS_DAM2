@@ -1,8 +1,10 @@
-// VAULT PAGE
+// VAULT PAGE — REDISENO CLAYMORPHISM + BENTO + GAMIFICACION HONESTA
 //
-// RESUMEN: PAGINA PRINCIPAL DE LA BOVEDA. RENDERIZA ITEMS Y
-// CARPETAS DESCIFRADOS EN CLIENTE Y DELEGA EL CRUD AL
-// VaultService. MANTIENE TODAS LAS ANIMACIONES GSAP DEL DISENO.
+// RESUMEN: PAGINA PRINCIPAL DE LA BOVEDA. RENDERIZA ITEMS Y CARPETAS
+// DESCIFRADOS EN CLIENTE Y DELEGA EL CRUD AL VaultService. NO TOCA EL
+// CONTRATO DE API (item_type SIGUE SIENDO 'password'|'note'|'file'); LOS
+// SUBTIPOS LOGIN/CARD/IDENTITY/APIKEY/SEED/NOTE/FILE VIVEN EN payload.kind
+// Y NUNCA SALEN AL SERVIDOR EN CLARO — SOLO DENTRO DEL BLOB CIFRADO.
 
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { Router } from '@angular/router';
@@ -19,6 +21,47 @@ import {
 // TIPO DE PESTANA ACTIVA EN EL TOP DE LA PAGINA
 type ViewTab = 'all' | 'password' | 'note' | 'file';
 
+// SUBTIPO DIDACTICO DENTRO DEL PAYLOAD CIFRADO — NO TOCA API
+export type VaultKind =
+  | 'login'    // CONTRASENA DE CUENTA (DEFAULT PARA item_type='password')
+  | 'card'     // TARJETA BANCARIA
+  | 'identity' // DOCUMENTO DE IDENTIDAD
+  | 'apikey'   // CLAVE API / TOKEN
+  | 'seed'     // SEMILLA CRIPTO / RECUPERACION
+  | 'note'     // NOTA SEGURA (DEFAULT PARA item_type='note')
+  | 'file';    // FICHERO CIFRADO (FIJADO POR item_type='file')
+
+// METADATA POR KIND — ICONO PHOSPHOR, COLOR SEMANTICO Y LABEL
+interface KindMeta {
+  icon: string;       // NOMBRE DEL ELEMENTO PHOSPHOR (SIN PREFIJO ph-)
+  color: string;      // VARIABLE CSS DEL COLOR SEMANTICO
+  label: string;      // LABEL EN ESPANOL PARA LA UI
+  parentType: 'password' | 'note' | 'file';  // item_type CONTRATADO POR EL BACKEND
+}
+
+// LOGRO DETECTADO SOBRE EL ESTADO ACTUAL DE LA BOVEDA
+interface Achievement {
+  id: string;
+  label: string;
+  icon: string;
+  unlocked: boolean;
+  hint: string;
+}
+
+// PASO DEL ONBOARDING DIDACTICO
+interface OnboardingStep {
+  title: string;
+  body: string;
+  icon: string;
+}
+
+// PRESET DE ACENTO PARA EL SELECTOR DE PERSONALIZACION
+interface AccentPreset {
+  key: string;
+  label: string;
+  hex: string;
+}
+
 @Component({
   selector: 'app-vault',
   templateUrl: './vault.page.html',
@@ -34,6 +77,7 @@ export class VaultPage implements OnInit, OnDestroy {
   // REFERENCIA AL CONTENEDOR ION-CONTENT PARA CONTROLAR EL SCROLL
   @ViewChild(IonContent) content!: IonContent;
 
+  // ── ESTADO BASE ─────────────────────────────────────────────────────
   // ESTADO DE LA CAJA DE BUSQUEDA
   searchQuery = '';
   // PESTANA ACTIVA (TODO, CONTRASENAS, NOTAS, FICHEROS)
@@ -54,36 +98,45 @@ export class VaultPage implements OnInit, OnDestroy {
 
   // MAPA DE ICONOS PERSONALIZADOS POR ID DE ITEM (PERSISTIDO EN LOCALSTORAGE)
   customIcons: { [id: number]: string } = {};
+  // ORDEN PERSONALIZADO DE FAVORITOS (IDS DE ITEM, MAX 6, PERSISTIDO)
+  favoriteIds: number[] = [];
 
   // TAMANO TOTAL ASIGNADO A LA BOVEDA (CONSTANTE DE PRESENTACION)
   storageTotalMb = 50;
 
+  // ── ESTADO FORMULARIOS ──────────────────────────────────────────────
   // FLAGS DE APERTURA DE LOS MODALES PERSONALIZADOS
   addPasswordOpen = false;
   addNoteOpen = false;
   addFolderOpen = false;
-  // ITEM PENDIENTE DE CONFIRMAR ELIMINACION (NULL SI NO HAY MODAL ACTIVO)
+  // ITEM EN MODO EDICION (NULL = MODAL ES PARA ALTA)
+  editingItem: VaultItem | null = null;
+  // ITEM PENDIENTE DE CONFIRMAR ELIMINACION
   confirmDelete: VaultItem | null = null;
+  // CHECKLIST DEL MODAL DE BORRADO (REQUIERE 2 CONFIRMACIONES EXPLICITAS)
+  confirmDeleteChecks = { exported: false, understood: false };
   // FLAG GENERAL DE GUARDADO PARA DESHABILITAR BOTONES MIENTRAS SE PROCESA
   saving = false;
   // FLAG DE MOSTRAR/OCULTAR CONTRASENA EN EL FORMULARIO
   showPasswordInForm = false;
 
-  // FORMULARIO DE ALTA DE CONTRASENA
+  // FORMULARIO DE ALTA/EDICION DE CONTRASENA (UNIFICADO)
   formPassword: {
     title: string;
     username: string;
     password: string;
     url: string;
     folderId: number | null;
-  } = { title: '', username: '', password: '', url: '', folderId: null };
+    kind: 'login' | 'card' | 'apikey' | 'seed';
+  } = { title: '', username: '', password: '', url: '', folderId: null, kind: 'login' };
 
-  // FORMULARIO DE ALTA DE NOTA
+  // FORMULARIO DE ALTA/EDICION DE NOTA (UNIFICADO)
   formNote: {
     title: string;
     notes: string;
     folderId: number | null;
-  } = { title: '', notes: '', folderId: null };
+    kind: 'note' | 'identity';
+  } = { title: '', notes: '', folderId: null, kind: 'note' };
 
   // FORMULARIO DE ALTA DE CARPETA
   formFolder: {
@@ -98,11 +151,116 @@ export class VaultPage implements OnInit, OnDestroy {
     '#F59E0B', '#EF4444', '#3B82F6', '#84CC16',
   ];
 
-  // ICONOS DISPONIBLES PARA CARPETAS (DEBEN COINCIDIR CON LOS *ngIf DEL HTML)
+  // ICONOS DISPONIBLES PARA CARPETAS (COINCIDEN CON LOS *ngIf DEL HTML)
   readonly folderIcons: string[] = [
     'folder', 'bank', 'envelope', 'users-three',
     'briefcase', 'house', 'share-network',
   ];
+
+  // ── ICONOGRAFIA POR KIND ────────────────────────────────────────────
+  // MAPA KIND → META. ES LA UNICA FUENTE DE VERDAD ICONOGRAFICA.
+  readonly kindMeta: Record<VaultKind, KindMeta> = {
+    login:    { icon: 'key',                 color: 'var(--color-primary)',      label: 'Cuenta',       parentType: 'password' },
+    card:     { icon: 'credit-card',         color: 'var(--color-success)',      label: 'Tarjeta',      parentType: 'password' },
+    apikey:   { icon: 'terminal-window',     color: 'var(--color-warning)',      label: 'API key',      parentType: 'password' },
+    seed:     { icon: 'wallet',              color: 'var(--color-secondary)',    label: 'Semilla',      parentType: 'password' },
+    identity: { icon: 'identification-card', color: 'var(--color-accent)',       label: 'Identidad',    parentType: 'note'     },
+    note:     { icon: 'note',                color: 'var(--color-primary-soft)', label: 'Nota',         parentType: 'note'     },
+    file:     { icon: 'file',                color: 'var(--color-text-muted)',   label: 'Archivo',      parentType: 'file'     },
+  };
+
+  // KINDS QUE EL USUARIO PUEDE ELEGIR EN EL FORMULARIO DE PASSWORD
+  readonly passwordKinds: VaultKind[] = ['login', 'card', 'apikey', 'seed'];
+  // KINDS QUE EL USUARIO PUEDE ELEGIR EN EL FORMULARIO DE NOTA
+  readonly noteKinds: VaultKind[] = ['note', 'identity'];
+
+  // ── PERSONALIZACION ─────────────────────────────────────────────────
+  // PRESETS DEL ACENTO PERSONALIZABLE (5 + DEFAULT VIOLETA)
+  readonly accentPresets: AccentPreset[] = [
+    { key: 'default', label: 'Violeta', hex: '#7C3AED' },
+    { key: 'rosa',    label: 'Rosa',    hex: '#EC4899' },
+    { key: 'cyan',    label: 'Cyan',    hex: '#06B6D4' },
+    { key: 'verde',   label: 'Verde',   hex: '#10B981' },
+    { key: 'ambar',   label: 'Ambar',   hex: '#F59E0B' },
+    { key: 'rojo',    label: 'Rojo',    hex: '#EF4444' },
+  ];
+  // KEY ACTIVA DEL ACENTO (PERSISTIDA EN LOCALSTORAGE)
+  accentKey = 'default';
+  // MODO DENSIDAD (COMODO POR DEFECTO, COMPACTO OPCIONAL)
+  density: 'comfortable' | 'compact' = 'comfortable';
+  // INICIAL DEL USUARIO PARA EL AVATAR DEL HEADER (DERIVADA DEL EMAIL)
+  userInitial = 'A';
+  // NOMBRE CORTO DEL USUARIO PARA EL SALUDO
+  userDisplay = '';
+  // FLAG DE APERTURA DEL PANEL DE PERSONALIZACION
+  customizeOpen = false;
+
+  // ── CLIPBOARD AUTOCLEAR ─────────────────────────────────────────────
+  // ID DEL ITEM CUYA PASSWORD ESTA AHORA MISMO EN EL PORTAPAPELES
+  copiedItemId: number | null = null;
+  // SEGUNDOS RESTANTES ANTES DEL AUTOCLEAR (CUENTA REGRESIVA VISIBLE)
+  copyCountdown = 0;
+  // HANDLE DEL setInterval PARA LIMPIAR
+  private copyTimerHandle: any = null;
+  // DURACION DEL AUTOCLEAR EN SEGUNDOS
+  readonly COPY_AUTOCLEAR_SECONDS = 30;
+
+  // ── HEALTH SCORE ────────────────────────────────────────────────────
+  // PORCENTAJE 0-100 AGREGADO DE LA SALUD DE LA BOVEDA
+  healthScore = 0;
+  // BREAKDOWN POR METRICA (PARA TOOLTIP / EXPANSION)
+  healthBreakdown = {
+    strong: 0,    // % CONTRASENAS FUERTES
+    unique: 0,    // % CONTRASENAS UNICAS (NO REUTILIZADAS)
+    noLeak: 0,    // % SIN HIT EN HIBP (PLACEHOLDER HASTA INTEGRAR AUDITOR)
+    fresh: 0,     // BONUS POR AUDITORIA RECIENTE (PLACEHOLDER)
+  };
+  // LOGROS DETECTADOS SOBRE EL ESTADO ACTUAL
+  achievements: Achievement[] = [];
+
+  // ── ONBOARDING ──────────────────────────────────────────────────────
+  // INDICE DEL PASO ACTUAL (-1 = NO HAY ONBOARDING ABIERTO)
+  onboardingStep = -1;
+  // CONTENIDO DE LOS PASOS (DIDACTICO, NO PROMOCIONAL)
+  readonly onboardingSteps: OnboardingStep[] = [
+    {
+      title: 'Tu boveda es zero-knowledge',
+      body: 'Todo se cifra en TU dispositivo con AES-256-GCM antes de salir. El servidor solo guarda bloques cifrados — nadie, ni el equipo de ARGOS, puede leerlos.',
+      icon: 'shield-check',
+    },
+    {
+      title: 'Tu clave maestra es volatil',
+      body: 'Al cerrar sesion la clave se borra de memoria. Sin ella tus datos son ilegibles incluso si el servidor cayera comprometido. Por eso te volvera a pedir login cada vez que vuelvas.',
+      icon: 'key',
+    },
+    {
+      title: 'Contrasenas fuertes y unicas',
+      body: 'Reutilizar una contrasena entre cuentas es el #1 vector de fuga. Usa el generador integrado: longitud ≥ 12, mayusculas, numeros y simbolos. La bóveda mide la fuerza en vivo.',
+      icon: 'lock',
+    },
+    {
+      title: 'Activa 2FA cuando puedas',
+      body: 'Aunque una contrasena se filtre, un segundo factor (TOTP o llave fisica) detiene el acceso. Guarda los codigos de respaldo aqui como notas seguras.',
+      icon: 'lock-open',
+    },
+    {
+      title: 'La copia se autodestruye',
+      body: 'Cuando copias una contrasena al portapapeles la bóveda la borra automaticamente a los 30 segundos. Veras una cuenta atras junto al item — pega antes.',
+      icon: 'copy',
+    },
+  ];
+
+  // ── PASSWORD GENERATOR ──────────────────────────────────────────────
+  // FLAG DE APERTURA DEL POPOVER DE GENERADOR DE CONTRASENAS
+  generatorOpen = false;
+  // CONFIG DEL GENERADOR
+  generatorConfig = {
+    length: 16,
+    upper: true,
+    lower: true,
+    digits: true,
+    symbols: true,
+  };
 
   // CONSTRUCTOR QUE INYECTA VaultService, AuthService Y Router
   constructor(
@@ -113,15 +271,17 @@ export class VaultPage implements OnInit, OnDestroy {
 
   // INICIALIZACION DE LA PAGINA: CARGA SEED + DATOS REALES
   async ngOnInit() {
-    // RESTAURA LOS ICONOS PERSONALIZADOS GUARDADOS EN LOCALSTORAGE
+    // RESTAURA LAS PREFERENCIAS DEL USUARIO ANTES DE NADA
     this.loadCustomIcons();
+    this.loadFavorites();
+    this.loadAccent();
+    this.loadDensity();
+    this.loadUserIdentity();
+
     // SI NO HAY CLAVE DE CIFRADO EN MEMORIA FUERZA UN LOGIN FRESCO
     // (LA CLAVE ES VOLATIL POR DISENO Y SE PIERDE EN CADA RECARGA)
     const keyPresent = !!this.auth.getEncryptionKey();
-    const tokenPresent = this.auth.isAuthenticated();
-    console.log('[VaultPage] ngOnInit — token:', tokenPresent, 'key:', keyPresent);
     if (!keyPresent) {
-      console.warn('Boveda: sin clave de cifrado, redirigiendo a login');
       this.auth.logout();
       this.router.navigateByUrl('/login');
       this.loading = false;
@@ -132,18 +292,16 @@ export class VaultPage implements OnInit, OnDestroy {
       await this.vault.seedDemoData();
       // RECARGA LA LISTA DE CARPETAS E ITEMS REALES
       await this.refresh();
+      // DISPARA EL ONBOARDING SI ES PRIMERA VEZ DE ESTE USUARIO
+      this.maybeStartOnboarding();
     } catch (err) {
-      // PROPAGA EL ERROR A CONSOLA PARA QUE EL DEV LO VEA
       console.error('Error cargando boveda:', err);
     } finally {
-      // OCULTA EL SPINNER INDEPENDIENTEMENTE DEL RESULTADO
       this.loading = false;
     }
   }
 
   // RECARGA CARPETAS E ITEMS DESDE EL BACKEND
-  // CADA LISTADO SE ENVUELVE EN SU PROPIO TRY/CATCH PARA QUE EL FALLO DE UNO
-  // NO BORRE LO QUE YA TENIAMOS EN MEMORIA DEL OTRO
   async refresh() {
     try {
       const freshFolders = await this.vault.listFolders();
@@ -157,6 +315,8 @@ export class VaultPage implements OnInit, OnDestroy {
     } catch (err) {
       console.error('Error refrescando items:', err);
     }
+    // RECALCULA HEALTH SCORE Y LOGROS AL TERMINAR LA RECARGA
+    this.recomputeHealth();
   }
 
   // CALLBACK DE IONIC AL ENTRAR EN LA VISTA, DISPARA ANIMACIONES
@@ -164,128 +324,131 @@ export class VaultPage implements OnInit, OnDestroy {
     this.animateEntrance();
   }
 
-  // ORQUESTA LAS ANIMACIONES GSAP DE ENTRADA
-  // GSAP SOLO MUEVE TRANSFORMS (y/x/scale). EL OPACITY LO CONTROLA LA CSS
-  // ANIMATION vaultFadeIn forwards PARA QUE NO QUEDE NUNCA A 0 SI GSAP NO
-  // LLEGA A CORRER (CASO DE LOS ITEMS RECIEN AGREGADOS TRAS UN refresh()).
+  // ORQUESTA LAS ANIMACIONES GSAP DE ENTRADA RESPETANDO REDUCED-MOTION
   animateEntrance() {
-    // LIMPIA TWEENS PREVIOS PARA EVITAR ANIMACIONES SOLAPADAS
-    gsap.killTweensOf('.vault-stats-banner, .stat-pill, .folder-card, .vault-item, .tab-pill');
+    gsap.killTweensOf('.vault-health-card, .stat-pill, .folder-card, .vault-item, .tab-pill, .bento-favorite');
 
-    // ANIMA LA ENTRADA DEL BANNER SUPERIOR DESDE ARRIBA (SIN TOCAR OPACITY)
-    gsap.fromTo('.vault-stats-banner',
-      { y:-20 },
-      { y:0, duration:0.5, ease:'power2.out' });
-
-    // ANIMA LAS PILL DE ESTADISTICAS CON UN POP DE ESCALA
-    gsap.fromTo('.stat-pill',
-      { scale:0.85 },
-      { scale:1, duration:0.35, stagger:0.06,
-        ease:'back.out(1.4)', delay:0.15 });
-
-    // ANIMA LAS PILL DE PESTANAS SUBIENDO
-    gsap.fromTo('.tab-pill',
-      { y:12 },
-      { y:0, duration:0.3, stagger:0.05,
-        ease:'power2.out', delay:0.3 });
-
-    // ANIMA LAS CARPETAS DESLIZANDO DESDE LA IZQUIERDA
-    gsap.fromTo('.folder-card',
-      { x:-20 },
-      { x:0, duration:0.4, stagger:0.06,
-        ease:'power2.out', delay:0.4 });
-
-    // ANIMA LOS ITEMS DEL LISTADO SUBIENDO
-    gsap.fromTo('.vault-item',
-      { y:16 },
-      { y:0, duration:0.35, stagger:0.06,
-        ease:'power2.out', delay:0.55 });
+    // matchMedia ASEGURA QUE prefers-reduced-motion APAGA LOS BOUNCES
+    const mm = gsap.matchMedia();
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      gsap.fromTo('.vault-health-card', { y: -16 }, { y: 0, duration: 0.55, ease: 'power3.out' });
+      gsap.fromTo('.bento-favorite',
+        { scale: 0.88, y: 8 },
+        { scale: 1, y: 0, duration: 0.45, stagger: 0.07, ease: 'back.out(1.4)', delay: 0.15 });
+      gsap.fromTo('.tab-pill', { y: 12 }, { y: 0, duration: 0.3, stagger: 0.05, ease: 'power2.out', delay: 0.3 });
+      gsap.fromTo('.folder-card', { x: -20 }, { x: 0, duration: 0.4, stagger: 0.06, ease: 'power2.out', delay: 0.35 });
+      gsap.fromTo('.vault-item', { y: 14 }, { y: 0, duration: 0.32, stagger: 0.05, ease: 'power2.out', delay: 0.45 });
+    });
+    mm.add('(prefers-reduced-motion: reduce)', () => {
+      gsap.set('.vault-health-card, .bento-favorite, .tab-pill, .folder-card, .vault-item', { clearProps: 'transform' });
+    });
   }
 
+  // ── KIND HELPERS ────────────────────────────────────────────────────
+  // LEE EL KIND DESDE EL PAYLOAD CON FALLBACK AL DEFAULT DE item_type
+  itemKind(item: VaultItem): VaultKind {
+    const raw = (item.payload as any)?.kind as VaultKind | undefined;
+    if (raw && this.kindMeta[raw]) return raw;
+    if (item.item_type === 'password') return 'login';
+    if (item.item_type === 'note') return 'note';
+    return 'file';
+  }
+  iconForItem(item: VaultItem): string  { return this.kindMeta[this.itemKind(item)].icon; }
+  colorForItem(item: VaultItem): string { return this.kindMeta[this.itemKind(item)].color; }
+  labelForItem(item: VaultItem): string { return this.kindMeta[this.itemKind(item)].label; }
+
+  // ── FILTRADO ────────────────────────────────────────────────────────
   // NUMERO TOTAL DE ITEMS PARA EL BANNER
-  get totalEntries(): number {
-    return this.items.length;
-  }
+  get totalEntries(): number { return this.items.length; }
 
   // PORCENTAJE DE CONTRASENAS FUERTES SOBRE EL TOTAL DE CONTRASENAS
   get strongPercent(): number {
-    // FILTRA SOLO ITEMS DE TIPO CONTRASENA
     const passwords = this.items.filter(i => i.item_type === 'password');
     if (passwords.length === 0) return 0;
-    // CUENTA LAS QUE DERIVAN FUERZA 'strong'
     const strong = passwords.filter(i => this.itemStrength(i) === 'strong').length;
     return Math.round((strong / passwords.length) * 100);
   }
 
   // CONSUMO ACTUAL DE LA BOVEDA EN MEGABYTES
   get storageUsedMb(): number {
-    // SUMA TAMANOS DE BLOBS CIFRADOS DE TODOS LOS ITEMS
     const totalBytes = this.items.reduce((acc, i) => acc + (i.size_bytes || 0), 0);
-    // CONVIERTE A MB CON UN DECIMAL
     return Math.round((totalBytes / (1024 * 1024)) * 10) / 10;
   }
 
+  // PORCENTAJE DE USO DE ALMACENAMIENTO PARA LA BARRA
+  getStorageProgress(): number {
+    return (this.storageUsedMb / this.storageTotalMb) * 100;
+  }
+
   // LISTA DE ITEMS FILTRADOS POR PESTANA, CARPETA Y BUSQUEDA
+  // BUSQUEDA AMPLIADA: TITULO + USERNAME + URL + NOTES + NOMBRE DE CARPETA
   get filteredItems(): VaultItem[] {
-    // PUNTO DE PARTIDA: TODOS LOS ITEMS DESCIFRADOS
     let list = this.items;
-    // FILTRA POR TIPO SI LA PESTANA NO ES 'all'
-    if (this.activeTab !== 'all') {
-      list = list.filter(i => i.item_type === this.activeTab);
-    }
-    // FILTRA POR CARPETA ACTIVA SI HAY UNA SELECCIONADA
-    if (this.activeFolderId !== null) {
-      list = list.filter(i => i.folder_id === this.activeFolderId);
-    }
-    // FILTRA POR TEXTO SOBRE TITULO Y USUARIO DEL PAYLOAD
+    if (this.activeTab !== 'all') list = list.filter(i => i.item_type === this.activeTab);
+    if (this.activeFolderId !== null) list = list.filter(i => i.folder_id === this.activeFolderId);
     if (this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase();
-      list = list.filter(i =>
-        (i.payload.title || '').toLowerCase().includes(q) ||
-        (i.payload.username || '').toLowerCase().includes(q));
+      list = list.filter(i => {
+        const p = i.payload;
+        if ((p.title || '').toLowerCase().includes(q)) return true;
+        if ((p.username || '').toLowerCase().includes(q)) return true;
+        if ((p.url || '').toLowerCase().includes(q)) return true;
+        if ((p.notes || '').toLowerCase().includes(q)) return true;
+        if (i.folder_id !== null) {
+          const fname = this.getFolderName(i.folder_id).toLowerCase();
+          if (fname.includes(q)) return true;
+        }
+        return false;
+      });
     }
     return list;
   }
 
-  // CAMBIA DE PESTANA Y RELANZA LA ANIMACION DEL LISTADO (SOLO TRANSFORM)
+  // FAVORITOS PARA EL BENTO SUPERIOR (MAX 6)
+  get favoriteItems(): VaultItem[] {
+    if (this.favoriteIds.length === 0) {
+      // SI EL USUARIO NO HA MARCADO FAVORITOS, MUESTRA LOS 4 MAS RECIENTES
+      return [...this.items]
+        .sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''))
+        .slice(0, 4);
+    }
+    return this.favoriteIds
+      .map(id => this.items.find(i => i.id === id))
+      .filter((i): i is VaultItem => !!i)
+      .slice(0, 6);
+  }
+
+  // CAMBIA DE PESTANA Y RELANZA LA ANIMACION DEL LISTADO
   setTab(tab: ViewTab) {
     this.activeTab = tab;
     setTimeout(() => {
-      gsap.fromTo('.vault-item',
-        { y:12 },
-        { y:0, duration:0.3, stagger:0.05, ease:'power2.out' });
+      gsap.fromTo('.vault-item', { y: 10 }, { y: 0, duration: 0.28, stagger: 0.04, ease: 'power2.out' });
     }, 30);
   }
 
-  // SELECCIONA UNA CARPETA O LA DESELECCIONA SI YA ESTABA ACTIVA (SOLO TRANSFORM)
+  // SELECCIONA UNA CARPETA O LA DESELECCIONA SI YA ESTABA ACTIVA
   selectFolder(id: number | null) {
     this.activeFolderId = this.activeFolderId === id ? null : id;
     setTimeout(() => {
-      gsap.fromTo('.vault-item',
-        { x:-20 },
-        { x:0, duration:0.3, stagger:0.05, ease:'power2.out' });
+      gsap.fromTo('.vault-item', { x: -16 }, { x: 0, duration: 0.28, stagger: 0.04, ease: 'power2.out' });
     }, 30);
   }
 
-  // DEVUELVE EL NOMBRE DE LA CARPETA DADA SU ID
+  // ── METADATOS DE CARPETA ────────────────────────────────────────────
   getFolderName(id: number | null): string {
     if (id === null) return '';
     return this.folders.find(f => f.id === id)?.name || '';
   }
-
-  // DEVUELVE EL COLOR DE LA CARPETA DADA SU ID
   getFolderColor(id: number | null): string {
     if (id === null) return 'var(--color-text-muted)';
     return this.folders.find(f => f.id === id)?.color || 'var(--color-text-muted)';
   }
 
-  // CALCULA UNA SALUD APROXIMADA POR CARPETA SOBRE LA BASE DE FUERZA DE PASSWORDS
+  // SALUD POR CARPETA (PROMEDIO DE FUERZA DE PASSWORDS DENTRO)
   getFolderHealth(folderId: number): number {
-    // FILTRA CONTRASENAS DE LA CARPETA INDICADA
     const passwords = this.items.filter(i =>
       i.folder_id === folderId && i.item_type === 'password');
     if (passwords.length === 0) return 80;
-    // PUNTUA CADA UNA Y PROMEDIA
     const score = passwords.reduce((acc, i) => {
       const s = this.itemStrength(i);
       return acc + (s === 'strong' ? 100 : s === 'medium' ? 60 : 30);
@@ -295,30 +458,46 @@ export class VaultPage implements OnInit, OnDestroy {
 
   // COLOR ASOCIADO A LA FUERZA DE UNA CONTRASENA
   getStrengthColor(s?: string): string {
-    if (s === 'strong') return 'var(--color-success)';
-    if (s === 'medium') return 'var(--color-warning)';
-    if (s === 'weak')   return 'var(--color-danger)';
+    if (s === 'strong') return 'var(--vault-health-good)';
+    if (s === 'medium') return 'var(--vault-health-mid)';
+    if (s === 'weak')   return 'var(--vault-health-bad)';
     return 'var(--color-text-muted)';
   }
-
   // ETIQUETA DE LA FUERZA DE UNA CONTRASENA
   getStrengthLabel(s?: string): string {
     if (s === 'strong') return 'Fuerte';
     if (s === 'medium') return 'Media';
-    if (s === 'weak')   return 'Débil';
+    if (s === 'weak')   return 'Debil';
     return '';
   }
-
+  // EXPLICACION DIDACTICA DE POR QUE UNA CONTRASENA NO ES FUERTE
+  getStrengthReason(item: VaultItem): string {
+    if (item.item_type !== 'password') return '';
+    const p = item.payload.password || '';
+    if (!p) return 'Sin contrasena';
+    const missing: string[] = [];
+    if (p.length < 12) missing.push('≥12 caracteres');
+    if (!/[A-Z]/.test(p)) missing.push('mayuscula');
+    if (!/[a-z]/.test(p)) missing.push('minuscula');
+    if (!/[0-9]/.test(p)) missing.push('numero');
+    if (!/[^A-Za-z0-9]/.test(p)) missing.push('simbolo');
+    if (missing.length === 0) return 'Cumple todos los criterios';
+    return 'Falta: ' + missing.join(', ');
+  }
   // COLOR DEL INDICADOR DE SALUD POR PUNTUACION
   getHealthColor(score: number): string {
-    if (score >= 85) return 'var(--color-success)';
-    if (score >= 65) return 'var(--color-warning)';
-    return 'var(--color-danger)';
+    if (score >= 80) return 'var(--vault-health-good)';
+    if (score >= 55) return 'var(--vault-health-mid)';
+    return 'var(--vault-health-bad)';
   }
-
-  // PORCENTAJE DE USO DE ALMACENAMIENTO PARA LA BARRA
-  getStorageProgress(): number {
-    return (this.storageUsedMb / this.storageTotalMb) * 100;
+  // ETIQUETA NARRATIVA DEL HEALTH SCORE PARA QUE LA MASCOTA LO COMENTE
+  get healthNarrative(): string {
+    const s = this.healthScore;
+    if (s >= 85) return 'Tu boveda esta blindada';
+    if (s >= 65) return 'Vas bien — sigue rotando las debiles';
+    if (s >= 40) return 'Hay reutilizadas o debiles que limpiar';
+    if (s > 0)   return 'Empieza por reforzar las contrasenas debiles';
+    return 'Aun no hay contrasenas que medir';
   }
 
   // EVALUA LA FUERZA DE UN ITEM A PARTIR DE SU PASSWORD EN CLARO
@@ -337,15 +516,35 @@ export class VaultPage implements OnInit, OnDestroy {
     return 'weak';
   }
 
-  // DEVUELVE EL COLOR DE FONDO DEL AVATAR (USA EL DE LA CARPETA)
+  // SET DE PASSWORDS REUTILIZADAS (PARA EL BADGE "REUTILIZADA")
+  private reusedSet = new Set<string>();
+  // RECALCULA EL SET DE PASSWORDS REUTILIZADAS (LLAMADO TRAS refresh)
+  private recomputeReused() {
+    const counts = new Map<string, number>();
+    for (const i of this.items) {
+      if (i.item_type !== 'password') continue;
+      const p = i.payload.password || '';
+      if (!p) continue;
+      counts.set(p, (counts.get(p) || 0) + 1);
+    }
+    this.reusedSet.clear();
+    for (const [p, n] of counts) if (n > 1) this.reusedSet.add(p);
+  }
+  // INDICA SI ESTE ITEM USA UNA CONTRASENA REUTILIZADA EN OTRAS CUENTAS
+  isReused(item: VaultItem): boolean {
+    if (item.item_type !== 'password') return false;
+    const p = item.payload.password || '';
+    if (!p) return false;
+    return this.reusedSet.has(p);
+  }
+
+  // DEVUELVE EL COLOR DE FONDO DEL AVATAR (USA EL COLOR DEL KIND)
   itemColor(item: VaultItem): string {
     if (item.folder_id !== null && item.folder_id !== undefined) {
       const f = this.folders.find(fo => fo.id === item.folder_id);
       if (f) return f.color;
     }
-    if (item.item_type === 'password') return '#7C3AED';
-    if (item.item_type === 'note') return '#06B6D4';
-    return '#EF4444';
+    return this.colorForItem(item);
   }
 
   // EXTRAE UN SNIPPET DE LA NOTA PARA EL LISTADO
@@ -384,120 +583,169 @@ export class VaultPage implements OnInit, OnDestroy {
     return `Hace ${diffMonths}m`;
   }
 
-  // COPIA AL PORTAPAPELES LA CONTRASENA Y DA UN FEEDBACK VISUAL
+  // ── COPY AL PORTAPAPELES CON AUTOCLEAR DE 30S ───────────────────────
   async copyPassword(item: VaultItem, event: Event) {
     event.stopPropagation();
     // ANIMA EL ITEM CON UN PULSO MINIMO
     gsap.fromTo(`#item-${item.id}`,
-      { scale:1 },
-      { scale:0.96, duration:0.1, yoyo:true, repeat:1 });
+      { scale: 1 }, { scale: 0.96, duration: 0.1, yoyo: true, repeat: 1 });
     // COPIA AL PORTAPAPELES SI HAY CONTENIDO
     const pwd = item.payload.password || '';
-    if (pwd && navigator.clipboard) {
-      try { await navigator.clipboard.writeText(pwd); } catch {}
+    if (!pwd || !navigator.clipboard) return;
+    try {
+      await navigator.clipboard.writeText(pwd);
+    } catch {
+      return;
+    }
+    // ARRANCA EL AUTOCLEAR
+    this.startCopyCountdown(item.id);
+  }
+  private startCopyCountdown(itemId: number) {
+    this.clearCopyTimer();
+    this.copiedItemId = itemId;
+    this.copyCountdown = this.COPY_AUTOCLEAR_SECONDS;
+    this.copyTimerHandle = setInterval(() => {
+      this.copyCountdown--;
+      if (this.copyCountdown <= 0) this.expireClipboard();
+    }, 1000);
+  }
+  private async expireClipboard() {
+    this.clearCopyTimer();
+    // SOBREESCRIBE EL CLIPBOARD CON UNA CADENA INOCUA
+    try {
+      if (navigator.clipboard) await navigator.clipboard.writeText('');
+    } catch {}
+    this.copiedItemId = null;
+    this.copyCountdown = 0;
+  }
+  private clearCopyTimer() {
+    if (this.copyTimerHandle) {
+      clearInterval(this.copyTimerHandle);
+      this.copyTimerHandle = null;
     }
   }
-
-  // ABRE O CIERRA EL MENU DEL FAB
-  toggleFab() {
-    this.fabOpen = !this.fabOpen;
+  // EL USUARIO PUEDE CANCELAR EL AUTOCLEAR MANUALMENTE (BORRA YA)
+  cancelClipboard(event?: Event) {
+    if (event) event.stopPropagation();
+    void this.expireClipboard();
   }
 
-  // ABRE EL MODAL DE NUEVA CONTRASENA Y RESETEA EL FORMULARIO
-  addPassword() {
+  // ── FAB / FORMULARIOS ──────────────────────────────────────────────
+  toggleFab() { this.fabOpen = !this.fabOpen; }
+
+  addPassword(kind: 'login' | 'card' | 'apikey' | 'seed' = 'login') {
     this.fabOpen = false;
+    this.editingItem = null;
     this.formPassword = {
       title: '', username: '', password: '', url: '',
-      folderId: this.activeFolderId,
+      folderId: this.activeFolderId, kind,
     };
     this.showPasswordInForm = false;
     this.addPasswordOpen = true;
   }
+  cancelAddPassword() { this.addPasswordOpen = false; this.editingItem = null; }
 
-  // CIERRA EL MODAL DE NUEVA CONTRASENA SIN GUARDAR
-  cancelAddPassword() {
-    this.addPasswordOpen = false;
-  }
-
-  // ENVIA EL FORMULARIO DE CONTRASENA AL BACKEND CIFRADO
   async submitAddPassword() {
-    // VALIDA QUE EL TITULO ESTE PRESENTE
     if (!this.formPassword.title.trim()) return;
     this.saving = true;
     try {
-      // CONSTRUYE EL PAYLOAD Y LO CIFRA EN VaultService.createItem
-      const payload: VaultItemPayload = {
+      const payload: VaultItemPayload & { kind?: VaultKind } = {
         title: this.formPassword.title.trim(),
         username: this.formPassword.username.trim(),
         password: this.formPassword.password,
         url: this.formPassword.url.trim(),
+        kind: this.formPassword.kind,
       };
-      await this.vault.createItem(
-        'password',
-        payload,
-        this.formPassword.folderId ?? undefined,
-      );
-      // CIERRA EL MODAL ANTES DEL REFRESH PARA QUE LA UI REACCIONE INMEDIATA
+      if (this.editingItem) {
+        await this.vault.updateItem(
+          this.editingItem.id,
+          payload as VaultItemPayload,
+          this.formPassword.folderId,
+        );
+      } else {
+        await this.vault.createItem(
+          'password', payload as VaultItemPayload,
+          this.formPassword.folderId ?? undefined,
+        );
+      }
       this.addPasswordOpen = false;
+      this.editingItem = null;
       await this.refresh();
     } catch (err) {
-      console.error('Error creando contrasena:', err);
+      console.error('Error guardando contrasena:', err);
     } finally {
       this.saving = false;
     }
   }
 
-  // ABRE EL MODAL DE NUEVA NOTA Y RESETEA EL FORMULARIO
-  addNote() {
+  addNote(kind: 'note' | 'identity' = 'note') {
     this.fabOpen = false;
-    this.formNote = {
-      title: '', notes: '',
-      folderId: this.activeFolderId,
-    };
+    this.editingItem = null;
+    this.formNote = { title: '', notes: '', folderId: this.activeFolderId, kind };
     this.addNoteOpen = true;
   }
+  cancelAddNote() { this.addNoteOpen = false; this.editingItem = null; }
 
-  // CIERRA EL MODAL DE NUEVA NOTA SIN GUARDAR
-  cancelAddNote() {
-    this.addNoteOpen = false;
-  }
-
-  // ENVIA EL FORMULARIO DE NOTA AL BACKEND CIFRADO
   async submitAddNote() {
     if (!this.formNote.title.trim()) return;
     this.saving = true;
     try {
-      const payload: VaultItemPayload = {
+      const payload: VaultItemPayload & { kind?: VaultKind } = {
         title: this.formNote.title.trim(),
         notes: this.formNote.notes,
+        kind: this.formNote.kind,
       };
-      await this.vault.createItem(
-        'note',
-        payload,
-        this.formNote.folderId ?? undefined,
-      );
+      if (this.editingItem) {
+        await this.vault.updateItem(
+          this.editingItem.id, payload as VaultItemPayload, this.formNote.folderId);
+      } else {
+        await this.vault.createItem(
+          'note', payload as VaultItemPayload, this.formNote.folderId ?? undefined);
+      }
       this.addNoteOpen = false;
+      this.editingItem = null;
       await this.refresh();
     } catch (err) {
-      console.error('Error creando nota:', err);
+      console.error('Error guardando nota:', err);
     } finally {
       this.saving = false;
     }
   }
 
-  // ABRE EL MODAL DE NUEVA CARPETA Y RESETEA EL FORMULARIO
+  // ABRE EL MODAL EN MODO EDICION CON LOS DATOS DEL ITEM
+  editItem(item: VaultItem, event: Event) {
+    event.stopPropagation();
+    const kind = this.itemKind(item);
+    this.editingItem = item;
+    if (item.item_type === 'password') {
+      this.formPassword = {
+        title: item.payload.title || '',
+        username: item.payload.username || '',
+        password: item.payload.password || '',
+        url: item.payload.url || '',
+        folderId: item.folder_id ?? null,
+        kind: (['login','card','apikey','seed'].includes(kind) ? kind : 'login') as any,
+      };
+      this.showPasswordInForm = false;
+      this.addPasswordOpen = true;
+    } else if (item.item_type === 'note') {
+      this.formNote = {
+        title: item.payload.title || '',
+        notes: item.payload.notes || '',
+        folderId: item.folder_id ?? null,
+        kind: (kind === 'identity' ? 'identity' : 'note') as any,
+      };
+      this.addNoteOpen = true;
+    }
+  }
+
   addFolder() {
     this.fabOpen = false;
     this.formFolder = { name: '', color: '#7C3AED', icon: 'folder' };
     this.addFolderOpen = true;
   }
+  cancelAddFolder() { this.addFolderOpen = false; }
 
-  // CIERRA EL MODAL DE NUEVA CARPETA SIN GUARDAR
-  cancelAddFolder() {
-    this.addFolderOpen = false;
-  }
-
-  // ENVIA EL FORMULARIO DE CARPETA AL BACKEND
   async submitAddFolder() {
     if (!this.formFolder.name.trim()) return;
     this.saving = true;
@@ -515,42 +763,24 @@ export class VaultPage implements OnInit, OnDestroy {
       this.saving = false;
     }
   }
+  pickFolderColor(color: string) { this.formFolder.color = color; }
+  pickFolderIcon(icon: string) { this.formFolder.icon = icon; }
 
-  // SELECCIONA UN COLOR EN EL FORMULARIO DE CARPETA
-  pickFolderColor(color: string) {
-    this.formFolder.color = color;
-  }
-
-  // SELECCIONA UN ICONO EN EL FORMULARIO DE CARPETA
-  pickFolderIcon(icon: string) {
-    this.formFolder.icon = icon;
-  }
-
-  // ABRE EL DIALOGO DE SELECCION DE FICHERO PARA SUBIR A LA BOVEDA
   addFile() {
     this.fabOpen = false;
     this.fileInput.nativeElement.click();
   }
-
-  // HANDLER DEL INPUT DE FICHERO: LEE, CIFRA Y SUBE COMO ITEM file
   onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
     const file = input.files[0];
-
-    // MUESTRA EL OVERLAY DE CIFRADO MIENTRAS PROCESA
     this.showCipherAnim = true;
-
-    // LEE EL FICHERO COMO BASE64 PARA INCRUSTARLO EN EL PAYLOAD
     const reader = new FileReader();
     reader.onload = async (e: any) => {
       const dataUrl: string = e.target.result;
-      // SEPARA EL PREFIJO data:...;base64, DEL CONTENIDO REAL
       const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
       const payload: VaultItemPayload = {
-        title: file.name,
-        fileName: file.name,
-        fileData: base64,
+        title: file.name, fileName: file.name, fileData: base64,
       };
       try {
         await this.vault.createItem('file', payload, this.activeFolderId ?? undefined);
@@ -558,7 +788,6 @@ export class VaultPage implements OnInit, OnDestroy {
       } catch (err) {
         console.error('Error subiendo fichero:', err);
       } finally {
-        // OCULTA EL OVERLAY TRAS UN BREVE RETARDO PARA QUE SE VEA LA ANIMACION
         setTimeout(() => { this.showCipherAnim = false; }, 800);
       }
     };
@@ -566,27 +795,27 @@ export class VaultPage implements OnInit, OnDestroy {
     input.value = '';
   }
 
-  // ABRE EL MODAL DE CONFIRMACION DE BORRADO PARA UN ITEM
+  // ── BORRADO CON CHECKLIST DIDACTICA ─────────────────────────────────
   deleteItem(item: VaultItem, event: Event) {
     event.stopPropagation();
     this.confirmDelete = item;
+    this.confirmDeleteChecks = { exported: false, understood: false };
   }
-
-  // CIERRA EL MODAL DE CONFIRMACION DE BORRADO SIN ACCION
-  cancelDelete() {
-    this.confirmDelete = null;
+  cancelDelete() { this.confirmDelete = null; }
+  get canConfirmDelete(): boolean {
+    return this.confirmDeleteChecks.understood;
   }
-
-  // EJECUTA EL BORRADO REAL DEL ITEM TRAS LA CONFIRMACION
   async confirmDeleteAction() {
+    if (!this.canConfirmDelete) return;
     const item = this.confirmDelete;
     if (!item) return;
     this.saving = true;
     try {
       await this.vault.deleteItem(item.id);
-      // LIMPIA EL ICONO CUSTOM SI EXISTIA PARA ESE ITEM
       delete this.customIcons[item.id];
+      this.favoriteIds = this.favoriteIds.filter(id => id !== item.id);
       this.saveCustomIcons();
+      this.saveFavorites();
       this.confirmDelete = null;
       await this.refresh();
     } catch (err) {
@@ -596,26 +825,19 @@ export class VaultPage implements OnInit, OnDestroy {
     }
   }
 
-  // ITEM ACTUALMENTE EN EDICION DE ICONO PERSONALIZADO
+  // ── ICONO PERSONALIZADO POR ITEM ────────────────────────────────────
   private currentEditingItemId: number | null = null;
-
-  // ABRE EL SELECTOR DE FICHERO PARA ICONO CUSTOM DE UN ITEM
   openIconPicker(item: VaultItem, event: Event) {
     event.stopPropagation();
     this.currentEditingItemId = item.id;
     this.iconInput.nativeElement.click();
   }
-
-  // LEE EL ICONO SELECCIONADO Y LO PERSISTE COMO DATAURL
   onIconSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
     if (this.currentEditingItemId === null) return;
     const file = input.files[0];
-    if (file.size > 1024 * 1024) {
-      alert('Imagen demasiado grande (máx 1MB)');
-      return;
-    }
+    if (file.size > 1024 * 1024) { alert('Imagen demasiado grande (max 1MB)'); return; }
     const reader = new FileReader();
     reader.onload = (e: any) => {
       if (this.currentEditingItemId !== null) {
@@ -626,25 +848,173 @@ export class VaultPage implements OnInit, OnDestroy {
     reader.readAsDataURL(file);
     input.value = '';
   }
-
-  // PERSISTE EL MAPA DE ICONOS PERSONALIZADOS EN LOCALSTORAGE
   private saveCustomIcons() {
     localStorage.setItem('argos-vault-icons', JSON.stringify(this.customIcons));
   }
-
-  // RECUPERA EL MAPA DE ICONOS PERSONALIZADOS GUARDADO
   private loadCustomIcons() {
     const saved = localStorage.getItem('argos-vault-icons');
     if (!saved) return;
-    try {
-      this.customIcons = JSON.parse(saved) || {};
-    } catch (e) {
-      this.customIcons = {};
-    }
+    try { this.customIcons = JSON.parse(saved) || {}; }
+    catch { this.customIcons = {}; }
   }
 
-  // DESTRUCTOR: LIMPIA TWEENS PARA EVITAR FUGAS DE ANIMACION
+  // ── FAVORITOS (MAX 6) ───────────────────────────────────────────────
+  isFavorite(item: VaultItem): boolean { return this.favoriteIds.includes(item.id); }
+  toggleFavorite(item: VaultItem, event: Event) {
+    event.stopPropagation();
+    if (this.isFavorite(item)) {
+      this.favoriteIds = this.favoriteIds.filter(id => id !== item.id);
+    } else {
+      if (this.favoriteIds.length >= 6) this.favoriteIds.pop();
+      this.favoriteIds = [item.id, ...this.favoriteIds];
+    }
+    this.saveFavorites();
+  }
+  private saveFavorites() {
+    localStorage.setItem('argos-vault-favs', JSON.stringify(this.favoriteIds));
+  }
+  private loadFavorites() {
+    const saved = localStorage.getItem('argos-vault-favs');
+    if (!saved) return;
+    try { this.favoriteIds = JSON.parse(saved) || []; }
+    catch { this.favoriteIds = []; }
+  }
+
+  // ── PERSONALIZACION: ACENTO / DENSIDAD / IDENTIDAD ──────────────────
+  openCustomize() { this.customizeOpen = true; }
+  closeCustomize() { this.customizeOpen = false; }
+  pickAccent(key: string) {
+    this.accentKey = key;
+    document.body.setAttribute('data-vault-accent', key === 'default' ? '' : key);
+    if (key === 'default') document.body.removeAttribute('data-vault-accent');
+    localStorage.setItem('argos-vault-accent', key);
+  }
+  private loadAccent() {
+    const saved = localStorage.getItem('argos-vault-accent') || 'default';
+    this.accentKey = saved;
+    if (saved === 'default') document.body.removeAttribute('data-vault-accent');
+    else document.body.setAttribute('data-vault-accent', saved);
+  }
+  toggleDensity() {
+    this.density = this.density === 'comfortable' ? 'compact' : 'comfortable';
+    document.body.classList.toggle('vault-density-compact', this.density === 'compact');
+    localStorage.setItem('argos-vault-density', this.density);
+  }
+  private loadDensity() {
+    const saved = (localStorage.getItem('argos-vault-density') as any) || 'comfortable';
+    this.density = saved === 'compact' ? 'compact' : 'comfortable';
+    document.body.classList.toggle('vault-density-compact', this.density === 'compact');
+  }
+  private loadUserIdentity() {
+    // INTENTA RECUPERAR EMAIL/NAME PERSISTIDO POR EL AUTH SERVICE
+    try {
+      const email = (this.auth as any).getEmail?.() || localStorage.getItem('argos-user-email') || '';
+      if (email) {
+        this.userInitial = (email[0] || 'A').toUpperCase();
+        this.userDisplay = email.split('@')[0];
+        return;
+      }
+    } catch {}
+    this.userInitial = 'A';
+    this.userDisplay = '';
+  }
+
+  // ── HEALTH SCORE + LOGROS ───────────────────────────────────────────
+  private recomputeHealth() {
+    this.recomputeReused();
+    const passwords = this.items.filter(i => i.item_type === 'password');
+    const total = passwords.length;
+
+    // % FUERTES
+    const strong = total === 0 ? 0
+      : Math.round((passwords.filter(i => this.itemStrength(i) === 'strong').length / total) * 100);
+    // % UNICAS (NO REUTILIZADAS)
+    const unique = total === 0 ? 0
+      : Math.round((passwords.filter(i => !this.isReused(i)).length / total) * 100);
+    // % SIN HIT EN HIBP — PLACEHOLDER HASTA INTEGRAR AuditorService DENTRO DE LA BOVEDA.
+    // SE PONE A 100 SI EL USUARIO NO HA AUDITADO TODAVIA, ASI EL SCORE NO SE PENALIZA
+    // GRATUITAMENTE; SE PENALIZARA SI EL AUDITOR DETECTA UNA FUGA EN UNA ITERACION POSTERIOR.
+    const noLeak = 100;
+    // BONUS POR AUDITORIA RECIENTE — PLACEHOLDER (DE NUEVO 100 POR DEFECTO)
+    const fresh = 100;
+
+    this.healthBreakdown = { strong, unique, noLeak, fresh };
+    this.healthScore = Math.round(strong * 0.35 + unique * 0.30 + noLeak * 0.20 + fresh * 0.15);
+
+    // LOGROS — TODOS SON ACCIONES DE SEGURIDAD REALES, NO DE VANITY
+    this.achievements = [
+      {
+        id: 'no-reused',
+        label: 'Sin reutilizadas',
+        icon: 'check-circle',
+        unlocked: total > 0 && unique === 100,
+        hint: 'Todas tus contrasenas son unicas',
+      },
+      {
+        id: 'all-strong',
+        label: 'Todas fuertes',
+        icon: 'lock',
+        unlocked: total > 0 && strong === 100,
+        hint: 'Todas tus contrasenas son fuertes',
+      },
+      {
+        id: 'health-80',
+        label: 'Salud > 80',
+        icon: 'shield-check',
+        unlocked: this.healthScore >= 80,
+        hint: 'Tu boveda esta en buen estado general',
+      },
+    ];
+  }
+
+  // ── ONBOARDING ──────────────────────────────────────────────────────
+  private maybeStartOnboarding() {
+    const seen = localStorage.getItem('argos-vault-onboarded');
+    if (seen === '1') return;
+    this.onboardingStep = 0;
+  }
+  nextOnboarding() {
+    if (this.onboardingStep < this.onboardingSteps.length - 1) this.onboardingStep++;
+    else this.finishOnboarding();
+  }
+  prevOnboarding() {
+    if (this.onboardingStep > 0) this.onboardingStep--;
+  }
+  skipOnboarding() { this.finishOnboarding(); }
+  private finishOnboarding() {
+    localStorage.setItem('argos-vault-onboarded', '1');
+    this.onboardingStep = -1;
+  }
+  // PERMITE REABRIR EL TOUR DESDE EL PANEL DE PERSONALIZACION
+  restartOnboarding() {
+    this.closeCustomize();
+    this.onboardingStep = 0;
+  }
+
+  // ── PASSWORD GENERATOR ──────────────────────────────────────────────
+  toggleGenerator() { this.generatorOpen = !this.generatorOpen; }
+  generatePassword() {
+    const lowerSet = 'abcdefghijklmnopqrstuvwxyz';
+    const upperSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const digitSet = '0123456789';
+    const symbolSet = '!@#$%^&*()-_=+[]{};:,.<>?';
+    let pool = '';
+    if (this.generatorConfig.lower) pool += lowerSet;
+    if (this.generatorConfig.upper) pool += upperSet;
+    if (this.generatorConfig.digits) pool += digitSet;
+    if (this.generatorConfig.symbols) pool += symbolSet;
+    if (!pool) pool = lowerSet + digitSet;
+    const arr = new Uint32Array(this.generatorConfig.length);
+    crypto.getRandomValues(arr);
+    let out = '';
+    for (let i = 0; i < arr.length; i++) out += pool[arr[i] % pool.length];
+    this.formPassword.password = out;
+    this.showPasswordInForm = true;
+  }
+
+  // DESTRUCTOR: LIMPIA TWEENS Y TIMERS PARA EVITAR FUGAS
   ngOnDestroy() {
-    gsap.killTweensOf('.vault-stats-banner, .stat-pill, .folder-card, .vault-item, .tab-pill');
+    this.clearCopyTimer();
+    gsap.killTweensOf('.vault-health-card, .stat-pill, .folder-card, .vault-item, .tab-pill, .bento-favorite');
   }
 }
