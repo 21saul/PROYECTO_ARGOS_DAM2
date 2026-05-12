@@ -1,263 +1,469 @@
-// COMPONENTE STANDALONE QUE RENDERIZA LA MASCOTA ARGUS EN SVG
-// REDISENO COMO MASCARA DE FSOCIETY: SOMBRERO DE COPA, CARA PALIDA,
-// BIGOTE ESTILO MONOPOLY MAN Y OJOS COMO HUECOS VACIOS.
+// MASCOTA OFICIAL DE ARGOS — TITAN GUARDIAN CHIBI MULTI-OJO
+// REFERENCIA MITICA: ARGOS PANOPTES, EL TITAN DE LOS CIEN OJOS QUE NUNCA DUERME.
+// SILUETA HOODED CON 6 OJOS DISTRIBUIDOS (2 PRINCIPALES + 1 FOREHEAD +
+// 2 PAULDRONS + 1 SIGIL DE PECHO). DUAL-THEME VIA CSS VARIABLES.
+// API RETROCOMPATIBLE: SIZE + MOOD ('idle' | 'happy' | 'alert' SIGUEN VIVOS).
 import { Component, Input } from '@angular/core';
-// MODULO COMUN DE ANGULAR PARA DIRECTIVAS BASICAS
 import { CommonModule } from '@angular/common';
+
+// MOODS SOPORTADOS — 8 ESTADOS + ALIAS 'alert' PARA RETROCOMPATIBILIDAD
+export type ArgusMood =
+  | 'idle'
+  | 'happy'
+  | 'thinking'
+  | 'loading'
+  | 'success'
+  | 'error'
+  | 'sleeping'
+  | 'excited'
+  | 'alert';
 
 @Component({
   selector: 'app-argus',
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="argus-wrap" [style.width.px]="size" [style.height.px]="size">
+    <div class="argus-wrap"
+         [class.theme-light]="theme === 'light'"
+         [style.width.px]="size" [style.height.px]="size">
       <svg [attr.width]="size" [attr.height]="size" viewBox="0 0 120 120"
-        fill="none" xmlns="http://www.w3.org/2000/svg"
-        class="argus-svg"
-        [class.argus-idle]="mood === 'idle'"
-        [class.argus-happy]="mood === 'happy'"
-        [class.argus-alert]="mood === 'alert'"
-        aria-hidden="true">
+           fill="none" xmlns="http://www.w3.org/2000/svg"
+           class="argus-svg"
+           [attr.data-mood]="effectiveMood"
+           aria-hidden="true">
 
-        <!-- DEFINICIONES — GRADIENTES Y FILTROS -->
+        <!-- DEFINICIONES — GRADIENTES Y FILTROS PARAMETRIZADOS POR CSS VARS -->
         <defs>
-          <!-- GRADIENTE DE LA CARA — CREMA PALIDO TIPO PORCELANA -->
-          <radialGradient id="maskFace" cx="40%" cy="30%" r="80%">
-            <stop offset="0%"  stop-color="#FBF7E8"/>
-            <stop offset="60%" stop-color="#F0E8D4"/>
-            <stop offset="100%" stop-color="#D9CCAE"/>
+          <!-- CUERPO Y MANTO — DEGRADADO DE TONO PRINCIPAL -->
+          <radialGradient id="bodyGrad" cx="50%" cy="40%" r="80%">
+            <stop offset="0%"  [attr.stop-color]="'var(--mascot-body-1)'"/>
+            <stop offset="100%" [attr.stop-color]="'var(--mascot-body-2)'"/>
           </radialGradient>
-          <!-- GRADIENTE DEL SOMBRERO DE COPA — NEGRO PROFUNDO -->
-          <linearGradient id="maskHat" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"  stop-color="#1A1F2E"/>
-            <stop offset="100%" stop-color="#0A0D14"/>
+          <!-- HOOD / CAPUCHA — TONO MAS PROFUNDO QUE EL CUERPO -->
+          <linearGradient id="hoodGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"  [attr.stop-color]="'var(--mascot-hood-1)'"/>
+            <stop offset="100%" [attr.stop-color]="'var(--mascot-hood-2)'"/>
           </linearGradient>
-          <!-- BORDE DEL OJO HUECO — DA SENSACION DE PROFUNDIDAD -->
-          <radialGradient id="maskEyeHole" cx="50%" cy="50%" r="55%">
-            <stop offset="0%"  stop-color="#0E1117"/>
-            <stop offset="80%" stop-color="#0E1117"/>
-            <stop offset="100%" stop-color="#2A2A3A"/>
+          <!-- CARA / PIEL — TONO INTERMEDIO LUMINOSO -->
+          <radialGradient id="faceGrad" cx="50%" cy="40%" r="70%">
+            <stop offset="0%"  [attr.stop-color]="'var(--mascot-face-1)'"/>
+            <stop offset="100%" [attr.stop-color]="'var(--mascot-face-2)'"/>
           </radialGradient>
-          <!-- GLOW VIOLETA SUTIL — ACENTO DE MARCA EN LA CINTA DEL SOMBRERO -->
-          <filter id="maskBandGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="1.2" result="b"/>
+          <!-- IRIS — DEGRADADO INTERNO DEL OJO QUE EMITE LUZ -->
+          <radialGradient id="irisGrad" cx="50%" cy="40%" r="60%">
+            <stop offset="0%"  [attr.stop-color]="'var(--mascot-iris-1)'"/>
+            <stop offset="100%" [attr.stop-color]="'var(--mascot-iris-2)'"/>
+          </radialGradient>
+          <!-- GLOW BIO-LUMINISCENTE DE LOS OJOS — FILTRO COMPARTIDO -->
+          <filter id="eyeBloom" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="1.4" result="blur"/>
             <feMerge>
-              <feMergeNode in="b"/>
+              <feMergeNode in="blur"/>
               <feMergeNode in="SourceGraphic"/>
             </feMerge>
           </filter>
+          <!-- HALO SUTIL ALREDEDOR DEL HOOD — MISTICA DE TITAN -->
+          <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+            <stop offset="60%" stop-color="transparent"/>
+            <stop offset="100%" [attr.stop-color]="'var(--mascot-glow)'"
+                  stop-opacity="0.18"/>
+          </radialGradient>
         </defs>
 
-        <!-- SOMBRA EN EL SUELO BAJO LA MASCARA -->
-        <ellipse class="floor-shadow" cx="60" cy="112" rx="32" ry="3.5"
-                 fill="rgba(0,0,0,0.32)"/>
+        <!-- HALO DETRAS DE LA CABEZA — DA SENSACION DE GUARDIAN -->
+        <circle class="halo" cx="60" cy="48" r="44" fill="url(#halo)"/>
 
-        <!-- ════════ SOMBRERO DE COPA ════════ -->
-        <g class="hat">
-          <!-- ALA DEL SOMBRERO — ELIPSE ANCHA -->
-          <ellipse cx="60" cy="32" rx="40" ry="5" fill="url(#maskHat)"/>
-          <!-- SOMBRA BAJO EL ALA -->
-          <ellipse cx="60" cy="34" rx="38" ry="2"
-                   fill="#000" opacity="0.3"/>
-          <!-- CUERPO CILINDRICO DEL SOMBRERO -->
-          <path d="M 41 30
-                   L 43 8
-                   Q 60 4 77 8
-                   L 79 30 Z"
-                fill="url(#maskHat)"/>
-          <!-- TOP CURVADO DEL SOMBRERO -->
-          <ellipse cx="60" cy="8" rx="17" ry="3" fill="#0A0D14"/>
-          <!-- BRILLO LATERAL DEL CILINDRO -->
-          <path d="M 46 12 L 47 28" stroke="#3A3A4A"
-                stroke-width="1" stroke-linecap="round" opacity="0.5"/>
-          <!-- CINTA DEL SOMBRERO — ACENTO VIOLETA ARGOS -->
-          <path d="M 42 24
-                   Q 60 22 78 24
-                   L 78 28
-                   Q 60 26 42 28 Z"
-                fill="#7C3AED" filter="url(#maskBandGlow)"/>
-          <!-- HEBILLA DE LA CINTA -->
-          <rect class="band-buckle" x="57" y="23" width="6" height="6"
-                rx="0.5" fill="#FBBF24"
-                stroke="#D97706" stroke-width="0.6"/>
+        <!-- SOMBRA EN EL SUELO -->
+        <ellipse class="floor-shadow" cx="60" cy="114" rx="34" ry="3.6"
+                 [attr.fill]="'var(--mascot-floor)'"/>
+
+        <!-- ═══════════ CUERPO / MANTO ═══════════ -->
+        <g class="body">
+          <!-- MANTO PRINCIPAL — FORMA REDONDEADA TIPO ORBE CON BORDES -->
+          <path d="M 30 78
+                   Q 60 72 90 78
+                   L 96 104
+                   Q 60 110 24 104 Z"
+                fill="url(#bodyGrad)"/>
+          <!-- CINTURON / BANDA INFERIOR -->
+          <path d="M 26 100 Q 60 106 94 100"
+                [attr.stroke]="'var(--mascot-rim)'"
+                stroke-width="1.2" fill="none" opacity="0.7"/>
+          <!-- PAULDRON IZQUIERDO — HOMBRO REDONDEADO -->
+          <ellipse cx="22" cy="80" rx="11" ry="10" fill="url(#bodyGrad)"
+                   [attr.stroke]="'var(--mascot-rim)'" stroke-width="0.8"
+                   opacity="0.95"/>
+          <!-- PAULDRON DERECHO -->
+          <ellipse cx="98" cy="80" rx="11" ry="10" fill="url(#bodyGrad)"
+                   [attr.stroke]="'var(--mascot-rim)'" stroke-width="0.8"
+                   opacity="0.95"/>
         </g>
 
-        <!-- ════════ CARA / MASCARA ════════ -->
-        <!-- OVALADO PRINCIPAL — CARA PALIDA -->
-        <ellipse cx="60" cy="68" rx="33" ry="36" fill="url(#maskFace)"/>
-        <!-- BORDE SUTIL DE LA MASCARA -->
-        <ellipse cx="60" cy="68" rx="33" ry="36" fill="none"
-                 stroke="#A89875" stroke-width="1.4" opacity="0.55"/>
-        <!-- LINEA DE UNION DE LA MASCARA — VERTICAL CENTRAL -->
-        <line x1="60" y1="36" x2="60" y2="102"
-              stroke="#A89875" stroke-width="0.6"
-              opacity="0.25" stroke-dasharray="2 3"/>
+        <!-- ═══════════ BRAZOS / MANITAS ═══════════ -->
+        <g class="arms" [class.thinking]="effectiveMood === 'thinking'">
+          <ellipse class="arm arm-left"  cx="16" cy="94" rx="6" ry="6"
+                   fill="url(#bodyGrad)"/>
+          <ellipse class="arm arm-right" cx="104" cy="94" rx="6" ry="6"
+                   fill="url(#bodyGrad)"/>
+        </g>
 
-        <!-- ════════ CEJAS DINAMICAS — ANGULO SEGUN MOOD ════════ -->
-        <path class="brow" [attr.d]="browLeftPath"
-              stroke="#1A1F2E" stroke-width="3.2"
+        <!-- ═══════════ HOOD / CAPUCHA QUE ENVUELVE LA CABEZA ═══════════ -->
+        <path class="hood"
+              d="M 26 50
+                 Q 28 14 60 12
+                 Q 92 14 94 50
+                 L 90 60
+                 Q 60 52 30 60 Z"
+              fill="url(#hoodGrad)"/>
+        <!-- BORDE INFERIOR DEL HOOD -->
+        <path d="M 30 58 Q 60 50 90 58"
+              [attr.stroke]="'var(--mascot-rim)'"
+              stroke-width="1" fill="none" opacity="0.65"/>
+
+        <!-- ═══════════ CARA ═══════════ -->
+        <ellipse class="face" cx="60" cy="52" rx="26" ry="26"
+                 fill="url(#faceGrad)"/>
+
+        <!-- ═══════════ OJO FOREHEAD (TERCER OJO ORNAMENTAL EN HOOD) ═══════════ -->
+        <g class="eye-secondary eye-forehead">
+          <circle cx="60" cy="28" r="3.2"
+                  fill="url(#irisGrad)" filter="url(#eyeBloom)"/>
+          <circle cx="60" cy="28" r="1.6"
+                  [attr.fill]="'var(--mascot-pupil)'"/>
+        </g>
+
+        <!-- ═══════════ CEJAS (CAMBIAN POR MOOD) ═══════════ -->
+        <path class="brow brow-left"  [attr.d]="browLeftPath"
+              [attr.stroke]="'var(--mascot-line)'" stroke-width="2.4"
               stroke-linecap="round" fill="none"/>
-        <path class="brow" [attr.d]="browRightPath"
-              stroke="#1A1F2E" stroke-width="3.2"
+        <path class="brow brow-right" [attr.d]="browRightPath"
+              [attr.stroke]="'var(--mascot-line)'" stroke-width="2.4"
               stroke-linecap="round" fill="none"/>
 
-        <!-- ════════ OJOS — HUECOS VACIOS PROFUNDOS ════════ -->
+        <!-- ═══════════ OJOS PRINCIPALES (ALMOND, GRANDES) ═══════════ -->
         <!-- OJO IZQUIERDO -->
-        <g class="eye eye-left">
-          <ellipse cx="48" cy="58" rx="5.5" ry="7"
-                   fill="url(#maskEyeHole)"/>
-          <!-- DESTELLO MUY SUTIL EN EL BORDE — DA PROFUNDIDAD -->
-          <ellipse cx="46" cy="55" rx="1.5" ry="2"
-                   fill="#FBF7E8" opacity="0.18"/>
-          <!-- PARPADO PARA PARPADEO — CIERRA HACIA ABAJO -->
-          <rect class="lid lid-left" x="42.5" y="58"
-                width="11" height="0" fill="url(#maskFace)"/>
+        <g class="eye eye-main eye-left">
+          <ellipse cx="46" cy="56" rx="7" ry="8.5"
+                   [attr.fill]="'var(--mascot-eye-bg)'"/>
+          <circle class="iris" [attr.cx]="46 + irisOffsetX"
+                  [attr.cy]="56 + irisOffsetY" r="5"
+                  fill="url(#irisGrad)" filter="url(#eyeBloom)"/>
+          <circle class="pupil" [attr.cx]="46 + irisOffsetX"
+                  [attr.cy]="56 + irisOffsetY" r="2.6"
+                  [attr.fill]="'var(--mascot-pupil)'"/>
+          <circle class="shine" [attr.cx]="44 + irisOffsetX"
+                  [attr.cy]="53 + irisOffsetY" r="1.6"
+                  fill="#FFFFFF" opacity="0.95"/>
+          <!-- PARPADO SUPERIOR — BAJA PARA PARPADEAR -->
+          <rect class="lid" x="39" y="47" width="14" height="0"
+                fill="url(#faceGrad)"/>
         </g>
-        <!-- OJO DERECHO -->
-        <g class="eye eye-right">
-          <ellipse cx="72" cy="58" rx="5.5" ry="7"
-                   fill="url(#maskEyeHole)"/>
-          <ellipse cx="70" cy="55" rx="1.5" ry="2"
-                   fill="#FBF7E8" opacity="0.18"/>
-          <rect class="lid lid-right" x="66.5" y="58"
-                width="11" height="0" fill="url(#maskFace)"/>
-        </g>
-
-        <!-- ════════ NARIZ — TRIANGULO DE SOMBRA SUTIL ════════ -->
-        <path d="M 60 70
-                 L 56 78
-                 Q 60 80 64 78 Z"
-              fill="#A89875" opacity="0.45"/>
-        <!-- LINEA INFERIOR DE LA NARIZ -->
-        <path d="M 57 78 Q 60 80 63 78"
-              stroke="#8B7C5D" stroke-width="0.6"
-              fill="none" opacity="0.7"/>
-
-        <!-- ════════ BIGOTE ESTILO MONOPOLY MAN ════════ -->
-        <g class="moustache">
-          <!-- FORMA PRINCIPAL — DOS LOBULOS QUE SUBEN EN LAS PUNTAS -->
-          <path d="M 60 84
-                   Q 50 80 40 82
-                   Q 30 84 26 80
-                   Q 32 88 42 88
-                   Q 52 90 60 86
-                   Q 68 90 78 88
-                   Q 88 88 94 80
-                   Q 90 84 80 82
-                   Q 70 80 60 84 Z"
-                fill="#1A1F2E"/>
-          <!-- BRILLO INTERIOR DEL BIGOTE -->
-          <path d="M 36 83 Q 50 85 60 85"
-                stroke="#3A3A4A" stroke-width="0.6"
-                fill="none" opacity="0.6"/>
-          <path d="M 60 85 Q 70 85 84 83"
-                stroke="#3A3A4A" stroke-width="0.6"
-                fill="none" opacity="0.6"/>
-          <!-- PUNTOS NEGROS EN LAS PUNTAS — ENRULADO -->
-          <circle cx="27" cy="80" r="1.2" fill="#0A0D14"/>
-          <circle cx="93" cy="80" r="1.2" fill="#0A0D14"/>
+        <!-- OJO DERECHO (ESPEJO) -->
+        <g class="eye eye-main eye-right">
+          <ellipse cx="74" cy="56" rx="7" ry="8.5"
+                   [attr.fill]="'var(--mascot-eye-bg)'"/>
+          <circle class="iris" [attr.cx]="74 + irisOffsetX"
+                  [attr.cy]="56 + irisOffsetY" r="5"
+                  fill="url(#irisGrad)" filter="url(#eyeBloom)"/>
+          <circle class="pupil" [attr.cx]="74 + irisOffsetX"
+                  [attr.cy]="56 + irisOffsetY" r="2.6"
+                  [attr.fill]="'var(--mascot-pupil)'"/>
+          <circle class="shine" [attr.cx]="72 + irisOffsetX"
+                  [attr.cy]="53 + irisOffsetY" r="1.6"
+                  fill="#FFFFFF" opacity="0.95"/>
+          <rect class="lid" x="67" y="47" width="14" height="0"
+                fill="url(#faceGrad)"/>
         </g>
 
-        <!-- ════════ BOCA — LINEA CURVADA QUE CAMBIA SEGUN MOOD ════════ -->
+        <!-- ═══════════ BOCA EXPRESIVA ═══════════ -->
         <path class="mouth" [attr.d]="mouthPath"
-              stroke="#1A1F2E" stroke-width="1.8"
+              [attr.stroke]="'var(--mascot-line)'" stroke-width="1.7"
               stroke-linecap="round" fill="none"/>
 
-        <!-- ════════ BARBILLA — SOMBRA SUTIL INFERIOR ════════ -->
-        <path d="M 50 98 Q 60 102 70 98"
-              stroke="#A89875" stroke-width="0.7"
-              fill="none" opacity="0.5"/>
+        <!-- ═══════════ MEJILLAS ROSAS — APARECEN EN HAPPY/EXCITED ═══════════ -->
+        <g class="cheeks">
+          <circle cx="36" cy="66" r="2.2"
+                  [attr.fill]="'var(--mascot-cheek)'" opacity="0"/>
+          <circle cx="84" cy="66" r="2.2"
+                  [attr.fill]="'var(--mascot-cheek)'" opacity="0"/>
+        </g>
 
+        <!-- ═══════════ OJOS PAULDRON (HOMBROS) ═══════════ -->
+        <g class="eye-secondary eye-pauldron-left">
+          <circle cx="22" cy="80" r="2.8"
+                  fill="url(#irisGrad)" filter="url(#eyeBloom)"/>
+          <circle cx="22" cy="80" r="1.3"
+                  [attr.fill]="'var(--mascot-pupil)'"/>
+        </g>
+        <g class="eye-secondary eye-pauldron-right">
+          <circle cx="98" cy="80" r="2.8"
+                  fill="url(#irisGrad)" filter="url(#eyeBloom)"/>
+          <circle cx="98" cy="80" r="1.3"
+                  [attr.fill]="'var(--mascot-pupil)'"/>
+        </g>
+
+        <!-- ═══════════ SIGIL DE PECHO (OJO GUARDIAN GRANDE) ═══════════ -->
+        <g class="eye-sigil">
+          <!-- ANILLO EXTERIOR DEL SELLO -->
+          <circle cx="60" cy="94" r="10.5" fill="none"
+                  [attr.stroke]="'var(--mascot-rim)'" stroke-width="1.3"
+                  opacity="0.75"/>
+          <!-- ANILLO INTERIOR -->
+          <circle cx="60" cy="94" r="7.5" fill="none"
+                  [attr.stroke]="'var(--mascot-rim)'" stroke-width="0.6"
+                  opacity="0.5"/>
+          <!-- ALMENDRA INTERIOR DEL OJO -->
+          <ellipse cx="60" cy="94" rx="6.5" ry="4.5"
+                   [attr.fill]="'var(--mascot-eye-bg)'"/>
+          <circle class="sigil-iris" cx="60" cy="94" r="3.2"
+                  fill="url(#irisGrad)" filter="url(#eyeBloom)"/>
+          <circle class="sigil-pupil" cx="60" cy="94" r="1.6"
+                  [attr.fill]="'var(--mascot-pupil)'"/>
+          <!-- MARCAS RADIALES DE GRABADO (4 PUNTOS CARDINALES) -->
+          <line x1="60" y1="80.5" x2="60" y2="82.5"
+                [attr.stroke]="'var(--mascot-rim)'" stroke-width="0.8"
+                opacity="0.7"/>
+          <line x1="60" y1="105.5" x2="60" y2="107.5"
+                [attr.stroke]="'var(--mascot-rim)'" stroke-width="0.8"
+                opacity="0.7"/>
+          <line x1="46.5" y1="94" x2="48.5" y2="94"
+                [attr.stroke]="'var(--mascot-rim)'" stroke-width="0.8"
+                opacity="0.7"/>
+          <line x1="71.5" y1="94" x2="73.5" y2="94"
+                [attr.stroke]="'var(--mascot-rim)'" stroke-width="0.8"
+                opacity="0.7"/>
+        </g>
+
+        <!-- ═══════════ Zzz DECORATIVO PARA SLEEPING ═══════════ -->
+        <g class="zzz" *ngIf="effectiveMood === 'sleeping'">
+          <text x="86" y="34" font-family="'Bricolage Grotesque', sans-serif"
+                font-size="11" font-weight="700"
+                [attr.fill]="'var(--mascot-line)'">Z</text>
+          <text x="92" y="22" font-family="'Bricolage Grotesque', sans-serif"
+                font-size="8" font-weight="700"
+                [attr.fill]="'var(--mascot-line)'" opacity="0.7">z</text>
+        </g>
+
+        <!-- ═══════════ SPARKLES PARA SUCCESS / EXCITED ═══════════ -->
+        <g class="sparkles"
+           *ngIf="effectiveMood === 'success' || effectiveMood === 'excited'">
+          <path d="M 18 22 l 1.5 -3 l 1.5 3 l 3 1.5 l -3 1.5 l -1.5 3 l -1.5 -3 l -3 -1.5 z"
+                [attr.fill]="'var(--mascot-glow)'"/>
+          <path d="M 100 36 l 1 -2 l 1 2 l 2 1 l -2 1 l -1 2 l -1 -2 l -2 -1 z"
+                [attr.fill]="'var(--mascot-glow)'" opacity="0.85"/>
+          <path d="M 14 70 l 1 -2 l 1 2 l 2 1 l -2 1 l -1 2 l -1 -2 l -2 -1 z"
+                [attr.fill]="'var(--mascot-glow)'" opacity="0.7"/>
+        </g>
       </svg>
     </div>
   `,
   styles: [`
+    /* ╔══════════════════════════════════════════════════════════╗
+       ║ TOKENS DE LA MASCOTA — DUAL-THEME VIA CSS VARIABLES     ║
+       ╚══════════════════════════════════════════════════════════╝ */
+
+    /* DARK MODE — COSMIC GUARDIAN (DEFECTO) */
     .argus-wrap {
+      --mascot-body-1: #2d2a5e;
+      --mascot-body-2: #1a1b3a;
+      --mascot-hood-1: #1f1b4a;
+      --mascot-hood-2: #0f0d2a;
+      --mascot-face-1: #3a3670;
+      --mascot-face-2: #2a2658;
+      --mascot-eye-bg: #0a0817;
+      --mascot-iris-1: #5dc8ff;
+      --mascot-iris-2: #00d4ff;
+      --mascot-pupil: #061018;
+      --mascot-glow:  #00d4ff;
+      --mascot-rim:   #7b5cd6;
+      --mascot-line:  #c4b8ff;
+      --mascot-cheek: #ec4899;
+      --mascot-floor: rgba(0, 0, 0, 0.45);
+
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      filter: drop-shadow(0 8px 24px
+              color-mix(in srgb, var(--mascot-glow) 22%, transparent));
     }
+
+    /* LIGHT MODE — FRIENDLY GUARDIAN */
+    .argus-wrap.theme-light {
+      --mascot-body-1: #7dd87d;
+      --mascot-body-2: #4dd0c8;
+      --mascot-hood-1: #5dd8a8;
+      --mascot-hood-2: #38b88a;
+      --mascot-face-1: #f3fff6;
+      --mascot-face-2: #c8eed4;
+      --mascot-eye-bg: #1a3a2a;
+      --mascot-iris-1: #8dd6ff;
+      --mascot-iris-2: #5bb3ff;
+      --mascot-pupil: #0a2030;
+      --mascot-glow:  #5bb3ff;
+      --mascot-rim:   #ff8c5a;
+      --mascot-line:  #1f4a3a;
+      --mascot-cheek: #ffb3a0;
+      --mascot-floor: rgba(40, 80, 60, 0.22);
+      filter: drop-shadow(0 8px 24px
+              color-mix(in srgb, var(--mascot-glow) 26%, transparent));
+    }
+
     .argus-svg {
       transition: transform 0.3s ease;
       will-change: transform;
       overflow: visible;
     }
 
-    /* SOMBRA EN EL SUELO — OSCILACION SUTIL */
+    /* ╔══════════════════════════════════════════════════════════╗
+       ║ ANIMACIONES COMPARTIDAS — SOMBRA, HALO, RESPIRACION     ║
+       ╚══════════════════════════════════════════════════════════╝ */
+
     .floor-shadow {
-      transform-origin: 60px 112px;
+      transform-origin: 60px 114px;
       animation: floorBreath 3s ease-in-out infinite;
     }
     @keyframes floorBreath {
-      0%, 100% { transform: scaleX(1);   opacity: 0.32; }
-      50%      { transform: scaleX(0.8); opacity: 0.2; }
+      0%, 100% { transform: scaleX(1);   opacity: 0.55; }
+      50%      { transform: scaleX(0.82); opacity: 0.32; }
     }
 
-    /* ════════ IDLE — CABECEO + PARPADEO OCASIONAL ════════ */
-    .argus-idle {
-      animation: argusBob 3.2s ease-in-out infinite;
-      transform-origin: 60px 100px;
+    .halo {
+      animation: haloPulse 4s ease-in-out infinite;
+      transform-origin: 60px 48px;
+    }
+    @keyframes haloPulse {
+      0%, 100% { opacity: 0.55; transform: scale(1); }
+      50%      { opacity: 0.95; transform: scale(1.06); }
+    }
+
+    /* OJOS SECUNDARIOS — RESPIRACION DE GLOW EN ALTERNANCIA */
+    .eye-forehead       { animation: eyePulse 3.2s ease-in-out infinite; }
+    .eye-pauldron-left  { animation: eyePulse 3.2s ease-in-out infinite 0.5s; }
+    .eye-pauldron-right { animation: eyePulse 3.2s ease-in-out infinite 1.1s; }
+    @keyframes eyePulse {
+      0%, 100% { opacity: 0.8; transform: scale(1); }
+      50%      { opacity: 1;   transform: scale(1.12); }
+    }
+    .eye-secondary {
+      transform-origin: center;
+      transform-box: fill-box;
+    }
+    /* FALLBACK PARA NAVEGADORES SIN transform-box: fill-box */
+    .eye-forehead       { transform-origin: 60px 28px; }
+    .eye-pauldron-left  { transform-origin: 22px 80px; }
+    .eye-pauldron-right { transform-origin: 98px 80px; }
+
+    /* SIGIL DE PECHO — PULSO PRINCIPAL DE LA MARCA */
+    .eye-sigil {
+      transform-origin: 60px 94px;
+      animation: sigilBreathe 3.6s ease-in-out infinite;
+    }
+    @keyframes sigilBreathe {
+      0%, 100% { opacity: 0.92; }
+      50%      { opacity: 1; }
+    }
+    .sigil-iris {
+      animation: sigilGlow 3.6s ease-in-out infinite;
+    }
+    @keyframes sigilGlow {
+      0%, 100% { filter: url(#eyeBloom) brightness(1); }
+      50%      { filter: url(#eyeBloom) brightness(1.25); }
+    }
+
+    /* ╔══════════════════════════════════════════════════════════╗
+       ║ MOOD: IDLE — CABECEO + PARPADEO OCASIONAL              ║
+       ╚══════════════════════════════════════════════════════════╝ */
+    [data-mood="idle"] {
+      animation: argusBob 3.4s ease-in-out infinite;
+      transform-origin: 60px 104px;
     }
     @keyframes argusBob {
       0%, 100% { transform: translateY(0) rotate(0deg); }
-      50%      { transform: translateY(-4px) rotate(-1.5deg); }
+      50%      { transform: translateY(-3px) rotate(-1deg); }
     }
-    /* PARPADEO — LOS PARPADOS BAJAN CUBRIENDO LOS HUECOS DE OJO */
-    .argus-idle .lid {
-      animation: maskBlink 5s ease-in-out infinite;
+    [data-mood="idle"] .lid {
+      animation: blink 5s ease-in-out infinite;
     }
-    @keyframes maskBlink {
-      0%, 92%, 100% { height: 0;  y: 58; }
-      94%           { height: 14; y: 51; }
-      96%           { height: 0;  y: 58; }
-    }
-    /* SOMBRERO MICRO-MOVIMIENTO */
-    .argus-idle .hat {
-      transform-origin: 60px 32px;
-      animation: hatIdle 3.2s ease-in-out infinite;
-    }
-    @keyframes hatIdle {
-      0%, 100% { transform: rotate(0deg); }
-      50%      { transform: rotate(-1deg) translateY(-1px); }
-    }
-    /* HEBILLA — BRILLO PERIODICO PARA DAR VIDA */
-    .band-buckle {
-      animation: buckleGlint 4s ease-in-out infinite;
-    }
-    @keyframes buckleGlint {
-      0%, 90%, 100% { fill: #FBBF24; }
-      94%           { fill: #FFF6BF; }
+    @keyframes blink {
+      0%, 92%, 100% { height: 0;  y: 47; }
+      94%           { height: 18; y: 47; }
+      96%           { height: 0;  y: 47; }
     }
 
-    /* ════════ HAPPY — LEVANTAR EL SOMBRERO (TIP HAT) ════════ */
-    .argus-happy {
-      animation: argusHappyHop 1.4s ease-in-out infinite;
-      transform-origin: 60px 100px;
+    /* ╔══════════════════════════════════════════════════════════╗
+       ║ MOOD: HAPPY — REBOTE + OJOS ARCO + MEJILLAS            ║
+       ╚══════════════════════════════════════════════════════════╝ */
+    [data-mood="happy"] {
+      animation: argusHop 1.4s ease-in-out infinite;
+      transform-origin: 60px 104px;
     }
-    @keyframes argusHappyHop {
+    @keyframes argusHop {
       0%, 100% { transform: translateY(0); }
       50%      { transform: translateY(-5px); }
     }
-    .argus-happy .hat {
-      transform-origin: 60px 34px;
-      animation: tipHat 1.4s ease-in-out infinite;
-    }
-    @keyframes tipHat {
-      0%, 100% { transform: translateY(0) rotate(0deg); }
-      40%      { transform: translateY(-10px) rotate(-12deg); }
-      80%      { transform: translateY(-2px) rotate(-4deg); }
-    }
-    .argus-happy .moustache {
-      transform-origin: 60px 84px;
-      animation: moustacheTwirl 1.4s ease-in-out infinite;
-    }
-    @keyframes moustacheTwirl {
-      0%, 100% { transform: rotate(0deg); }
-      50%      { transform: rotate(-2deg) scale(1.04); }
+    [data-mood="happy"] .cheeks circle,
+    [data-mood="excited"] .cheeks circle {
+      opacity: 0.85;
     }
 
-    /* ════════ ALERT — VIBRACION + PARPADEO RAPIDO + SOMBRERO TEMBLOROSO ════════ */
-    .argus-alert {
+    /* ╔══════════════════════════════════════════════════════════╗
+       ║ MOOD: THINKING — LADEAR CABEZA + MIRADA ARRIBA-IZQ      ║
+       ╚══════════════════════════════════════════════════════════╝ */
+    [data-mood="thinking"] {
+      animation: argusTilt 4s ease-in-out infinite;
+      transform-origin: 60px 60px;
+    }
+    @keyframes argusTilt {
+      0%, 100% { transform: rotate(-3deg) translateY(0); }
+      50%      { transform: rotate(-3deg) translateY(-2px); }
+    }
+
+    /* ╔══════════════════════════════════════════════════════════╗
+       ║ MOOD: LOADING / SCANNING — SECUENCIA RADAR DE OJOS      ║
+       ╚══════════════════════════════════════════════════════════╝ */
+    [data-mood="loading"] .eye-forehead,
+    [data-mood="loading"] .eye-pauldron-left,
+    [data-mood="loading"] .eye-pauldron-right,
+    [data-mood="loading"] .eye-sigil {
+      animation: radarSweep 1.6s ease-in-out infinite;
+    }
+    [data-mood="loading"] .eye-pauldron-left  { animation-delay: 0s; }
+    [data-mood="loading"] .eye-forehead       { animation-delay: 0.4s; }
+    [data-mood="loading"] .eye-pauldron-right { animation-delay: 0.8s; }
+    [data-mood="loading"] .eye-sigil          { animation-delay: 1.2s; }
+    @keyframes radarSweep {
+      0%, 100% { opacity: 0.4; transform: scale(0.92); }
+      30%      { opacity: 1;   transform: scale(1.18); }
+    }
+
+    /* ╔══════════════════════════════════════════════════════════╗
+       ║ MOOD: SUCCESS — DESTELLO Y SPARKLES                     ║
+       ╚══════════════════════════════════════════════════════════╝ */
+    [data-mood="success"] {
+      animation: argusBurst 1.6s ease-out infinite;
+      transform-origin: 60px 60px;
+    }
+    @keyframes argusBurst {
+      0%, 100% { transform: scale(1); }
+      30%      { transform: scale(1.06); }
+    }
+    .sparkles path {
+      animation: sparkleTwinkle 1.4s ease-in-out infinite;
+      transform-origin: center;
+      transform-box: fill-box;
+    }
+    .sparkles path:nth-child(2) { animation-delay: 0.3s; }
+    .sparkles path:nth-child(3) { animation-delay: 0.7s; }
+    @keyframes sparkleTwinkle {
+      0%, 100% { opacity: 0.2; transform: scale(0.6) rotate(0deg); }
+      50%      { opacity: 1;   transform: scale(1.1) rotate(45deg); }
+    }
+
+    /* ╔══════════════════════════════════════════════════════════╗
+       ║ MOOD: ERROR / ALERT — GLITCH SHAKE                      ║
+       ╚══════════════════════════════════════════════════════════╝ */
+    [data-mood="error"],
+    [data-mood="alert"] {
       animation: argusGlitch 0.32s steps(2, end) infinite;
       transform-origin: 60px 60px;
     }
@@ -268,54 +474,157 @@ import { CommonModule } from '@angular/common';
       75%  { transform: translate(-1px, 2px); }
       100% { transform: translate(0, 0); }
     }
-    .argus-alert .lid {
-      animation: maskBlinkFast 0.5s ease-in-out infinite;
+    [data-mood="error"] .lid,
+    [data-mood="alert"] .lid {
+      animation: blinkFast 0.5s ease-in-out infinite;
     }
-    @keyframes maskBlinkFast {
-      0%, 100% { height: 0;  y: 58; }
-      50%      { height: 12; y: 52; }
-    }
-    .argus-alert .hat {
-      transform-origin: 60px 32px;
-      animation: hatShake 0.32s ease-in-out infinite;
-    }
-    @keyframes hatShake {
-      0%, 100% { transform: rotate(0deg); }
-      50%      { transform: rotate(2deg); }
+    @keyframes blinkFast {
+      0%, 100% { height: 0;  y: 47; }
+      50%      { height: 14; y: 47; }
     }
 
-    /* RESPETO DE PREFERENCIA DE MOTION REDUCIDA */
+    /* ╔══════════════════════════════════════════════════════════╗
+       ║ MOOD: SLEEPING — CIERRA OJOS PRINCIPALES + Zzz          ║
+       ╚══════════════════════════════════════════════════════════╝ */
+    [data-mood="sleeping"] {
+      animation: argusSnore 4s ease-in-out infinite;
+      transform-origin: 60px 104px;
+    }
+    @keyframes argusSnore {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50%      { transform: translateY(-2px) rotate(1deg); }
+    }
+    [data-mood="sleeping"] .lid {
+      height: 18 !important;
+      y: 47 !important;
+    }
+    /* TODOS LOS OJOS SECUNDARIOS BAJAN OPACIDAD AL DORMIR */
+    [data-mood="sleeping"] .eye-secondary,
+    [data-mood="sleeping"] .eye-sigil {
+      animation: none;
+      opacity: 0.35;
+    }
+    .zzz text {
+      animation: zzzFloat 2.2s ease-in-out infinite;
+      transform-origin: center;
+      transform-box: fill-box;
+    }
+    .zzz text:nth-child(2) { animation-delay: 0.5s; }
+    @keyframes zzzFloat {
+      0%   { opacity: 0; transform: translate(0, 4px) scale(0.8); }
+      40%  { opacity: 1; transform: translate(2px, -2px) scale(1); }
+      100% { opacity: 0; transform: translate(6px, -8px) scale(1.05); }
+    }
+
+    /* ╔══════════════════════════════════════════════════════════╗
+       ║ MOOD: EXCITED — BOUNCE FUERTE + TODOS OJOS DESPIERTOS   ║
+       ╚══════════════════════════════════════════════════════════╝ */
+    [data-mood="excited"] {
+      animation: argusJump 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+      transform-origin: 60px 104px;
+    }
+    @keyframes argusJump {
+      0%, 100% { transform: translateY(0)   scale(1); }
+      40%      { transform: translateY(-10px) scale(1.04); }
+      70%      { transform: translateY(-2px) scale(0.96); }
+    }
+    [data-mood="excited"] .eye-secondary,
+    [data-mood="excited"] .eye-sigil {
+      animation-duration: 1.4s !important;
+    }
+
+    /* ╔══════════════════════════════════════════════════════════╗
+       ║ THINKING — BRAZO IZQ A LA BARBILLA (SUTIL)              ║
+       ╚══════════════════════════════════════════════════════════╝ */
+    .arms.thinking .arm-left {
+      transform: translate(20px, -22px);
+      transition: transform 0.4s var(--ease-spring,
+                  cubic-bezier(0.34, 1.56, 0.64, 1));
+    }
+    .arms .arm-left {
+      transition: transform 0.4s ease;
+    }
+
+    /* ╔══════════════════════════════════════════════════════════╗
+       ║ ACCESIBILIDAD — RESPETO DE MOTION REDUCIDA              ║
+       ╚══════════════════════════════════════════════════════════╝ */
     @media (prefers-reduced-motion: reduce) {
-      .argus-idle, .argus-happy, .argus-alert,
-      .hat, .moustache, .lid, .floor-shadow, .band-buckle {
-        animation: none;
+      .argus-svg, .floor-shadow, .halo,
+      .eye-forehead, .eye-pauldron-left, .eye-pauldron-right,
+      .eye-sigil, .sigil-iris, .lid, .arms, .arm-left,
+      .sparkles path, .zzz text,
+      [data-mood] {
+        animation: none !important;
+        transition: none !important;
       }
     }
   `]
 })
 export class ArgusComponent {
-  // TAMANO EN PIXELES DEL CUADRADO QUE OCUPA LA MASCARA
+  // TAMANO EN PIXELES DEL CUADRADO QUE OCUPA LA MASCOTA
   @Input() size = 80;
-  // ESTADO DE ANIMO QUE CONTROLA ANIMACION Y EXPRESION DE LA MASCARA
-  @Input() mood: 'idle' | 'happy' | 'alert' = 'idle';
+  // ESTADO DE ANIMO QUE CONTROLA ANIMACION Y EXPRESION
+  @Input() mood: ArgusMood = 'idle';
+  // VARIANTE DE TEMA — DARK COSMIC POR DEFECTO, LIGHT FRIENDLY OPCIONAL
+  @Input() theme: 'dark' | 'light' = 'dark';
 
-  // CEJA IZQUIERDA — ANGULO SEGUN MOOD
-  // HAPPY: ARQUEADA ARRIBA. ALERT: DESCIENDE HACIA EL CENTRO. IDLE: NEUTRA.
+  // NORMALIZA EL MOOD (mantiene 'alert' como sinonimo visual de 'error')
+  get effectiveMood(): ArgusMood {
+    return this.mood;
+  }
+
+  // DESPLAZAMIENTO HORIZONTAL DEL IRIS — MIRADA SEGUN MOOD
+  get irisOffsetX(): number {
+    if (this.mood === 'thinking') return -1.4;
+    if (this.mood === 'loading')  return 1.2;
+    return 0;
+  }
+  // DESPLAZAMIENTO VERTICAL DEL IRIS
+  get irisOffsetY(): number {
+    if (this.mood === 'thinking') return -1.6;
+    if (this.mood === 'happy')    return 0.6;
+    if (this.mood === 'excited')  return -0.6;
+    return 0;
+  }
+
+  // CEJA IZQUIERDA — ANGULO POR MOOD
   get browLeftPath(): string {
-    if (this.mood === 'alert') return 'M 36 46 L 54 50';
-    if (this.mood === 'happy') return 'M 36 46 Q 45 40 54 46';
-    return 'M 36 46 Q 45 44 54 46';
+    switch (this.mood) {
+      case 'error':
+      case 'alert':    return 'M 34 44 L 52 50';   // CEÑO HACIA ABAJO
+      case 'thinking': return 'M 34 46 L 52 42';   // SUBIDA INTERIOR (DUDA)
+      case 'happy':    return 'M 34 46 Q 43 40 52 46';
+      case 'excited':  return 'M 34 44 Q 43 38 52 44';
+      case 'sleeping': return 'M 34 46 Q 43 47 52 46';
+      case 'success':  return 'M 34 44 Q 43 38 52 44';
+      default:         return 'M 34 46 Q 43 44 52 46';
+    }
   }
-  // CEJA DERECHA — ESPEJO DE LA IZQUIERDA
+  // CEJA DERECHA — ESPEJO
   get browRightPath(): string {
-    if (this.mood === 'alert') return 'M 84 46 L 66 50';
-    if (this.mood === 'happy') return 'M 84 46 Q 75 40 66 46';
-    return 'M 84 46 Q 75 44 66 46';
+    switch (this.mood) {
+      case 'error':
+      case 'alert':    return 'M 86 44 L 68 50';
+      case 'thinking': return 'M 86 46 L 68 42';
+      case 'happy':    return 'M 86 46 Q 77 40 68 46';
+      case 'excited':  return 'M 86 44 Q 77 38 68 44';
+      case 'sleeping': return 'M 86 46 Q 77 47 68 46';
+      case 'success':  return 'M 86 44 Q 77 38 68 44';
+      default:         return 'M 86 46 Q 77 44 68 46';
+    }
   }
-  // BOCA INFERIOR DEBAJO DEL BIGOTE — CURVA SUTIL QUE CAMBIA SEGUN ANIMO
+  // BOCA — CURVATURA Y POSICION POR MOOD
   get mouthPath(): string {
-    if (this.mood === 'alert') return 'M 52 96 Q 60 92 68 96';
-    if (this.mood === 'happy') return 'M 50 94 Q 60 102 70 94';
-    return 'M 52 95 Q 60 97 68 95';
+    switch (this.mood) {
+      case 'happy':    return 'M 52 72 Q 60 80 68 72';
+      case 'excited':  return 'M 50 71 Q 60 82 70 71';
+      case 'thinking': return 'M 55 75 Q 60 73 65 75';
+      case 'loading':  return 'M 56 75 L 64 75';
+      case 'success':  return 'M 52 72 Q 60 80 68 72';
+      case 'error':
+      case 'alert':    return 'M 52 78 Q 60 72 68 78';
+      case 'sleeping': return 'M 55 75 Q 60 77 65 75';
+      default:         return 'M 55 75 Q 60 76 65 75';
+    }
   }
 }
