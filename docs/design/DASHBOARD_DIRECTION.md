@@ -1,34 +1,37 @@
 # Dashboard — Direccion de arte
 
-Hibrido brutalist + mascota Argus. El Dashboard se lee como un panel forense
-donde Argus (mascota) actua de ancla emocional y todo lo demas es dato.
+Dark gamificada didactica estilo Duolingo. La aplicacion entrena al usuario en
+ciberseguridad, asi que el Dashboard debe sentirse como un mapa de progreso
+amable, NO como un panel forense frio.
 
-## Reglas duras
-- Grid editorial real: una columna ancha de "estado del sistema" + columna
-  estrecha de "telemetria". No mar de cards iguales.
-- Tipografia operacional: numeros con `tabular-nums`, escala display
-  Bricolage Grotesque para tituleras, mono (Inter mono fallback / system mono)
-  reservada a metricas, timestamps y codigos CVE.
-- Color funcional, NO decorativo. Acento unico por estado (ok, warn, danger).
-  Cero gradientes morado-azul. Cero glassmorphism por defecto.
-- Bordes nitidos (1px), radios pequenos (`--r-md` max), sombras planas. Las
-  sombras blandas estan prohibidas en superficies de datos.
-- Cada metrica viaja con su contexto: fuente, timestamp o delta. Nada flota
-  sin etiqueta.
-- Estados completos: loading skeleton, empty state, error, ok, success.
-- Responsive intencional: mobile 1 col, tablet 2 col, desktop 12 col grid.
-- Accesibilidad AA: foco visible, aria-labels en metricas, contraste >= 4.5.
+## Principios
+- Paleta oscura por defecto (la app puede estar en claro, pero el Dashboard
+  fuerza dark para que no canse la vista en uso prolongado).
+- Acentos vibrantes de la paleta del proyecto: violeta `#7C3AED`, rosa
+  `#EC4899`, cyan `#06B6D4`, verde `#10B981`, ambar `#F59E0B`, rojo
+  `#EF4444`. Color por modulo, nunca decorativo.
+- Iconos Phosphor con `weight="fill"` dentro de circulos de color soft. Nada
+  de iconos lineales sueltos.
+- Tipografia: Bricolage Grotesque para titulares y numeros protagonistas,
+  Inter para UI. Letras redondas, sin mono.
+- Cards generosamente redondeadas (`--r-blob`, 22px). Sombras suaves dark
+  con halo de color por modulo.
+- Mascota Argus protagonista en el hero — anclaje emocional, no decoracion.
+
+## Que hacemos
+- Hero con anillo de Privacy Score grande y Argus al lado.
+- Fila de stats gamificadas: racha (fuego animado), XP, nivel, logros.
+- Quick Action card: proxima mision recomendada con CTA pill.
+- Cards de modulo 2 columnas con icono enorme en circulo de color y halo
+  sutil del mismo color al hacer hover.
+- Banner CVE solo si hay criticos hoy.
+- Estados completos: loading skeleton, empty con CTA, error legible.
+- Datos reales: AuditorService, VaultService, NewsService ya conectados.
 
 ## Que NO hacemos
-- No gradientes radiales en el hero.
-- No particle network decorativa.
-- No emoji animado en el saludo.
-- No cards-dentro-de-cards.
-- No mockear datos cuando hay endpoint real.
-
-## Que SI hacemos
-- Hero = "Argus esta vigilando esto" con score y sparkline de 8 semanas.
-- Feed de telemetria con conteos reales: vault, CVE hoy, ultima auditoria.
-- Bloque de breaking CVE si el backend lo expone.
-- Modulos jerarquizados por rango funcional (defensa / diagnostico /
-  analisis / inteligencia / entrenamiento), no como rejilla uniforme.
+- Cero modo claro forzado: el dashboard siempre dark.
+- Cero tipografias mono / brutalist / industrial.
+- Cero glassmorphism por defecto.
+- Cero gradientes morado-azul random — solo gradientes intencionales
+  ligados al estado (success / warning / danger).
+- Cero mockear: si el endpoint existe, se consume.
