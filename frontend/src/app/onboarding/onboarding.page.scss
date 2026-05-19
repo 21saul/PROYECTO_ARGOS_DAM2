@@ -1,293 +1,888 @@
-// CONTENEDOR PRINCIPAL DEL CONTENIDO DEL ONBOARDING — FONDO BASE DE LA APP
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  ONBOARDING DE ARGOS — "EL DESPERTAR DEL GUARDIAN"           ║
+// ║  4 SLIDES: BIENVENIDA → CAPACIDADES → GAMIFICACION → CTA     ║
+// ║  TODO EN TOKENS DEL TEMA — JAMAS HEX SUELTO                  ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// CONTENEDOR PRINCIPAL DE IONIC — FONDO BASE Y SIN PADDINGS POR DEFECTO
 .onboarding-content {
   // FORZAR EL FONDO DEL ION-CONTENT AL COLOR DE FONDO DE ARGOS
   --background: var(--color-bg);
-  // ELIMINAR PADDINGS POR DEFECTO PARA QUE LOS SLIDES OCUPEN TODO EL VIEWPORT
+  // ELIMINAR PADDINGS POR DEFECTO PARA QUE EL ROOT OCUPE TODO EL VIEWPORT
   --padding-top: 0;
   --padding-bottom: 0;
   --padding-start: 0;
   --padding-end: 0;
 }
 
-// CARRUSEL DE SWIPER QUE OCUPA EL ALTO COMPLETO DE LA PANTALLA
-swiper-container.onboarding-swiper {
+// RAIZ DEL ONBOARDING — POSICION RELATIVA PARA ANCLAR CAPAS DECORATIVAS
+.os-root {
+  // POSICIONAMIENTO RELATIVO PARA ANCLAR PARTICULAS Y HALO
+  position: relative;
+  // ANCHO COMPLETO HORIZONTAL DEL ION-CONTENT
+  width: 100%;
+  // ALTO COMPLETO DEL VIEWPORT PARA INMERSION TOTAL
+  height: 100%;
+  // EVITA QUE LAS DECORACIONES SE DESBORDEN POR FUERA
+  overflow: hidden;
+  // FONDO DARK INCLUSO SI EL TEMA NO PROPAGA
+  background: var(--color-bg);
+}
+
+// RED DE PARTICULAS DETRAS DE TODO — OPACIDAD BAJA PARA NO ROBAR FOCO
+.os-particles {
+  // POSICIONAMIENTO EN CAPA INFERIOR ABSOLUTA OCUPANDO TODO EL ROOT
+  position: absolute;
+  inset: 0;
+  // POR ENCIMA DEL FONDO Y POR DEBAJO DEL CONTENIDO
+  z-index: 0;
+  // OPACIDAD BAJA PARA QUE NO ROBE FOCO
+  opacity: 0.35;
+  // SIN INTERCEPTAR EVENTOS PARA NO BLOQUEAR EL SWIPER
+  pointer-events: none;
+}
+
+// HALO RADIAL CENTRAL QUE DA SENSACION DE GUARDIAN DETRAS DE LA MASCOTA
+.os-halo {
+  // POSICIONAMIENTO ABSOLUTO EN EL CENTRO SUPERIOR DEL VIEWPORT
+  position: absolute;
+  top: -10%;
+  left: 50%;
+  transform: translateX(-50%);
+  // TAMANO GRANDE PARA QUE EL DEGRADADO SE EXTIENDA SUAVEMENTE
+  width: 120vw;
+  height: 70vh;
+  // DEGRADADO RADIAL CENTRADO USANDO EL COLOR PRIMARIO
+  background: radial-gradient(closest-side,
+    color-mix(in srgb, var(--color-primary) 24%, transparent) 0%,
+    color-mix(in srgb, var(--color-accent)  10%, transparent) 35%,
+    transparent 70%);
+  // BORDE TOTAL PARA FORMAR ELIPSE
+  border-radius: 50%;
+  // SUTIL PULSACION QUE EVOCA EL LATIDO DEL TITAN
+  animation: osHalo 5s ease-in-out infinite;
+  // POR ENCIMA DE PARTICULAS PERO POR DEBAJO DEL CONTENIDO
+  z-index: 1;
+  // SIN BLOQUEO DE EVENTOS PARA EL SWIPER
+  pointer-events: none;
+  // OPTIMIZACION DE COMPOSICION USANDO TRANSFORM/OPACITY UNICAMENTE
+  will-change: opacity, transform;
+}
+
+// KEYFRAMES DEL LATIDO DEL HALO — VARIA OPACIDAD Y ESCALA SUAVEMENTE
+@keyframes osHalo {
+  0%, 100% { opacity: 0.7; transform: translateX(-50%) scale(1); }
+  50%      { opacity: 1;   transform: translateX(-50%) scale(1.05); }
+}
+
+// CARRUSEL DE SWIPER — OCUPA EL CONTENEDOR COMPLETO POR ENCIMA DE LAS CAPAS
+swiper-container.os-swiper {
+  // POSICIONAMIENTO RELATIVO POR ENCIMA DE FONDO Y HALO
+  position: relative;
+  z-index: 2;
   // ANCHO COMPLETO HORIZONTAL
   width: 100%;
-  // ALTURA EXACTA DE 100VH PARA INMERSION TOTAL
-  height: 100vh;
-  // FONDO DEL CARRUSEL EN EL COLOR DE FONDO DEFINIDO POR EL TEMA
-  background: var(--color-bg);
-  // BLOQUE PARA RESETEAR ESTILOS DE LINEA DEL CUSTOM ELEMENT
+  // ALTURA EXACTA DEL CONTENEDOR PARA INMERSION TOTAL
+  height: 100%;
+  // FONDO TRANSPARENTE — EL ROOT APORTA EL COLOR
+  background: transparent;
+  // RESETEO BASICO DE WEBCOMPONENT
   display: block;
 }
 
-// ESTILOS BASE APLICADOS DIRECTAMENTE SOBRE EL ELEMENTO SWIPER-SLIDE
-// SE APLICAN POR ELEMENTO PARA EVITAR QUE LOS ESTILOS INTERNOS DEL WEB COMPONENT
-// DESPLACEN EL CONTENIDO HACIA LA IZQUIERDA EN NAVEGADORES DE ESCRITORIO
-swiper-slide.argos-slide {
-  // FLEXBOX EN COLUMNA PARA APILAR ICONO + TITULO + SUBTITULO + ACCIONES
+// ESTILOS BASE DE CADA SLIDE — ESCROLABLE SI EL CONTENIDO PASA DE 100VH
+swiper-slide.os-slide {
+  // FLEX EN COLUMNA PARA APILAR CONTENIDO INTERNO
   display: flex;
   flex-direction: column;
   // CENTRADO HORIZONTAL DEL CONTENIDO DEL SLIDE
   align-items: center;
-  // CENTRADO VERTICAL DEL CONTENIDO DEL SLIDE
+  // CENTRADO VERTICAL DEL CONTENIDO CUANDO SOBRA ESPACIO
   justify-content: center;
-  // ALINEACION DE TEXTO CENTRADA POR DEFECTO PARA TODO EL SLIDE
+  // ALINEACION DE TEXTO CENTRADA POR DEFECTO
   text-align: center;
   // ANCHO COMPLETO PARA QUE EL SLIDE OCUPE TODO EL CARRUSEL
   width: 100%;
   // ALTURA COMPLETA DE LA PANTALLA POR SLIDE
-  height: 100vh;
-  // FONDO DEL SLIDE TOMADO DE LA VARIABLE GLOBAL DE TEMA
-  background: var(--color-bg);
-  // PADDING HORIZONTAL PARA QUE EL CONTENIDO RESPIRE EN MOVILES ESTRECHOS
-  padding: 24px;
-  // COLOR DE TEXTO HEREDADO TOMADO DE LA VARIABLE DEL TEMA
+  height: 100%;
+  // FONDO TRANSPARENTE — EL HALO Y PARTICULAS SE VEN DEBAJO
+  background: transparent;
+  // PADDING RESPETANDO NOTCH Y DEJANDO HUECO INFERIOR PARA EL INDICADOR DE OJOS
+  padding: calc(56px + env(safe-area-inset-top, 0)) 24px
+           calc(96px + env(safe-area-inset-bottom, 0)) 24px;
+  // COLOR DE TEXTO HEREDADO TOMADO DEL TEMA
   color: var(--color-text);
   // CAJA INCLUYENDO PADDING EN LA MEDIDA TOTAL PARA NO DESBORDAR
   box-sizing: border-box;
+  // PERMITIMOS SCROLL VERTICAL SI EL SLIDE TIENE MAS CONTENIDO QUE 100VH (IPHONE SE)
+  overflow-y: auto;
+  // OCULTAMOS LA SCROLLBAR PERO MANTENEMOS LA INTERACCION
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
 }
 
-// CONTENEDOR INTERNO QUE LIMITA EL ANCHO Y ORDENA EL CONTENIDO EN COLUMNA
-.argos-slide__inner {
-  // FLEX EN COLUMNA PARA APILAR ICONO + TITULOS + ELEMENTOS DE ACCION
+// CONTENEDOR INTERNO QUE LIMITA EL ANCHO Y ORDENA EL CONTENIDO
+.os-slide__inner {
+  // FLEX EN COLUMNA PARA APILAR ELEMENTOS DEL SLIDE
   display: flex;
   flex-direction: column;
   // CENTRADO HORIZONTAL DE LOS HIJOS
   align-items: center;
-  // ESPACIO VERTICAL CONSISTENTE ENTRE ELEMENTOS HIJOS
+  // ESPACIO VERTICAL CONFORTABLE ENTRE ELEMENTOS DEL SLIDE
   gap: 24px;
-  // ANCHO MAXIMO PARA QUE EN PANTALLAS GRANDES NO SE EXPANDA EXCESIVAMENTE
-  max-width: 480px;
+  // ANCHO MAXIMO QUE EN ESCRITORIO NO SE EXPANDA EXCESIVAMENTE
+  max-width: 460px;
   // ANCHO COMPLETO HASTA ESE TOPE
   width: 100%;
-  // ALINEAR EL TEXTO AL CENTRO POR DEFECTO EN TODO EL SLIDE
+  // ALINEACION CENTRAL POR DEFECTO
   text-align: center;
+  // MARGIN AUTO ARRIBA/ABAJO PARA QUE EL JUSTIFY-CONTENT CENTRE CUANDO SOBRA ESPACIO
+  margin: auto 0;
 }
 
-// ICONO ESCUDO+OJO DEL PRIMER SLIDE — TAMAÑO IMPACTANTE Y DROP-SHADOW PULSANTE
-.argos-shield {
-  // ANCHO RESPONSIVO BASADO EN UN PORCENTAJE DEL ANCHO DEL VIEWPORT
-  width: clamp(140px, 45vw, 220px);
-  // MANTENEMOS LA PROPORCION VERTICAL DEL ESCUDO
-  height: auto;
-  // SOMBRA INICIAL CON COLOR PRIMARIO QUE SE ANIMARA EN PULSACIONES
-  filter: drop-shadow(0 0 24px color-mix(in srgb, var(--color-primary) 60%, transparent));
-  // ANIMACION PULSANTE INFINITA QUE DA SENSACION DE VIGILANCIA ACTIVA
-  animation: pulse-glow 2.5s ease-in-out infinite;
+// VARIANTE MAS ANGOSTA USADA EN SLIDES CON TARJETAS/BENTO
+.os-slide__inner--narrow {
+  // ANCHO MAS CONTENIDO PARA QUE BENTO Y RUNAS RESPIREN
+  max-width: 420px;
+  // SEPARACION LIGERAMENTE MAS COMPACTA PARA APROVECHAR EL ESPACIO VERTICAL
+  gap: 18px;
 }
 
-// KEYFRAMES DE LA ANIMACION DEL DROP-SHADOW DEL ESCUDO — VARIA INTENSIDAD DEL HALO
-@keyframes pulse-glow {
-  // ESTADO MINIMO DEL HALO AL INICIO Y AL FINAL DEL CICLO
-  0%, 100% { filter: drop-shadow(0 0 16px color-mix(in srgb, var(--color-primary) 40%, transparent)); }
-  // ESTADO MAXIMO DEL HALO EN EL PUNTO MEDIO DEL CICLO
-  50%       { filter: drop-shadow(0 0 40px color-mix(in srgb, var(--color-primary) 80%, transparent)); }
+// MASCOTA ARGUS — APARECE EN HEROS CON SOMBRA PROPIA
+.os-mascot {
+  // CENTRADO INTERNO USANDO INLINE-FLEX PARA NO HEREDAR HUECOS DE LINEA
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  // FILTRO DE SOMBRA SUTIL PARA DAR PESO A LA MASCOTA
+  filter: drop-shadow(0 12px 40px color-mix(in srgb, var(--color-primary) 35%, transparent));
 }
 
-// TITULO PRINCIPAL DE LOS SLIDES — TIPOGRAFIA GRANDE Y CON PRESENCIA
-.argos-title {
-  // TAMAÑO RESPONSIVO QUE ESCALA CON LA VENTANA
-  font-size: clamp(28px, 6.5vw, 40px);
-  // PESO SEMIBOLD PARA IMPACTO VISUAL SIN LLEGAR A NEGRITA EXCESIVA
+// BLOQUE DE COPY CENTRADO — AGRUPA TITULO Y SUBTITULO PARA QUE ESTEN JUNTOS
+.os-copy {
+  // FLEX EN COLUMNA PARA APILAR TITULO Y SUBTITULO PEGADOS
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  // GAP COMPACTO ENTRE TITULO Y SUBTITULO
+  gap: 10px;
+  // ANCHO COMPLETO HASTA EL CONTENEDOR PADRE
+  width: 100%;
+}
+
+// TITULO PRINCIPAL DE LOS SLIDES — BRICOLAGE GROTESQUE EN GRANDE
+.os-title {
+  // FUENTE DISPLAY DEL PRODUCTO PARA HEADLINES
+  font-family: 'Bricolage Grotesque', 'Inter', sans-serif;
+  // TAMANO RESPONSIVO QUE ESCALA CON LA VENTANA
+  font-size: clamp(26px, 6.4vw, 34px);
+  // PESO BOLD PARA IMPACTO VISUAL
   font-weight: 700;
   // INTERLINEADO COMPACTO PARA TITULOS GRANDES
   line-height: 1.15;
-  // RESETEAR MARGENES PARA TENER CONTROL TOTAL DESDE EL CONTENEDOR FLEX
+  // ELIMINAMOS MARGENES PARA CONTROL DESDE EL CONTENEDOR FLEX
   margin: 0;
-  // COLOR DEL TEXTO TOMADO DE LA VARIABLE DEL TEMA
+  // COLOR DEL TEXTO PRIMARIO DEL TEMA
   color: var(--color-text);
+  // ANCHO MAXIMO QUE EVITA LINEAS EXCESIVAMENTE LARGAS
+  max-width: 18ch;
+  // EVITA SALTOS DE LINEA RAROS EN HEADLINES CON SPLITTEXT
+  text-wrap: balance;
 }
 
-// VARIANTE DEL TITULO USADA EN EL CTA FINAL — UN PUNTO MAS GRANDE
-.argos-title--cta {
-  // TAMAÑO LIGERAMENTE MAYOR PARA EL CTA FINAL
-  font-size: clamp(32px, 7vw, 44px);
-}
-
-// SUBTITULO COMUN DE LOS SLIDES — TONO MAS APAGADO QUE EL TITULO
-.argos-subtitle {
-  // TAMAÑO MEDIO Y CONFORTABLE DE LECTURA
-  font-size: 17px;
-  // INTERLINEADO HOLGADO PARA LECTURA RAPIDA
-  line-height: 1.5;
-  // RESETEAR MARGENES PARA CONTROL DESDE EL CONTENEDOR
-  margin: 0;
-  // COLOR ATENUADO PARA JERARQUIA TIPOGRAFICA
-  color: var(--color-text-muted);
-  // ANCHO MAXIMO PARA EVITAR LINEAS EXCESIVAMENTE LARGAS
-  max-width: 36ch;
-}
-
-// CONTENEDOR DE LAS TARJETAS DE CARACTERISTICAS DEL SLIDE 2
-.argos-features {
-  // FLEX HORIZONTAL CON SEPARACION ENTRE TARJETAS
-  display: flex;
-  flex-direction: row;
-  // PERMITIR ENVOLVIMIENTO EN PANTALLAS MUY ESTRECHAS
-  flex-wrap: wrap;
-  // CENTRADO DE LAS TARJETAS EN EL EJE PRINCIPAL
-  justify-content: center;
-  // ESPACIO ENTRE TARJETAS
-  gap: 12px;
-  // ANCHO COMPLETO PARA OCUPAR EL ANCHO DEL CONTENEDOR INTERNO
-  width: 100%;
-}
-
-// TARJETA INDIVIDUAL DE CARACTERISTICA — PEQUEÑA, COMPACTA Y CON SUPERFICIE PROPIA
-.argos-feature-card {
-  // FLEX EN COLUMNA PARA APILAR ICONO Y TEXTO
-  display: flex;
-  flex-direction: column;
-  // CENTRADO HORIZONTAL DEL CONTENIDO
-  align-items: center;
-  // SEPARACION VERTICAL ENTRE ICONO Y TEXTO
-  gap: 8px;
-  // FONDO TOMADO DE LA SUPERFICIE DEL TEMA
-  background: var(--color-surface);
-  // BORDE REDONDEADO MEDIO PARA UN AIRE AMABLE
-  border-radius: 16px;
-  // PADDING INTERNO QUE DA AIRE A ICONO Y TEXTO
-  padding: 16px 12px;
-  // ANCHO MINIMO PARA QUE LA TARJETA SE LEA BIEN
-  min-width: 96px;
-  // ANCHO FLEXIBLE PARA QUE TRES TARJETAS QUEPAN EN UNA FILA EN MOVILES MEDIANOS
-  flex: 1 1 96px;
-  // ANCHO MAXIMO PARA QUE NO SE ESTIRE DEMASIADO EN PANTALLAS GRANDES
-  max-width: 140px;
-  // SOMBRA SUTIL DE ELEVACION USANDO COLOR DE TEXTO MEZCLADO CON TRANSPARENTE
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-text) 8%, transparent);
-}
-
-// ICONO EMOJI DENTRO DE CADA TARJETA DE CARACTERISTICA
-.argos-feature-card__icon {
-  // TAMAÑO DEL EMOJI USADO COMO ICONO
-  font-size: 32px;
-  // ALTURA DE LINEA AJUSTADA AL TAMAÑO DEL ICONO
+// VARIANTE BRAND DEL TITULO — WORDMARK PRINCIPAL EN SLIDE 0
+.os-title--brand {
+  // TAMANO MAYOR PARA QUE EL WORDMARK SEA HERO
+  font-size: clamp(40px, 12vw, 64px);
+  // PESO MAXIMO PARA MARCA
+  font-weight: 800;
+  // TRACKING WIDE TIPO MONOGRAMA
+  letter-spacing: 0.18em;
+  // INTERLINEADO COMPACTO ABSOLUTO
   line-height: 1;
 }
 
-// ETIQUETA DE TEXTO BAJO EL ICONO EN CADA TARJETA
-.argos-feature-card__text {
-  // TIPOGRAFIA COMPACTA PARA TARJETA PEQUEÑA
-  font-size: 13px;
-  // PESO MEDIO PARA LECTURA RAPIDA
-  font-weight: 600;
-  // COLOR DEL TEXTO PRINCIPAL DEL TEMA
+// SUBTITULO COMUN — TONO MAS APAGADO QUE EL TITULO
+.os-sub {
+  // TAMANO MEDIO CONFORTABLE
+  font-size: 15px;
+  // INTERLINEADO HOLGADO PARA LECTURA RAPIDA
+  line-height: 1.5;
+  // SIN MARGENES
+  margin: 0;
+  // COLOR ATENUADO PARA JERARQUIA TIPOGRAFICA
+  color: var(--color-text-muted);
+  // ANCHO MAXIMO PARA EVITAR LINEAS LARGAS
+  max-width: 32ch;
+}
+
+// EYEBROW — ETIQUETA PEQUENA QUE INTRODUCE EL SLIDE
+.os-eyebrow {
+  // TAMANO PEQUENO PERO LEGIBLE
+  font-size: 11px;
+  // PESO BOLD PARA QUE SE LEA COMO CATEGORIA
+  font-weight: 800;
+  // MAYUSCULAS Y TRACKING PARA DARLE AIRE DE EDITORIAL
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  // COLOR PRIMARIO SOFT PARA QUE NO COMPITA CON EL TITULO
+  color: var(--color-primary-soft);
+  // SIN MARGEN — CONTROL VIA GAP
+  margin: 0;
+}
+
+// PILL ZERO-KNOWLEDGE — PROMESA NUCLEAR DEL PRODUCTO
+.os-zk-pill {
+  // FLEX HORIZONTAL CON ICONO + TEXTO
+  display: inline-flex;
+  align-items: center;
+  // SEPARACION INTERNA ENTRE ICONO Y TEXTO
+  gap: 8px;
+  // PADDING PILL COMPACTO
+  padding: 8px 14px;
+  // BORDE PILL TOTAL
+  border-radius: 999px;
+  // FONDO SUAVE TENIDO DE VERDE PARA REFORZAR LA PROMESA DE SEGURIDAD
+  background: color-mix(in srgb, var(--color-success) 14%, var(--color-surface));
+  // BORDE FINO QUE DA SENSACION DE CHIP REAL
+  border: 1px solid color-mix(in srgb, var(--color-success) 40%, transparent);
+  // TIPOGRAFIA COMPACTA Y BOLD PARA LECTURA RAPIDA
+  font-size: 12px;
+  font-weight: 700;
+  // COLOR DEL TEXTO ATENUADO Y NEUTRO
+  color: var(--color-text-muted);
+  // PULSACION SUTIL DEL FONDO PARA QUE NO QUEDE PLANO
+  animation: osZkPulse 3.6s ease-in-out infinite;
+  // OPTIMIZACION DE COMPOSICION
+  will-change: opacity;
+  // MARGEN SUPERIOR PEQUENO PARA SEPARARLO DEL COPY
+  margin-top: 4px;
+}
+
+// COLOR PROPIO DEL ICONO DENTRO DEL PILL ZK
+.os-zk-pill__ico { color: var(--color-success); flex-shrink: 0; }
+
+// PULSACION SUAVE DEL PILL ZK — SOLO OPACIDAD PARA RENDIMIENTO
+@keyframes osZkPulse {
+  0%, 100% { opacity: 0.9; }
+  50%      { opacity: 1;   }
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  SLIDE 1 — CAPACIDADES: BENTO ASIMETRICO                     ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// GRID BENTO ASIMETRICO — HERO DOMINANTE ARRIBA, DOS SATELITES ABAJO
+.os-bento {
+  // DISPLAY GRID PARA CONTROL ASIMETRICO PRECISO
+  display: grid;
+  // DOS COLUMNAS IGUALES POR DEFECTO
+  grid-template-columns: 1fr 1fr;
+  // FILA DEL HERO MAS ALTA QUE LAS DE SATELITES
+  grid-template-rows: auto auto;
+  // ESPACIO ENTRE TARJETAS
+  gap: 12px;
+  // ANCHO COMPLETO HASTA EL TOPE DEL CONTENEDOR
+  width: 100%;
+  // SIN MARGENES — CONTROL VIA GAP DEL CONTENEDOR PADRE
+  margin: 0;
+}
+
+// TARJETA BASE DEL BENTO — FONDO SURFACE Y BORDES SUAVES
+.os-bento__card {
+  // POSICIONAMIENTO RELATIVO PARA ANCLAR EL ANILLO DECORATIVO
+  position: relative;
+  // FLEX EN COLUMNA PARA APILAR ICONO + TITULO + DESCRIPCION
+  display: flex;
+  flex-direction: column;
+  // ALINEACION A LA IZQUIERDA PARA UN AIRE EDITORIAL
+  align-items: flex-start;
+  text-align: left;
+  // SEPARACION VERTICAL ENTRE ELEMENTOS INTERNOS
+  gap: 8px;
+  // FONDO TOMADO DE LA SUPERFICIE DEL TEMA
+  background: var(--color-surface);
+  // BORDE REDONDEADO GRANDE PARA UN AIRE AMABLE
+  border-radius: 18px;
+  // PADDING INTERNO HOLGADO
+  padding: 16px;
+  // BORDE SUTIL QUE DA SENSACION DE TARJETA REAL
+  border: 1px solid color-mix(in srgb, var(--color-text) 6%, transparent);
+  // SOMBRA DE ELEVACION SUTIL — RESPETA EL TEMA OSCURO
+  box-shadow: 0 8px 24px color-mix(in srgb, #000 24%, transparent);
+  // EVITA QUE LA SOMBRA DEL ANILLO SE DESBORDE
+  overflow: hidden;
+}
+
+// VARIANTE HERO — OCUPA LAS DOS COLUMNAS Y CRECE EN PADDING
+.os-bento__card--hero {
+  // OCUPA LAS DOS COLUMNAS DEL GRID
+  grid-column: 1 / -1;
+  // PADDING MAYOR PARA QUE EL HERO RESPIRE
+  padding: 20px;
+  // ALTURA MINIMA PARA DESTACAR JERARQUIA EN EL BENTO
+  min-height: 132px;
+  // BORDE PRIMARIO MAS PRESENTE PARA RESALTAR JERARQUIA
+  border-color: color-mix(in srgb, var(--color-primary) 28%, transparent);
+  // SOMBRA TENIDA DEL COLOR PRIMARIO PARA ELEVAR
+  box-shadow: 0 12px 36px color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+// VARIANTE MINI — TARJETAS SATELITE MAS COMPACTAS
+.os-bento__card--mini {
+  // PADDING REDUCIDO PARA UN AIRE COMPACTO
+  padding: 14px;
+  // ALTURA MINIMA QUE ALINEA LAS DOS SATELITES
+  min-height: 116px;
+}
+
+// ICONO DENTRO DE LA TARJETA BENTO
+.os-bento__icon {
+  // CENTRADO INTERNO POR INLINE-FLEX
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  // CHIP CIRCULAR DE FONDO TENIDO DEL PRIMARIO
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface-2));
+  // COLOR DEL ICONO TOMADO DEL PRIMARIO SOFT
+  color: var(--color-primary-soft);
+}
+
+// VARIANTE ACCENT DEL ICONO — PARA SATELITES (DIFERENCIA CROMATICA)
+.os-bento__icon--accent {
+  background: color-mix(in srgb, var(--color-accent) 18%, var(--color-surface-2));
+  color: var(--color-accent);
+}
+
+// TITULO DENTRO DE LA TARJETA BENTO
+.os-bento__title {
+  // FUENTE DISPLAY PARA QUE DESTAQUE
+  font-family: 'Bricolage Grotesque', 'Inter', sans-serif;
+  // TAMANO DE TITULAR SECUNDARIO
+  font-size: 15px;
+  // PESO BOLD
+  font-weight: 800;
+  // COLOR PRINCIPAL DEL TEMA
   color: var(--color-text);
   // INTERLINEADO COMPACTO
-  line-height: 1.25;
+  line-height: 1.15;
 }
 
-// BOTON BASE DEL ONBOARDING — ESTILO LIMPIO Y FACIL DE PULSAR EN MOVIL
-.argos-btn {
-  // ELIMINAR ESTILO DE BOTON NATIVO POR DEFECTO DEL NAVEGADOR
-  border: 0;
-  background: transparent;
-  // CURSOR DE MANO PARA INDICAR INTERACTIVIDAD EN ESCRITORIO
-  cursor: pointer;
-  // TIPOGRAFIA HEREDADA DEL DOCUMENTO
-  font-family: inherit;
-  // PERMITIR TRANSICIONES DE COLOR Y SOMBRA AL INTERACTUAR
-  transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+// DESCRIPCION DENTRO DE LA TARJETA BENTO
+.os-bento__desc {
+  // TAMANO PEQUENO PARA DETALLE
+  font-size: 12px;
+  // INTERLINEADO MEDIO PARA LECTURA
+  line-height: 1.4;
+  // COLOR DE TEXTO ATENUADO
+  color: var(--color-text-muted);
+  // PESO MEDIO
+  font-weight: 500;
 }
 
-// VARIANTE PRIMARIA DEL BOTON — CTA PRINCIPAL DEL ONBOARDING
-.argos-btn--primary {
-  // FONDO PRINCIPAL TOMADO DE LA VARIABLE PRIMARIA DEL TEMA
-  background: var(--color-primary);
-  // COLOR DE TEXTO BLANCO POR REQUISITO DE LA TAREA — ALTO CONTRASTE SOBRE EL PRIMARIO
+// ANILLO DECORATIVO DENTRO DEL HERO — POSICIONADO AL FONDO DERECHO
+.os-bento__ring {
+  // POSICIONAMIENTO ABSOLUTO RESPECTO A LA TARJETA HERO
+  position: absolute;
+  bottom: -18px;
+  right: -18px;
+  // TAMANO DE ANILLO DECORATIVO
+  width: 104px;
+  height: 104px;
+  // OPACIDAD MEDIA PARA QUE NO COMPITA CON EL TEXTO
+  opacity: 0.55;
+  // PULSO SUTIL DEL ANILLO PARA INSINUAR VIDA
+  animation: osRing 4s ease-in-out infinite;
+  // SIN INTERCEPCION DE EVENTOS
+  pointer-events: none;
+}
+
+// KEYFRAMES DEL ANILLO DECORATIVO — SOLO OPACIDAD/ROTACION
+@keyframes osRing {
+  0%, 100% { opacity: 0.5; transform: rotate(0deg); }
+  50%      { opacity: 0.85; transform: rotate(8deg); }
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  SLIDE 2 — GAMIFICACION: NIVEL + XP + LOGROS                 ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// TARJETA DEL NIVEL ACTUAL CON BADGE Y BARRA XP
+.os-level-card {
+  // FLEX HORIZONTAL: BADGE | CUERPO
+  display: flex;
+  align-items: center;
+  // SEPARACION ENTRE BADGE Y CUERPO
+  gap: 14px;
+  // ANCHO COMPLETO HASTA EL TOPE DEL CONTENEDOR
+  width: 100%;
+  // PADDING INTERNO HOLGADO
+  padding: 14px;
+  // FONDO TOMADO DE LA SUPERFICIE
+  background: var(--color-surface);
+  // BORDE REDONDEADO GRANDE
+  border-radius: 18px;
+  // BORDE SUTIL TENIDO DEL ACCENT PARA DIFERENCIAR DEL BENTO
+  border: 1px solid color-mix(in srgb, var(--color-accent) 22%, transparent);
+  // SOMBRA DE ELEVACION SUTIL
+  box-shadow: 0 8px 24px color-mix(in srgb, #000 30%, transparent);
+}
+
+// BADGE CIRCULAR DEL NIVEL — INCLUYE ICONO Y NUMERO
+.os-level-card__badge {
+  // POSICIONAMIENTO RELATIVO PARA ANCLAR EL NUMERO SOBRE EL ICONO
+  position: relative;
+  // FLEX CENTRADO INTERNO
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  // TAMANO CUADRADO DEL BADGE
+  width: 56px;
+  height: 56px;
+  // EVITA QUE SE ENCOJA SI EL TEXTO ES LARGO
+  flex-shrink: 0;
+  // BORDE REDONDEADO TOTAL PARA CIRCULO PERFECTO
+  border-radius: 50%;
+  // FONDO TENIDO CON GRADIENTE PRIMARIO->ACCENT PARA QUE BRILLE
+  background: radial-gradient(circle at 30% 30%,
+    color-mix(in srgb, var(--color-accent) 70%, var(--color-primary)),
+    var(--color-primary));
+  // COLOR DEL ICONO BLANCO ROTO PARA CONTRASTE
   color: #ffffff;
-  // BORDE REDONDEADO TIPO PILDORA
+  // SOMBRA TENIDA PARA QUE FLOTE
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--color-primary) 45%, transparent);
+}
+
+// NUMERO DEL NIVEL ENCIMA DEL ICONO DEL BADGE
+.os-level-card__num {
+  // POSICIONAMIENTO ABSOLUTO EN ESQUINA INFERIOR DERECHA DEL BADGE
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  // CHIP CIRCULAR CON FONDO DEL TEMA OSCURO
+  background: var(--color-surface-2);
+  // TIPOGRAFIA COMPACTA BOLD
+  font-size: 11px;
+  font-weight: 800;
+  // COLOR DEL TEXTO PRIMARIO PARA CONTRASTE
+  color: var(--color-text);
+  // BORDE FINO DEL COLOR PRIMARIO PARA INTEGRARSE
+  border: 1.5px solid var(--color-primary);
+  // BORDE REDONDEADO TOTAL
   border-radius: 999px;
-  // PADDING SOLICITADO POR EL DISEÑO DEL ONBOARDING
-  padding: 16px 48px;
-  // TAMAÑO DE FUENTE GRANDE PARA QUE SEA EL FOCO DEL SLIDE
-  font-size: 18px;
-  // PESO BOLD PARA UN CTA EXPRESIVO
+  // PADDING COMPACTO
+  padding: 1px 6px;
+}
+
+// CUERPO DE LA TARJETA DE NIVEL — A LA DERECHA DEL BADGE
+.os-level-card__body {
+  // FLEX EN COLUMNA PARA APILAR TITULO + XP + BARRA
+  display: flex;
+  flex-direction: column;
+  // SEPARACION VERTICAL ENTRE ELEMENTOS DEL CUERPO
+  gap: 4px;
+  // FLEX 1 PARA OCUPAR EL ESPACIO RESTANTE
+  flex: 1;
+  // ALINEACION A LA IZQUIERDA
+  align-items: flex-start;
+  text-align: left;
+  // EVITA QUE EL XP SE DESBORDE
+  min-width: 0;
+}
+
+// TITULO DEL NIVEL ACTUAL DENTRO DE LA TARJETA
+.os-level-card__title {
+  // FUENTE DISPLAY DEL PRODUCTO
+  font-family: 'Bricolage Grotesque', 'Inter', sans-serif;
+  // TAMANO MEDIO
+  font-size: 15px;
+  // PESO BOLD
+  font-weight: 800;
+  // COLOR PRINCIPAL DEL TEMA
+  color: var(--color-text);
+}
+
+// LABEL DE XP ACTUAL/META
+.os-level-card__xp {
+  // TAMANO PEQUENO
+  font-size: 11.5px;
+  // PESO SEMI-BOLD
   font-weight: 700;
-  // SOMBRA DE ELEVACION USANDO EL COLOR PRIMARIO PARA INTEGRARSE EN EL TEMA
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--color-primary) 35%, transparent);
+  // COLOR ATENUADO PARA JERARQUIA
+  color: var(--color-text-muted);
+  // TRACKING LIGERO PARA QUE PAREZCA UNA METRICA
+  letter-spacing: 0.04em;
 }
 
-// EFECTO HOVER/ACTIVE DEL BOTON PRIMARIO — LIGERO LIFT
-.argos-btn--primary:hover {
-  // PEQUEÑO DESPLAZAMIENTO HACIA ARRIBA EN HOVER PARA SENSACION TACTIL
-  transform: translateY(-1px);
+// BARRA DE PROGRESO DE XP — VACIA EN ESTE PUNTO PORQUE EL USUARIO ES NUEVO
+.os-xpbar {
+  // ANCHO COMPLETO DEL CUERPO
+  width: 100%;
+  // ALTURA FINA TIPO BARRA
+  height: 6px;
+  // FONDO ATENUADO TIPO TRACK
+  background: var(--color-surface-2);
+  // BORDE PILL TOTAL
+  border-radius: 999px;
+  // EVITA QUE EL FILL SE SALGA AL ANIMAR
+  overflow: hidden;
+  // MARGEN SUPERIOR PEQUENO RESPECTO AL TEXTO XP
+  margin-top: 4px;
 }
 
-// EFECTO ACTIVE DEL BOTON PRIMARIO — RESETEA EL LIFT
-.argos-btn--primary:active {
-  // VOLVER A LA POSICION ORIGINAL EN PRESS
-  transform: translateY(0);
-  // SOMBRA REDUCIDA PARA EFECTO DE PRESION
-  box-shadow: 0 4px 10px color-mix(in srgb, var(--color-primary) 25%, transparent);
+// RELLENO DE LA BARRA XP — A 0% PERO CON ANIMACION DE INSINUACION
+.os-xpbar__fill {
+  // BLOQUE QUE SE PUEDE ANIMAR — ARRANCA EN 0%
+  display: block;
+  width: 0%;
+  height: 100%;
+  // GRADIENTE PRIMARIO-ACCENT PARA UN AIRE GAMIFICADO CUANDO TENGA ANCHO
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+  // BORDE PILL TOTAL PARA QUE EL FRENTE QUEDE BIEN
+  border-radius: 999px;
 }
 
-// VARIANTE SECUNDARIA TIPO TEXTO — SIN FONDO, SOLO TEXTO ATENUADO
-.argos-btn--ghost {
-  // FONDO TRANSPARENTE PORQUE ES UN BOTON DE TEXTO
+// TITULO PEQUENO QUE PRECEDE A LA REJILLA DE LOGROS
+.os-ach-title {
+  // FUENTE DISPLAY
+  font-family: 'Bricolage Grotesque', 'Inter', sans-serif;
+  // TAMANO PEQUENO PARA NO COMPETIR CON EL TITULO PRINCIPAL
+  font-size: 14px;
+  // PESO BOLD
+  font-weight: 800;
+  // COLOR PRINCIPAL DEL TEMA
+  color: var(--color-text);
+  // ALINEACION CENTRADA
+  text-align: center;
+  // MARGEN VERTICAL PEQUENO PARA SEPARARLO DEL LEVEL CARD
+  margin-top: 4px;
+}
+
+// REJILLA DE LOGROS — 3 COLUMNAS EN MOVIL
+.os-ach-grid {
+  // GRID DE 3 COLUMNAS IGUALES
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  // GAP COMPACTO
+  gap: 8px;
+  // ANCHO COMPLETO
+  width: 100%;
+}
+
+// TARJETA INDIVIDUAL DE LOGRO — POR DEFECTO EN GRIS PARA INSINUAR BLOQUEO
+.os-ach-card {
+  // FLEX EN COLUMNA PARA APILAR ICONO + TEXTO
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  // SEPARACION INTERNA
+  gap: 6px;
+  // PADDING INTERNO COMPACTO
+  padding: 12px 8px;
+  // FONDO LIGERAMENTE DESATURADO
+  background: color-mix(in srgb, var(--color-surface-2) 70%, var(--color-surface));
+  // BORDE REDONDEADO MEDIO
+  border-radius: 14px;
+  // BORDE SUTIL
+  border: 1px solid color-mix(in srgb, var(--color-text) 4%, transparent);
+  // COLOR DEL ICONO Y TEXTO ATENUADOS POR DEFECTO
+  color: var(--color-text-muted);
+  // OPACIDAD MEDIA PARA INSINUAR BLOQUEO
+  opacity: 0.7;
+  // FILTRO QUE DESATURA LOS LOGROS BLOQUEADOS
+  filter: grayscale(1);
+  // ALTURA MINIMA PARA HOMOGENEIDAD
+  min-height: 72px;
+  // TRANSICION DE COLOR Y OPACIDAD POR SI EN FUTURO SE DESBLOQUEAN
+  transition: opacity 220ms var(--ease-quick), filter 220ms var(--ease-quick);
+}
+
+// VARIANTE HOT — LOGRO A COLOR PARA CREAR DESEO
+.os-ach-card--hot {
+  // FONDO TENIDO DEL ACCENT PARA RESALTAR
+  background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
+  // BORDE TENIDO DEL ACCENT
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  // COLOR DE TEXTO PRIMARIO
+  color: var(--color-text);
+  // SIN OPACIDAD REDUCIDA
+  opacity: 1;
+  // SIN FILTRO GRAYSCALE
+  filter: none;
+}
+
+// COLOR DEL ICONO EN LOGRO HOT
+.os-ach-card--hot .os-ach-card__ico { color: var(--color-accent); }
+
+// CONTENEDOR DEL ICONO DENTRO DE LA TARJETA DE LOGRO
+.os-ach-card__ico {
+  // INLINE-FLEX PARA CENTRADO INTERNO
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// ETIQUETA DEBAJO DEL ICONO DEL LOGRO
+.os-ach-card__lbl {
+  // TAMANO MUY COMPACTO
+  font-size: 11px;
+  // PESO SEMI-BOLD PARA LECTURA RAPIDA
+  font-weight: 700;
+  // INTERLINEADO COMPACTO
+  line-height: 1.2;
+  // ALINEACION CENTRADA
+  text-align: center;
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  SLIDE 3 — CTA FINAL: PROMESA DE 10 MIN + BOTONES            ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// PILL DE TIEMPO QUE REFUERZA LA PROMESA DE 10 MIN
+.os-time-pill {
+  // FLEX HORIZONTAL CON ICONO + TEXTO
+  display: inline-flex;
+  align-items: center;
+  // SEPARACION INTERNA
+  gap: 6px;
+  // PADDING COMPACTO TIPO CHIP
+  padding: 6px 12px;
+  // BORDE PILL TOTAL
+  border-radius: 999px;
+  // FONDO TENIDO DEL ACCENT PARA UN AIRE DE BADGE
+  background: color-mix(in srgb, var(--color-accent) 18%, var(--color-surface));
+  // BORDE DEL ACCENT FINO
+  border: 1px solid color-mix(in srgb, var(--color-accent) 40%, transparent);
+  // COLOR DEL TEXTO
+  color: var(--color-accent);
+  // TIPOGRAFIA COMPACTA
+  font-size: 11.5px;
+  font-weight: 800;
+  // MAYUSCULAS Y TRACKING PARA QUE PAREZCA HUD
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+// GRUPO DE ACCIONES DEL CTA FINAL — PRIMARIO + SECUNDARIO STACKED
+.os-actions {
+  // FLEX EN COLUMNA PARA APILAR LOS DOS BOTONES
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  // SEPARACION ENTRE LOS DOS BOTONES
+  gap: 10px;
+  // ANCHO COMPLETO HASTA UN MAXIMO PARA QUE EL CTA TENGA AIRE
+  width: 100%;
+  max-width: 320px;
+}
+
+// BOTON BASE DE LOS CTA — TAMANO TACTIL EN MOVIL
+.os-btn {
+  // BLOQUE DE ANCHO COMPLETO PARA UN TAP TARGET CONFORTABLE
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  // SEPARACION INTERNA ENTRE ICONO Y TEXTO
+  gap: 8px;
+  // PADDING VERTICAL CONFORTABLE
+  padding: 14px 28px;
+  // ANCHO COMPLETO HASTA EL MAXIMO DEL CONTENEDOR
+  width: 100%;
+  // BORDE PILL TOTAL
+  border-radius: 999px;
+  // TIPOGRAFIA COMPACTA Y BOLD
+  font-size: 15px;
+  font-weight: 800;
+  // FUENTE HEREDADA DEL DOCUMENTO
+  font-family: 'Inter', sans-serif;
+  // ELIMINAMOS BORDES POR DEFECTO
+  border: 0;
+  // CURSOR DE MANO PARA INTERACTIVIDAD EN ESCRITORIO
+  cursor: pointer;
+  // TRANSICION SUTIL EN HOVER/PRESS
+  transition: transform 220ms var(--ease-spring),
+              box-shadow 220ms var(--ease-quick),
+              opacity 220ms var(--ease-quick);
+}
+
+// VARIANTE PRIMARIA DEL CTA — CON HALO LATIENDO
+.os-btn--primary {
+  // FONDO PRINCIPAL TOMADO DE LA VARIABLE PRIMARIA
+  background: linear-gradient(135deg,
+    var(--color-primary) 0%,
+    color-mix(in srgb, var(--color-primary) 70%, var(--color-accent)) 100%);
+  // COLOR DE TEXTO BLANCO PARA CONTRASTE SOBRE EL PRIMARIO
+  color: #ffffff;
+  // SOMBRA DE GLOW USANDO EL COLOR PRIMARIO
+  box-shadow:
+    0 8px 28px color-mix(in srgb, var(--color-primary) 45%, transparent),
+    inset 0 1px 0 color-mix(in srgb, #ffffff 22%, transparent);
+  // HALO PULSANTE QUE EVOCA EL LATIDO DEL TITAN
+  animation: osBtnHeartbeat 1.6s ease-in-out infinite;
+  // OPTIMIZACION DE COMPOSICION
+  will-change: transform, box-shadow;
+}
+
+// LATIDO DEL CTA PRIMARIO — UN PUNCH AL PRINCIPIO DEL CICLO
+@keyframes osBtnHeartbeat {
+  0%, 100% {
+    box-shadow:
+      0 8px 28px color-mix(in srgb, var(--color-primary) 45%, transparent),
+      inset 0 1px 0 color-mix(in srgb, #ffffff 22%, transparent);
+    transform: translateY(0);
+  }
+  40% {
+    box-shadow:
+      0 16px 44px color-mix(in srgb, var(--color-primary) 65%, transparent),
+      inset 0 1px 0 color-mix(in srgb, #ffffff 28%, transparent);
+    transform: translateY(-2px);
+  }
+}
+
+// PRESS DEL CTA PRIMARIO — PEQUENA REGRESION DE LIFT
+.os-btn--primary:active {
+  // PRESION HACIA ABAJO MUY CORTA
+  transform: translateY(1px);
+  // SOMBRA REDUCIDA EN PRESS
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--color-primary) 35%, transparent);
+}
+
+// VARIANTE GHOST DEL CTA SECUNDARIO — SIN FONDO, SOLO TEXTO
+.os-btn--ghost {
+  // FONDO TRANSPARENTE PORQUE ES SOLO TEXTO
   background: transparent;
   // COLOR DE TEXTO ATENUADO PARA NO COMPETIR CON EL CTA PRIMARIO
   color: var(--color-text-muted);
   // PADDING MAS COMPACTO QUE EL CTA PRIMARIO
-  padding: 12px 24px;
-  // TAMAÑO LIGERAMENTE MENOR
-  font-size: 15px;
-  // PESO SEMIBOLD PARA SEGUIR SIENDO LEGIBLE
-  font-weight: 600;
-  // SUBRAYADO IMPLICITO AL HOVER MEDIANTE TEXT-DECORATION
-  text-decoration: underline;
-  // GROSOR DEL SUBRAYADO PARA SUTILEZA
-  text-decoration-thickness: 1px;
-  // OPACIDAD INICIAL LIGERAMENTE BAJA PARA INTEGRACION
-  opacity: 0.85;
+  padding: 10px 16px;
+  // ANCHO AUTO PARA QUE NO COMPITA POR ANCHO CON EL CTA PRIMARIO
+  width: auto;
+  // TAMANO LIGERAMENTE MAS PEQUENO
+  font-size: 14px;
+  // PESO MENOR PARA JERARQUIA CLARA
+  font-weight: 700;
 }
 
-// HOVER DEL BOTON SECUNDARIO — RECUPERA OPACIDAD COMPLETA
-.argos-btn--ghost:hover {
-  // OPACIDAD MAXIMA PARA INDICAR INTERACTIVIDAD
-  opacity: 1;
-}
+// HOVER DEL CTA GHOST — RECUPERA OPACIDAD COMPLETA Y RESALTA COLOR
+.os-btn--ghost:hover { color: var(--color-text); }
 
-// CONTENEDOR DE LOS DOTS DE PROGRESO — POSICIONADO ABSOLUTAMENTE EN LA PARTE INFERIOR
-.argos-dots {
-  // POSICION ABSOLUTA RESPECTO AL ION-CONTENT PADRE
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  INDICADOR DE OJOS — LOS OJOS DE ARGUS SE ABREN AL AVANZAR   ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// CONTENEDOR DE OJOS — FIJO EN LA PARTE INFERIOR RESPETANDO SAFE-AREA
+.os-eyes {
+  // POSICIONAMIENTO ABSOLUTO RESPECTO AL ROOT
   position: absolute;
-  // SEPARACION DESDE LA BASE QUE RESPETA SAFE-AREA EN MOVILES CON NOTCH/HOME-BAR
+  // SEPARACION DESDE LA BASE RESPETANDO HOME-BAR
   bottom: calc(28px + env(safe-area-inset-bottom, 0));
-  // CENTRADO HORIZONTAL MEDIANTE TRANSLATE
+  // CENTRADO HORIZONTAL
   left: 50%;
   transform: translateX(-50%);
-  // FLEX HORIZONTAL PARA ALINEAR DOTS EN UNA FILA
+  // FLEX HORIZONTAL CON SEPARACION ENTRE OJOS
   display: flex;
-  // ESPACIO ENTRE DOTS
-  gap: 10px;
-  // ASEGURAMOS QUE LOS DOTS QUEDAN POR ENCIMA DEL CONTENIDO DEL SLIDE
-  z-index: 10;
-  // EVITA QUE INTERCEPTEN GESTOS DEL CARRUSEL CUANDO NO INTERESA
+  gap: 12px;
+  // POR ENCIMA DEL SWIPER
+  z-index: 5;
+  // SIN INTERCEPCION DE EVENTOS PARA NO INTERFERIR CON EL SWIPE
   pointer-events: none;
 }
 
-// DOT INDIVIDUAL DEL INDICADOR DE PROGRESO — ESTADO INACTIVO POR DEFECTO
-.argos-dots__dot {
-  // ANCHO Y ALTO IGUALES PARA FORMAR UN CIRCULO
-  width: 8px;
-  height: 8px;
-  // BORDE TOTAL PARA REDONDEAR EN CIRCULO
-  border-radius: 50%;
-  // COLOR DE FONDO ATENUADO USANDO LA VARIABLE DE TEXTO MUTED CON OPACIDAD
-  background: color-mix(in srgb, var(--color-text-muted) 50%, transparent);
-  // TRANSICION SUAVE AL CAMBIAR EL DOT ACTIVO
-  transition: background-color 200ms ease, transform 200ms ease, width 200ms ease;
+// OJO INDIVIDUAL DEL INDICADOR — SVG INLINE CON IRIS Y PARPADO
+.os-eye {
+  // TAMANO TACTIL CONFORTABLE
+  display: inline-block;
+  width: 36px;
+  height: 24px;
+  // OPACIDAD POR DEFECTO REDUCIDA PARA QUE SOLO EL ACTIVO BRILLE
+  opacity: 0.6;
+  // TRANSICION SUAVE
+  transition: opacity 240ms var(--ease-quick);
 }
 
-// VARIANTE ACTIVA DEL DOT — USA --color-primary Y ES MAS ANCHO PARA INDICAR PROGRESO
-.argos-dots__dot--active {
-  // FONDO DEL DOT ACTIVO TOMADO DE LA VARIABLE PRIMARIA DE ARGOS
-  background: var(--color-primary);
-  // ANCHO MAYOR PARA RESALTAR LA POSICION ACTUAL DENTRO DEL CARRUSEL
-  width: 24px;
-  // BORDE REDONDEADO DE PILDORA EN LUGAR DE CIRCULO PARA EL DOT ACTIVO
-  border-radius: 999px;
+// SVG DENTRO DEL OJO — OCUPA TODO EL CONTENEDOR
+.os-eye svg {
+  width: 100%;
+  height: 100%;
+  // OVERFLOW VISIBLE PARA QUE EL IRIS QUE BRILLA NO SE CORTE
+  overflow: visible;
+}
+
+// CONTORNO ALMENDRA DEL OJO — TRAZO DEL COLOR DEL TEMA
+.os-eye__shape {
+  // GROSOR DEL TRAZO Y COLOR ATENUADO
+  stroke: color-mix(in srgb, var(--color-text-muted) 60%, transparent);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  // BORDES REDONDEADOS DEL TRAZO
+  stroke-linecap: round;
+}
+
+// IRIS DEL OJO — ARRANCA APAGADO, BRILLA AL ACTIVAR
+.os-eye__iris {
+  // RELLENO ATENUADO POR DEFECTO
+  fill: var(--color-text-muted);
+  // TRANSICION DE COLOR AL ACTIVAR
+  transition: fill 240ms var(--ease-quick);
+}
+
+// PARPADO QUE CUBRE EL OJO — ARRANCA CERRADO PARA INACTIVOS
+.os-eye__lid {
+  // RELLENO IGUAL AL FONDO PARA QUE PAREZCA TAPADO
+  fill: var(--color-bg);
+  // TRANSFORM-ORIGIN ARRIBA PARA QUE PARPADEE COMO PERSIANA
+  transform-origin: 12px 0px;
+  transform: scaleY(1);
+  // TRANSICION DE PARPADEO SUAVE
+  transition: transform 360ms var(--ease-spring);
+}
+
+// VARIANTE ACTIVA DEL OJO — SE ABRE Y EL IRIS BRILLA EN PRIMARIO
+.os-eye--active {
+  // OPACIDAD COMPLETA PARA QUE DESTAQUE
+  opacity: 1;
+}
+
+// EL PARPADO DEL OJO ACTIVO SE LEVANTA POR COMPLETO
+.os-eye--active .os-eye__lid {
+  transform: scaleY(0);
+}
+
+// EL IRIS DEL OJO ACTIVO BRILLA EN COLOR PRIMARIO
+.os-eye--active .os-eye__iris {
+  fill: var(--color-primary);
+  // PULSO DEL IRIS PARA QUE PAREZCA QUE MIRA AL USUARIO
+  animation: osIrisPulse 2.2s ease-in-out infinite;
+}
+
+// VARIANTE PASADA — EL OJO YA VISITADO QUEDA ABIERTO PERO MAS APAGADO
+.os-eye--past .os-eye__lid { transform: scaleY(0); }
+.os-eye--past .os-eye__iris { fill: var(--color-primary-soft); opacity: 0.7; }
+
+// PULSO DEL IRIS DEL OJO ACTIVO — SOLO OPACIDAD
+@keyframes osIrisPulse {
+  0%, 100% { opacity: 0.85; }
+  50%      { opacity: 1; }
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  ACCESIBILIDAD — RESPETO DE PREFERS-REDUCED-MOTION           ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// CUANDO EL USUARIO PIDE MOTION REDUCIDO, CONGELAMOS LAS ANIMACIONES
+@media (prefers-reduced-motion: reduce) {
+  .os-halo,
+  .os-zk-pill,
+  .os-btn--primary,
+  .os-eye--active .os-eye__iris,
+  .os-bento__ring {
+    animation: none !important;
+  }
+  .os-eye__lid {
+    transition: none !important;
+  }
 }

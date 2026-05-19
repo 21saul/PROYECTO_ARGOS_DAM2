@@ -1,120 +1,486 @@
-<!-- HEADER PRINCIPAL DE LA PAGINA DE PERFIL -->
-<ion-header>
+<!-- ═══════════════════════════════════════════════════════════════════
+     PROFILE PAGE — CENTRO DE COMANDO PERSONAL DE ARGOS
+     REDISEÑO "GUARDIAN HUD" — HERO IDENTITARIO + PANEL DE
+     PERSONALIZACION VIVA + HUD GAMIFICADO + SECCIONES EDITORIALES
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<!-- HEADER GLASS — TOOLBAR ATENUADO PARA QUE PROTAGONICE EL HERO -->
+<ion-header class="glass-header profile-header">
   <ion-toolbar>
     <ion-buttons slot="start">
       <ion-back-button defaultHref="/dashboard" text="">
         <ph-arrow-left weight="bold" size="22" slot="icon-only"></ph-arrow-left>
       </ion-back-button>
     </ion-buttons>
-    <ion-title>Mi Perfil</ion-title>
+    <!-- ETIQUETA EN VERSALITAS CON CONTRASTE TIPOGRAFICO PREMIUM -->
+    <ion-title>
+      <span class="profile-toolbar-eyebrow">Centro de comando</span>
+      <span class="profile-toolbar-title">Tu guardián</span>
+    </ion-title>
     <ion-buttons slot="end">
-      <ion-button>
-        <ph-gear-six weight="fill" size="22" slot="icon-only"></ph-gear-six>
+      <!-- ACCESO RAPIDO A PERSONALIZACION QUE HACE SCROLL AL PANEL VIVO -->
+      <ion-button (click)="scrollToCustomization()" aria-label="Personalizar">
+        <ph-sliders weight="fill" size="22" slot="icon-only"></ph-sliders>
       </ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<!-- CONTENIDO PRINCIPAL CON HERO, ESTADISTICAS, TOGGLE Y MENU -->
-<ion-content class="profile-content">
+<!-- CONTENIDO PRINCIPAL — TODA LA COREOGRAFIA VIVE BAJO #pageRoot -->
+<ion-content class="profile-content" #scrollContent>
+  <div class="profile-root" #pageRoot>
 
-  <!-- HERO SUPERIOR CON GRADIENTE DE MARCA Y AVATAR DEL USUARIO -->
-  <div class="profile-hero gradient-primary">
-    <!-- ENVOLTORIO DEL AVATAR CON BADGE DE EDICION SUPERPUESTO -->
-    <div class="profile-avatar-wrap" (click)="openAvatarPicker()">
-      <!-- AVATAR CIRCULAR — MUESTRA IMAGEN SUBIDA O LA INICIAL DEL USUARIO -->
-      <div class="profile-avatar interactive">
-        <img *ngIf="avatar" [src]="avatar" alt="Avatar">
-        <span *ngIf="!avatar">{{getInitial()}}</span>
+    <!-- ═══════════════════════════════════════════════════════════════
+         BLOQUE 1 · HERO IDENTITARIO
+         Avatar con halo cuyo color = acento elegido, nombre editable,
+         barra de progreso de nivel, badge de rango con shimmer y Cub
+         flotando con micro-loop idle.
+         ═══════════════════════════════════════════════════════════════ -->
+    <section class="hero" data-reveal="hero">
+      <!-- AURORA DE FONDO — RESPIRA SUTILMENTE SOLO EN motion=cinematic -->
+      <div class="hero-aurora" aria-hidden="true"></div>
+      <!-- PARTICULAS ESTATICAS QUE EL PARALLAX MUEVE EN CINEMATIC -->
+      <div class="hero-particles" aria-hidden="true">
+        <span *ngFor="let p of heroParticles" [style.left.%]="p.x" [style.top.%]="p.y" [style.opacity]="p.o"></span>
       </div>
-      <!-- BADGE FLOTANTE FUERA DEL AVATAR PARA QUE NO LO RECORTE EL OVERFLOW -->
-      <div class="avatar-edit-badge">
-        <ph-camera weight="fill" size="16"></ph-camera>
+
+      <!-- ETIQUETA SUPERIOR — RANGO TEXTUAL EN VERSALITAS -->
+      <div class="hero-eyebrow">
+        <span class="hero-dot"></span>
+        <span>Guardián Digital · Operativo</span>
       </div>
-      <!-- INPUT FILE OCULTO QUE SE DISPARA AL TOCAR EL AVATAR -->
-      <input #avatarInput
-        type="file"
-        accept="image/*"
-        style="display:none"
-        (change)="onAvatarSelected($event)">
-    </div>
-    <!-- NOMBRE DEL USUARIO MOSTRADO EN GRANDE -->
-    <div class="profile-name">{{displayName}}</div>
-    <!-- EMAIL DEL USUARIO ATENUADO BAJO EL NOMBRE -->
-    <div class="profile-email">usuario@argos.app</div>
-    <!-- PILDORA INFORMATIVA CON EL NIVEL Y RANGO DEL USUARIO -->
-    <div class="profile-level-badge">
-      <ph-star weight="fill"></ph-star>
-      Nivel 5 · Guardián Digital
-    </div>
+
+      <!-- AVATAR + HALO CONCENTRICO QUE PULSA EN VIVO -->
+      <div class="avatar-stage" (click)="openAvatarPicker()">
+        <!-- ANILLO EXTERIOR — XP HACIA EL SIGUIENTE NIVEL -->
+        <svg class="avatar-xp-ring" viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="ring-bg"     cx="60" cy="60" r="54"></circle>
+          <circle class="ring-fill"   cx="60" cy="60" r="54"
+                  [attr.stroke-dasharray]="ringCircumference"
+                  [attr.stroke-dashoffset]="ringDashOffset"></circle>
+        </svg>
+        <!-- HALO DIFUSO — INTENSIDAD ANIMADA POR GSAP -->
+        <span class="avatar-halo"></span>
+
+        <!-- AVATAR EN SI — IMAGEN O INICIAL -->
+        <div class="avatar interactive">
+          <img *ngIf="avatar" [src]="avatar" alt="Avatar">
+          <span *ngIf="!avatar">{{ getInitial() }}</span>
+        </div>
+        <!-- BADGE DE EDICION INFERIOR DERECHO -->
+        <button class="avatar-edit" type="button" aria-label="Cambiar avatar">
+          <ph-camera weight="fill" size="14"></ph-camera>
+        </button>
+        <!-- INPUT FILE OCULTO PARA SELECCIONAR LA IMAGEN -->
+        <input #avatarInput
+               type="file"
+               accept="image/*"
+               style="display:none"
+               (change)="onAvatarSelected($event)">
+      </div>
+
+      <!-- NOMBRE EDITABLE INLINE — TAP EXPANDE INPUT, BLUR GUARDA -->
+      <div class="hero-name-wrap" [class.editing]="isEditingName">
+        <button *ngIf="!isEditingName" type="button"
+                class="hero-name"
+                (click)="startEditingName()"
+                aria-label="Editar nombre">
+          <span class="hero-name-text">{{ displayName }}</span>
+          <ph-pencil-simple weight="bold" size="16"></ph-pencil-simple>
+        </button>
+        <input *ngIf="isEditingName"
+               #nameInput
+               class="hero-name-input"
+               [(ngModel)]="nameDraft"
+               (blur)="commitName()"
+               (keyup.enter)="commitName()"
+               (keyup.escape)="cancelEditingName()"
+               maxlength="32"
+               aria-label="Nombre del guardián">
+      </div>
+      <!-- HANDLE / EMAIL ATENUADO -->
+      <div class="hero-handle">{{ userHandle }}</div>
+
+      <!-- BARRA DE PROGRESO DE NIVEL CON XP ACTUAL Y SIGUIENTE -->
+      <div class="hero-level">
+        <!-- ETIQUETA DEL NIVEL ACTUAL Y EL SIGUIENTE -->
+        <div class="hero-level-head">
+          <span class="level-chip">
+            <ph-star weight="fill" size="14"></ph-star>
+            Nivel {{ level }}
+          </span>
+          <span class="level-counter number-display">
+            <!-- CONTADOR ANIMADO POR GSAP — VACIO HASTA QUE EL TS LO RELLENE -->
+            <span #xpCounter>0</span>
+            <span class="level-counter-sep">/</span>
+            <span class="level-counter-target">{{ xpForNext | number:'1.0-0':'es' }}</span>
+            <span class="level-counter-unit">XP</span>
+          </span>
+          <span class="level-chip ghost">
+            <ph-arrow-up-right weight="bold" size="14"></ph-arrow-up-right>
+            {{ level + 1 }}
+          </span>
+        </div>
+        <!-- TRACK + FILL DE PROGRESO — FILL EN SCALE-X PARA SUAVIDAD -->
+        <div class="hero-level-track">
+          <div class="hero-level-fill" [style.transform]="'scaleX(' + (xpProgress / 100) + ')'"></div>
+          <!-- TICKS DEL TRACK CADA 20% -->
+          <span class="track-tick" *ngFor="let t of [20,40,60,80]" [style.left.%]="t"></span>
+        </div>
+      </div>
+
+      <!-- RANGO PILL CON SHIMMER -->
+      <div class="hero-rank-pill">
+        <ph-shield-star weight="fill" size="14"></ph-shield-star>
+        <span class="hero-rank-text">{{ rankTitle }}</span>
+        <span class="hero-rank-shimmer" aria-hidden="true"></span>
+      </div>
+
+      <!-- MASCOTA CUB FLOTANDO — MOOD CAMBIA SEGUN PERSONALIDAD -->
+      <div class="hero-cub" [attr.data-personality]="cubPersonality">
+        <app-argus-cub [size]="86" [mood]="cubMood" [theme]="isDark ? 'dark' : 'light'"></app-argus-cub>
+        <div class="hero-cub-bubble">
+          <span class="hero-cub-msg">{{ cubMessage }}</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         BLOQUE 2 · HUD DE PROGRESO — ANILLOS SVG GAMIFICADOS
+         ═══════════════════════════════════════════════════════════════ -->
+    <section class="hud" data-reveal="hud" #hudSection>
+      <header class="section-head">
+        <h2 class="section-title">Estado operativo</h2>
+        <span class="section-sub">Pulso del último mes</span>
+      </header>
+      <div class="hud-grid">
+        <article class="hud-ring" *ngFor="let r of rings; let i = index" [class]="'tone-' + r.tone">
+          <!-- ANILLO SVG PROGRESIVO -->
+          <svg class="hud-ring-svg" viewBox="0 0 64 64" aria-hidden="true">
+            <circle class="hud-ring-bg"   cx="32" cy="32" r="26"></circle>
+            <circle class="hud-ring-fill" cx="32" cy="32" r="26"
+                    [attr.stroke-dasharray]="hudCircumference"
+                    [attr.stroke-dashoffset]="hudDashOffset(r.value)"></circle>
+          </svg>
+          <!-- ICONO CENTRAL -->
+          <span class="hud-ring-icon">
+            <ng-container [ngSwitch]="r.icon">
+              <ph-star        *ngSwitchCase="'star'"        weight="fill" size="20"></ph-star>
+              <ph-fire        *ngSwitchCase="'fire'"        weight="fill" size="20"></ph-fire>
+              <ph-trophy      *ngSwitchCase="'trophy'"      weight="fill" size="20"></ph-trophy>
+              <ph-map-trifold *ngSwitchCase="'map-trifold'" weight="fill" size="20"></ph-map-trifold>
+            </ng-container>
+          </span>
+          <!-- VALOR + ETIQUETA -->
+          <div class="hud-ring-body">
+            <span class="hud-ring-value number-display">{{ r.display }}</span>
+            <span class="hud-ring-label">{{ r.label }}</span>
+          </div>
+        </article>
+      </div>
+
+      <!-- VITRINA HORIZONTAL DE LOGROS DESBLOQUEADOS -->
+      <div class="achievements">
+        <header class="section-head tight">
+          <h3 class="section-subtitle">Vitrina de logros</h3>
+          <span class="achievements-counter">{{ unlockedAchievements.length }} / {{ totalAchievements }}</span>
+        </header>
+        <div class="achievements-row scroll-clean">
+          <button *ngFor="let a of unlockedAchievements; let i = index"
+                  type="button"
+                  class="achievement-chip"
+                  [attr.data-tone]="a.tone"
+                  [attr.aria-label]="a.title + ' — ' + a.subtitle">
+            <span class="achievement-icon">
+              <ng-container [ngSwitch]="a.icon">
+                <ph-shield-check *ngSwitchCase="'shield'"  weight="fill" size="22"></ph-shield-check>
+                <ph-fire         *ngSwitchCase="'fire'"    weight="fill" size="22"></ph-fire>
+                <ph-key          *ngSwitchCase="'key'"     weight="fill" size="22"></ph-key>
+                <ph-medal        *ngSwitchCase="'medal'"   weight="fill" size="22"></ph-medal>
+                <ph-fish-simple  *ngSwitchCase="'phish'"   weight="fill" size="22"></ph-fish-simple>
+                <ph-trophy       *ngSwitchCase="'trophy'"  weight="fill" size="22"></ph-trophy>
+              </ng-container>
+            </span>
+            <span class="achievement-title">{{ a.title }}</span>
+            <span class="achievement-sparkle" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <!-- PROXIMO LOGRO DESTACADO -->
+        <article class="next-achievement">
+          <div class="next-achievement-glyph">
+            <ph-target weight="fill" size="22"></ph-target>
+          </div>
+          <div class="next-achievement-body">
+            <span class="next-achievement-eyebrow">Próximo logro</span>
+            <h4 class="next-achievement-title">{{ nextAchievement.title }}</h4>
+            <p class="next-achievement-desc">{{ nextAchievement.description }}</p>
+            <div class="next-achievement-track">
+              <div class="next-achievement-fill" [style.width.%]="nextAchievement.progress"></div>
+            </div>
+            <span class="next-achievement-pct number-display">{{ nextAchievement.progress }}%</span>
+          </div>
+          <button type="button" class="next-achievement-cta">
+            <span>Ver retos</span>
+            <ph-arrow-right weight="bold" size="14"></ph-arrow-right>
+          </button>
+        </article>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         BLOQUE 3 · PANEL DE PERSONALIZACION VIVA
+         Cada control aplica su efecto en vivo sobre la propia pantalla.
+         ═══════════════════════════════════════════════════════════════ -->
+    <section class="custom" data-reveal="custom" #customSection>
+      <header class="section-head">
+        <span class="section-eyebrow">Personalización viva</span>
+        <h2 class="section-title">Esculpe tu guardián</h2>
+        <p class="section-desc">Cada ajuste se aplica al instante. Lo que ves aquí es lo que verás en toda la app.</p>
+      </header>
+
+      <!-- ROW · MODO DE TEMA — 3 CHIPS (claro / oscuro / auto) -->
+      <article class="custom-row" data-row="theme">
+        <div class="custom-row-head">
+          <span class="custom-row-icon"><ph-sun-horizon weight="fill" size="18"></ph-sun-horizon></span>
+          <div class="custom-row-text">
+            <h3 class="custom-row-title">Modo de tema</h3>
+            <p class="custom-row-desc">Crossfade suave entre paletas.</p>
+          </div>
+        </div>
+        <div class="seg seg-3">
+          <button *ngFor="let m of themeModes"
+                  type="button"
+                  class="seg-item"
+                  [class.active]="currentMode === m.value"
+                  (click)="onSelectTheme(m.value, $event)">
+            <ng-container [ngSwitch]="m.icon">
+              <ph-sun         *ngSwitchCase="'sun'"     weight="fill" size="16"></ph-sun>
+              <ph-moon        *ngSwitchCase="'moon'"    weight="fill" size="16"></ph-moon>
+              <ph-circle-half *ngSwitchCase="'auto'"    weight="fill" size="16"></ph-circle-half>
+            </ng-container>
+            <span>{{ m.label }}</span>
+          </button>
+        </div>
+      </article>
+
+      <!-- ROW · ACENTO DE MARCA — 6 SWATCHES — ONDA EXPANSIVA AL TAP -->
+      <article class="custom-row" data-row="accent">
+        <div class="custom-row-head">
+          <span class="custom-row-icon"><ph-paint-brush-broad weight="fill" size="18"></ph-paint-brush-broad></span>
+          <div class="custom-row-text">
+            <h3 class="custom-row-title">Acento de marca</h3>
+            <p class="custom-row-desc">Reescribe <code>--argos-accent</code> en toda la app.</p>
+          </div>
+        </div>
+        <div class="swatches">
+          <button *ngFor="let a of accentOptions"
+                  type="button"
+                  class="swatch"
+                  [class.active]="currentAccent === a.value"
+                  [style.--swatch]="a.hex"
+                  [attr.aria-label]="'Acento ' + a.label"
+                  (click)="onSelectAccent(a.value, $event)">
+            <span class="swatch-dot"></span>
+            <span class="swatch-ring"></span>
+            <ph-check *ngIf="currentAccent === a.value" weight="bold" size="14"></ph-check>
+          </button>
+        </div>
+      </article>
+
+      <!-- ROW · DENSIDAD -->
+      <article class="custom-row" data-row="density">
+        <div class="custom-row-head">
+          <span class="custom-row-icon"><ph-rows weight="fill" size="18"></ph-rows></span>
+          <div class="custom-row-text">
+            <h3 class="custom-row-title">Densidad</h3>
+            <p class="custom-row-desc">Ajusta el aire entre filas.</p>
+          </div>
+        </div>
+        <div class="seg seg-3">
+          <button *ngFor="let d of densityOptions"
+                  type="button"
+                  class="seg-item"
+                  [class.active]="currentDensity === d.value"
+                  (click)="onSelectDensity(d.value)">
+            <span class="seg-glyph" [attr.data-density]="d.value">
+              <span></span><span></span><span></span>
+            </span>
+            <span>{{ d.label }}</span>
+          </button>
+        </div>
+      </article>
+
+      <!-- ROW · TAMAÑO DE FUENTE — PREVIEW EN VIVO -->
+      <article class="custom-row" data-row="font">
+        <div class="custom-row-head">
+          <span class="custom-row-icon"><ph-text-aa weight="fill" size="18"></ph-text-aa></span>
+          <div class="custom-row-text">
+            <h3 class="custom-row-title">Tamaño de fuente</h3>
+            <p class="custom-row-desc">Aplica al cuerpo y a los menús.</p>
+          </div>
+        </div>
+        <div class="seg seg-4">
+          <button *ngFor="let f of fontOptions"
+                  type="button"
+                  class="seg-item seg-item-font"
+                  [class.active]="currentFont === f.value"
+                  (click)="onSelectFont(f.value)">
+            <span class="font-glyph" [attr.data-size]="f.value">A</span>
+            <span class="seg-item-caption">{{ f.label }}</span>
+          </button>
+        </div>
+        <div class="font-preview">
+          <span class="font-preview-eyebrow">Vista previa</span>
+          <p class="font-preview-line">Tu bóveda está sellada. <strong>Argus vigila.</strong></p>
+        </div>
+      </article>
+
+      <!-- ROW · MOTION -->
+      <article class="custom-row" data-row="motion">
+        <div class="custom-row-head">
+          <span class="custom-row-icon"><ph-lightning weight="fill" size="18"></ph-lightning></span>
+          <div class="custom-row-text">
+            <h3 class="custom-row-title">Nivel de animación</h3>
+            <p class="custom-row-desc">Respeta <code>prefers-reduced-motion</code> del sistema.</p>
+          </div>
+        </div>
+        <div class="seg seg-3">
+          <button *ngFor="let m of motionOptions"
+                  type="button"
+                  class="seg-item"
+                  [class.active]="currentMotion === m.value"
+                  (click)="onSelectMotion(m.value)">
+            <span>{{ m.label }}</span>
+          </button>
+        </div>
+      </article>
+
+      <!-- ROW · PERSONALIDAD DEL CUB -->
+      <article class="custom-row" data-row="cub">
+        <div class="custom-row-head">
+          <span class="custom-row-icon"><ph-paw-print weight="fill" size="18"></ph-paw-print></span>
+          <div class="custom-row-text">
+            <h3 class="custom-row-title">Personalidad de Argus</h3>
+            <p class="custom-row-desc">Cambia el tono con el que te habla la mascota.</p>
+          </div>
+        </div>
+        <div class="seg seg-3">
+          <button *ngFor="let p of personalityOptions"
+                  type="button"
+                  class="seg-item"
+                  [class.active]="cubPersonality === p.value"
+                  (click)="onSelectPersonality(p.value)">
+            <span>{{ p.label }}</span>
+          </button>
+        </div>
+      </article>
+
+      <!-- ROW · SONIDOS -->
+      <article class="custom-row inline" data-row="sounds">
+        <div class="custom-row-head">
+          <span class="custom-row-icon">
+            <ph-speaker-high *ngIf="soundsEnabled" weight="fill" size="18"></ph-speaker-high>
+            <ph-speaker-x    *ngIf="!soundsEnabled" weight="fill" size="18"></ph-speaker-x>
+          </span>
+          <div class="custom-row-text">
+            <h3 class="custom-row-title">Sonidos del sistema</h3>
+            <p class="custom-row-desc">Ticks discretos en logros y alertas.</p>
+          </div>
+        </div>
+        <button type="button"
+                class="switch"
+                [class.on]="soundsEnabled"
+                (click)="onToggleSounds()"
+                role="switch"
+                [attr.aria-checked]="soundsEnabled">
+          <span class="switch-thumb"></span>
+        </button>
+      </article>
+
+      <!-- ROW · IDIOMA -->
+      <article class="custom-row" data-row="lang">
+        <div class="custom-row-head">
+          <span class="custom-row-icon"><ph-translate weight="fill" size="18"></ph-translate></span>
+          <div class="custom-row-text">
+            <h3 class="custom-row-title">Idioma</h3>
+            <p class="custom-row-desc">Se aplicará tras reiniciar la app.</p>
+          </div>
+        </div>
+        <div class="seg seg-3">
+          <button *ngFor="let l of languageOptions"
+                  type="button"
+                  class="seg-item seg-item-lang"
+                  [class.active]="currentLang === l.value"
+                  (click)="onSelectLang(l.value)">
+            <span class="lang-code">{{ l.code }}</span>
+            <span class="lang-label">{{ l.label }}</span>
+          </button>
+        </div>
+      </article>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         BLOQUE 4 · AJUSTES SERIOS AGRUPADOS POR INTENCION
+         ═══════════════════════════════════════════════════════════════ -->
+    <section class="settings" *ngFor="let group of settingsGroups; let gi = index"
+             data-reveal="settings"
+             [attr.data-group]="group.key">
+      <header class="section-head">
+        <span class="section-eyebrow">{{ group.eyebrow }}</span>
+        <h2 class="section-title">{{ group.title }}</h2>
+        <p class="section-desc">{{ group.description }}</p>
+      </header>
+      <ul class="settings-list">
+        <li *ngFor="let item of group.items; let i = index"
+            class="settings-item"
+            [class.danger]="item.tone === 'danger'"
+            [class.warning]="item.tone === 'warning'"
+            (click)="onSettingTap(item)">
+          <span class="settings-icon" [attr.data-tone]="item.tone || 'neutral'">
+            <ng-container [ngSwitch]="item.icon">
+              <ph-bell-ringing       *ngSwitchCase="'bell'"      weight="fill" size="20"></ph-bell-ringing>
+              <ph-shield-check       *ngSwitchCase="'shield'"    weight="fill" size="20"></ph-shield-check>
+              <ph-lock-key            *ngSwitchCase="'lock'"      weight="fill" size="20"></ph-lock-key>
+              <ph-export             *ngSwitchCase="'export'"    weight="fill" size="20"></ph-export>
+              <ph-upload             *ngSwitchCase="'import'"    weight="fill" size="20"></ph-upload>
+              <ph-trash              *ngSwitchCase="'trash'"     weight="fill" size="20"></ph-trash>
+              <ph-envelope-simple    *ngSwitchCase="'email'"     weight="fill" size="20"></ph-envelope-simple>
+              <ph-key                *ngSwitchCase="'key'"       weight="fill" size="20"></ph-key>
+              <ph-monitor            *ngSwitchCase="'monitor'"   weight="fill" size="20"></ph-monitor>
+              <ph-sign-out           *ngSwitchCase="'signout'"   weight="fill" size="20"></ph-sign-out>
+              <ph-x-circle           *ngSwitchCase="'xcircle'"   weight="fill" size="20"></ph-x-circle>
+              <ph-question           *ngSwitchCase="'help'"      weight="fill" size="20"></ph-question>
+              <ph-bug-beetle         *ngSwitchCase="'bug'"       weight="fill" size="20"></ph-bug-beetle>
+              <ph-info               *ngSwitchCase="'info'"      weight="fill" size="20"></ph-info>
+              <ph-book-open          *ngSwitchCase="'changelog'" weight="fill" size="20"></ph-book-open>
+              <ph-eye-slash          *ngSwitchCase="'privacy'"   weight="fill" size="20"></ph-eye-slash>
+            </ng-container>
+          </span>
+          <div class="settings-body">
+            <span class="settings-label">{{ item.label }}</span>
+            <span class="settings-desc">{{ item.desc }}</span>
+          </div>
+          <!-- INDICADOR DERECHO: BADGE NUMERICO, ETIQUETA O FLECHA -->
+          <span class="settings-trail" *ngIf="item.badge as b">
+            <span class="settings-badge" [attr.data-tone]="item.badgeTone || 'neutral'">{{ b }}</span>
+          </span>
+          <ph-caret-right weight="bold" size="16" class="settings-arrow"></ph-caret-right>
+        </li>
+      </ul>
+    </section>
+
+    <!-- PIE — VERSION + FIRMA EDITORIAL -->
+    <footer class="profile-foot" data-reveal="foot">
+      <div class="foot-line"></div>
+      <div class="foot-row">
+        <span class="foot-brand">ARGOS</span>
+        <span class="foot-meta">v1.0.0 · Build {{ buildTag }}</span>
+      </div>
+      <p class="foot-claim">Tu guardián digital. Zero-Knowledge. Hecho con disciplina en España.</p>
+    </footer>
+
+    <!-- ESPACIADOR FINAL PARA RESPIRACION VISUAL EN MOBILE -->
+    <div class="profile-tail"></div>
   </div>
-
-  <!-- GRID DE ESTADISTICAS DE GAMIFICACION DE 4 COLUMNAS -->
-  <div class="profile-stats">
-    <!-- TARJETA INDIVIDUAL POR CADA ESTADISTICA CONFIGURADA -->
-    <div *ngFor="let s of stats" class="profile-stat">
-      <span class="profile-stat-icon">
-        <ng-container [ngSwitch]="s.iconKey">
-          <ph-star         *ngSwitchCase="'star'"         weight="fill"></ph-star>
-          <ph-fire         *ngSwitchCase="'fire'"         weight="fill"></ph-fire>
-          <ph-medal        *ngSwitchCase="'medal'"        weight="fill"></ph-medal>
-          <ph-map-trifold  *ngSwitchCase="'map-trifold'"  weight="fill"></ph-map-trifold>
-        </ng-container>
-      </span>
-      <span class="profile-stat-val">{{s.value}}</span>
-      <span class="profile-stat-lbl">{{s.label}}</span>
-    </div>
-  </div>
-
-  <!-- TARJETA DE TOGGLE DE TEMA CLARO/OSCURO -->
-  <div class="theme-card">
-    <!-- BLOQUE IZQUIERDO CON ICONO Y DESCRIPCION DEL TEMA -->
-    <div class="theme-card-left">
-      <ph-moon *ngIf="isDark"  weight="fill" size="24" class="theme-icon"></ph-moon>
-      <ph-sun  *ngIf="!isDark" weight="fill" size="24" class="theme-icon"></ph-sun>
-      <div class="theme-info">
-        <span class="theme-label">Tema {{isDark ? 'Oscuro' : 'Claro'}}</span>
-        <span class="theme-sub">Cambiar apariencia de la app</span>
-      </div>
-    </div>
-    <!-- TOGGLE DE IONIC SINCRONIZADO CON EL ESTADO DEL TEMA -->
-    <ion-toggle
-      [checked]="isDark"
-      (ionChange)="toggleTheme()"
-      class="argos-toggle">
-    </ion-toggle>
-  </div>
-
-  <!-- LISTA AGRUPADA DE OPCIONES DEL MENU -->
-  <div class="menu-list">
-    <!-- OPCION INDIVIDUAL POR CADA ENTRADA DEL MENU -->
-    <div *ngFor="let item of menuItems"
-      class="menu-item"
-      [class.danger]="item.danger">
-      <!-- ICONO DE LA OPCION CON FONDO RESALTADO PARA ACCIONES PELIGROSAS -->
-      <div class="menu-icon-wrap" [class.danger]="item.danger">
-        <ng-container [ngSwitch]="item.iconKey">
-          <ph-bell         *ngSwitchCase="'bell'"         weight="fill" size="22"></ph-bell>
-          <ph-shield-check *ngSwitchCase="'shield-check'" weight="fill" size="22"></ph-shield-check>
-          <ph-palette      *ngSwitchCase="'palette'"      weight="fill" size="22"></ph-palette>
-          <ph-export       *ngSwitchCase="'export'"       weight="fill" size="22"></ph-export>
-          <ph-question     *ngSwitchCase="'question'"     weight="fill" size="22"></ph-question>
-          <ph-sign-out     *ngSwitchCase="'sign-out'"     weight="fill" size="22"></ph-sign-out>
-        </ng-container>
-      </div>
-      <!-- BLOQUE CENTRAL CON ETIQUETA Y DESCRIPCION SECUNDARIA -->
-      <div class="menu-info">
-        <span class="menu-label" [class.danger-text]="item.danger">{{item.label}}</span>
-        <span class="menu-desc">{{item.desc}}</span>
-      </div>
-      <!-- INDICADOR DE NAVEGACION HACIA LA DERECHA -->
-      <ph-caret-right weight="bold" size="18" class="menu-arrow"></ph-caret-right>
-    </div>
-  </div>
-
-  <!-- VERSION DE LA APP MOSTRADA AL FINAL DE LA PANTALLA -->
-  <div class="app-version">ARGOS v1.0.0 · Hecho con 🛡️ en España</div>
-
-  <!-- ESPACIADOR INFERIOR PARA RESPIRACION VISUAL -->
-  <div style="height: 40px"></div>
 </ion-content>

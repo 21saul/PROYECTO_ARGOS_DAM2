@@ -1,5 +1,5 @@
 // COMPONENTE STANDALONE DE RED DE PARTÍCULAS ANIMADA SOBRE CANVAS HTML5
-import { Component, OnInit, OnDestroy, Input, ElementRef, ViewChild } from '@angular/core';
+import { Component, AfterViewInit, OnDestroy, Input, ElementRef, ViewChild } from '@angular/core';
 // MÓDULO COMÚN DE ANGULAR PARA DIRECTIVAS BÁSICAS EN PLANTILLAS
 import { CommonModule } from '@angular/common';
 
@@ -45,7 +45,7 @@ interface Particle {
     }
   `]
 })
-export class ParticleNetworkComponent implements OnInit, OnDestroy {
+export class ParticleNetworkComponent implements AfterViewInit, OnDestroy {
 
   // REFERENCIA AL CANVAS NATIVO PARA OBTENER SU CONTEXTO 2D
   @ViewChild('particleCanvas', { static: true })
@@ -70,26 +70,54 @@ export class ParticleNetworkComponent implements OnInit, OnDestroy {
   private animationId = 0;
   // OBSERVER QUE REDIMENSIONA EL CANVAS CUANDO EL CONTENEDOR PADRE CAMBIA
   private resizeObserver?: ResizeObserver;
+  // FLAG QUE INDICA SI YA SE LOGRO UN INIT CON TAMANO VALIDO (>0).
+  // EVITA QUE PARTICLES QUEDEN ATRAPADAS EN (0,0) CUANDO EL PADRE AUN
+  // NO HABIA TERMINADO EL LAYOUT EN EL PRIMER FRAME.
+  private hasValidSizedInit = false;
 
-  ngOnInit() {
+  ngAfterViewInit() {
     // OBTENER REFERENCIA AL ELEMENTO CANVAS NATIVO
     const canvas = this.canvasRef.nativeElement;
     // OBTENER EL CONTEXTO 2D — ASUMIMOS DISPONIBILIDAD EN NAVEGADORES MODERNOS
     this.ctx = canvas.getContext('2d')!;
+
+    // ESPERAR AL SIGUIENTE FRAME PARA QUE EL BROWSER HAYA HECHO LAYOUT
+    // ANTES DE LEER clientWidth/clientHeight DEL PADRE. SIN ESTO LAS
+    // PARTICULAS PUEDEN GENERARSE EN (0,0) Y APARECER "VACIO" AL INICIO.
+    requestAnimationFrame(() => this.bootstrap());
+
+    // AJUSTAR LA OPACIDAD DEL CANVAS SEGÚN EL TEMA ACTIVO PARA NO ROMPER LA LEGIBILIDAD
+    this.adjustForTheme();
+  }
+
+  // ARRANCA EL CANVAS UNA VEZ EL LAYOUT ESTA ESTABLE
+  private bootstrap() {
+    const canvas = this.canvasRef.nativeElement;
     // AJUSTAR EL TAMAÑO DEL CANVAS A SU CONTENEDOR
     this.resize();
     // INICIALIZAR EL ARRAY DE PARTÍCULAS CON POSICIONES Y VELOCIDADES ALEATORIAS
     this.initParticles();
+    // SI EL CANVAS YA TENIA TAMANO VALIDO, MARCAMOS EL INIT COMO DEFINITIVO
+    if (canvas.clientWidth > 0 && canvas.clientHeight > 0) {
+      this.hasValidSizedInit = true;
+    }
     // ARRANCAR EL BUCLE DE ANIMACIÓN
     this.animate();
 
-    // OBSERVAR CAMBIOS DE TAMAÑO DEL CONTENEDOR PARA RECALCULAR EL CANVAS
-    this.resizeObserver = new ResizeObserver(() => this.resize());
-    // SUSCRIBIR EL OBSERVER AL ELEMENTO PADRE DEL CANVAS
+    // OBSERVAR CAMBIOS DE TAMAÑO DEL CONTENEDOR PARA RECALCULAR EL CANVAS.
+    // SI EL PRIMER INIT OCURRIO CON SIZE=0 (RARO PERO POSIBLE EN IONIC
+    // CON PAGINAS QUE MONTAN OFFSCREEN), CUANDO RECUPERE TAMANO REAL
+    // REINICIALIZAMOS LAS PARTICULAS PARA QUE NO QUEDEN ACUMULADAS EN (0,0).
+    this.resizeObserver = new ResizeObserver(() => {
+      this.resize();
+      if (!this.hasValidSizedInit
+        && canvas.clientWidth > 0
+        && canvas.clientHeight > 0) {
+        this.initParticles();
+        this.hasValidSizedInit = true;
+      }
+    });
     this.resizeObserver.observe(canvas.parentElement!);
-
-    // AJUSTAR LA OPACIDAD DEL CANVAS SEGÚN EL TEMA ACTIVO PARA NO ROMPER LA LEGIBILIDAD
-    this.adjustForTheme();
   }
 
   // RECALCULA LAS DIMENSIONES INTERNAS DEL CANVAS RESPETANDO EL DEVICE PIXEL RATIO

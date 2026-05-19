@@ -1,107 +1,204 @@
 <!-- CONTENIDO PRINCIPAL DE LA PAGINA DE ONBOARDING DE ARGOS — SIN HEADER PARA INMERSION TOTAL -->
 <ion-content [fullscreen]="true" class="onboarding-content">
 
-  <!-- CARRUSEL DE SWIPER QUE CONTIENE LOS TRES SLIDES DE BIENVENIDA -->
-  <swiper-container
-    class="onboarding-swiper"
-    [attr.slides-per-view]="1"
-    [attr.speed]="400"
-    (slidechange)="onSlideChange($event)">
+  <!-- RAIZ DEL ONBOARDING USADA PARA AISLAR EL CONTEXTO DE GSAP -->
+  <div #rootEl class="os-root">
 
-    <!-- SLIDE 1 — BIENVENIDA CON ESCUDO+OJO Y MENSAJE INICIAL -->
-    <swiper-slide class="argos-slide argos-slide--welcome">
-      <div class="argos-slide__inner">
+    <!-- CAPA DE PARTICULAS DETRAS DE TODO — OPACIDAD BAJA PARA NO ROBAR FOCO -->
+    <app-particle-network
+      class="os-particles"
+      [particleCount]="36"
+      [maxDistance]="120"
+      [speed]="0.32"
+      particleColor="#7C3AED"
+      lineColor="#A78BFA">
+    </app-particle-network>
 
-        <!-- MASCOTA ARGUS COMO LOGO DE BIENVENIDA EN ESTADO HAPPY -->
-        <app-argus [size]="140" mood="happy" class="shield-icon">
-        </app-argus>
+    <!-- HALO RADIAL DECORATIVO QUE DA SENSACION DE GUARDIAN DETRAS DE LA MASCOTA -->
+    <div class="os-halo" aria-hidden="true"></div>
 
-        <!-- TITULO DE BIENVENIDA — USA LA CLASE GLOBAL .text-hero PARA TIPOGRAFIA CONSISTENTE -->
-        <h1 class="argos-title text-hero">Bienvenido a ARGOS</h1>
-        <!-- SUBTITULO DESCRIPTIVO — USA CLASES GLOBALES .text-body Y .text-muted -->
-        <p class="argos-subtitle text-body text-muted">Tu entrenador personal de ciberseguridad</p>
+    <!-- CARRUSEL DE SWIPER QUE CONTIENE LOS CUATRO SLIDES DEL DESPERTAR -->
+    <swiper-container
+      class="os-swiper"
+      [attr.slides-per-view]="1"
+      [attr.speed]="420"
+      (slidechange)="onSlideChange($event)">
 
-      </div>
-    </swiper-slide>
-
-    <!-- SLIDE 2 — RESUMEN DE LO QUE OFRECE ARGOS EN TRES TARJETAS HORIZONTALES -->
-    <swiper-slide class="argos-slide argos-slide--features">
-      <div class="argos-slide__inner">
-
-        <!-- TITULO DE LA SECCION DE CARACTERISTICAS -->
-        <h2 class="argos-title">Todo lo que necesitas</h2>
-
-        <!-- CONTENEDOR DE LAS TARJETAS DE CARACTERISTICAS -->
-        <div class="argos-features">
-
-          <!-- TARJETA 1 — BOVEDA CIFRADA -->
-          <article class="argos-feature-card">
-            <span class="argos-feature-card__icon" aria-hidden="true">
-              <ph-vault weight="fill" size="40"></ph-vault>
-            </span>
-            <span class="argos-feature-card__text">Bóveda cifrada</span>
-          </article>
-
-          <!-- TARJETA 2 — AUDITOR DE SEGURIDAD -->
-          <article class="argos-feature-card">
-            <span class="argos-feature-card__icon" aria-hidden="true">
-              <ph-chart-bar weight="fill" size="40"></ph-chart-bar>
-            </span>
-            <span class="argos-feature-card__text">Auditor de seguridad</span>
-          </article>
-
-          <!-- TARJETA 3 — APRENDIZAJE GAMIFICADO -->
-          <article class="argos-feature-card">
-            <span class="argos-feature-card__icon" aria-hidden="true">
-              <ph-graduation-cap weight="fill" size="40"></ph-graduation-cap>
-            </span>
-            <span class="argos-feature-card__text">Aprende jugando</span>
-          </article>
-
+      <!-- SLIDE 0 — BIENVENIDA: MASCOTA + WORDMARK + SUBTITULO + PILL ZK -->
+      <swiper-slide class="os-slide" data-slide="0">
+        <div class="os-slide__inner">
+          <!-- MASCOTA ARGUS COMO PROTAGONISTA DE LA BIENVENIDA -->
+          <div class="os-mascot os-reveal">
+            <app-argus [size]="argusSize" [mood]="argusMood"></app-argus>
+          </div>
+          <!-- BLOQUE DE COPY CENTRAL — WORDMARK + SUBTITULO -->
+          <div class="os-copy os-reveal">
+            <h1 class="os-title os-title--brand">ARGOS</h1>
+            <p class="os-sub">Tu titán guardián de ciberseguridad personal.</p>
+          </div>
+          <!-- PILL ZERO-KNOWLEDGE — PROMESA NUCLEAR DEL PRODUCTO -->
+          <div class="os-zk-pill os-reveal" role="status">
+            <ph-shield-check weight="fill" size="16" class="os-zk-pill__ico"></ph-shield-check>
+            <span>Zero-Knowledge · Tus datos nunca salen de tu dispositivo</span>
+          </div>
         </div>
+      </swiper-slide>
 
-      </div>
-    </swiper-slide>
+      <!-- SLIDE 1 — CAPACIDADES: BENTO ASIMETRICO CON BOVEDA DOMINANTE -->
+      <swiper-slide class="os-slide" data-slide="1">
+        <div class="os-slide__inner os-slide__inner--narrow">
+          <!-- ETIQUETA PEQUENA QUE INTRODUCE EL BLOQUE -->
+          <span class="os-eyebrow os-reveal">Tres módulos</span>
+          <!-- TITULO DEL SLIDE DE CAPACIDADES -->
+          <h2 class="os-title">Todo lo que necesitas</h2>
+          <!-- SUBTITULO DEL SLIDE PARA CONTEXTUALIZAR -->
+          <p class="os-sub os-reveal">Protege, aprende y crece sin salir de tu móvil.</p>
+          <!-- GRID BENTO ASIMETRICO CON LA TARJETA DOMINANTE DE BOVEDA Y DOS SATELITES -->
+          <div class="os-bento os-reveal">
+            <!-- TARJETA DOMINANTE — BOVEDA CIFRADA CON ANILLO DE HEALTH MINI -->
+            <article class="os-bento__card os-bento__card--hero">
+              <span class="os-bento__icon" aria-hidden="true">
+                <ph-vault weight="fill" size="32"></ph-vault>
+              </span>
+              <div class="os-bento__title">Bóveda cifrada</div>
+              <div class="os-bento__desc">Tus contraseñas y notas, blindadas con tu llave maestra.</div>
+              <!-- MINI ANILLO DECORATIVO QUE EVOCA EL HEALTH RING DE LA BOVEDA -->
+              <svg class="os-bento__ring" viewBox="0 0 64 64" aria-hidden="true">
+                <circle cx="32" cy="32" r="26" fill="none"
+                  stroke="rgba(255,255,255,0.08)" stroke-width="4"/>
+                <circle cx="32" cy="32" r="26" fill="none"
+                  stroke="var(--color-primary)" stroke-width="4"
+                  stroke-linecap="round" stroke-dasharray="163"
+                  stroke-dashoffset="45" transform="rotate(-90 32 32)"/>
+              </svg>
+            </article>
+            <!-- TARJETA SATELITE — ANTI-PHISHING -->
+            <article class="os-bento__card os-bento__card--mini">
+              <span class="os-bento__icon os-bento__icon--accent" aria-hidden="true">
+                <ph-fish-simple weight="fill" size="22"></ph-fish-simple>
+              </span>
+              <div class="os-bento__title">Anti-phishing</div>
+              <div class="os-bento__desc">Detecta enlaces trampa al instante.</div>
+            </article>
+            <!-- TARJETA SATELITE — APRENDIZAJE GAMIFICADO -->
+            <article class="os-bento__card os-bento__card--mini">
+              <span class="os-bento__icon os-bento__icon--accent" aria-hidden="true">
+                <ph-graduation-cap weight="fill" size="22"></ph-graduation-cap>
+              </span>
+              <div class="os-bento__title">Aprende jugando</div>
+              <div class="os-bento__desc">Misiones cortas para subir de nivel.</div>
+            </article>
+          </div>
+        </div>
+      </swiper-slide>
 
-    <!-- SLIDE 3 — CTA FINAL CON BOTONES DE REGISTRO Y LOGIN -->
-    <swiper-slide class="argos-slide argos-slide--cta">
-      <div class="argos-slide__inner">
+      <!-- SLIDE 2 — GAMIFICACION: NIVEL 1, BARRA XP A 0% Y LOGROS POR DESBLOQUEAR -->
+      <swiper-slide class="os-slide" data-slide="2">
+        <div class="os-slide__inner os-slide__inner--narrow">
+          <!-- ETIQUETA PEQUENA DEL BLOQUE DE GAMIFICACION -->
+          <span class="os-eyebrow os-reveal">Progreso real</span>
+          <!-- TITULO DEL SLIDE DE GAMIFICACION -->
+          <h2 class="os-title">Cada paso, un trofeo</h2>
+          <!-- TARJETA DE NIVEL ACTUAL CON BADGE Y BARRA DE PROGRESO -->
+          <div class="os-level-card os-reveal">
+            <!-- BADGE CIRCULAR DEL NIVEL ACTUAL -->
+            <div class="os-level-card__badge" aria-hidden="true">
+              <ph-shield-star weight="fill" size="22"></ph-shield-star>
+              <span class="os-level-card__num">1</span>
+            </div>
+            <!-- BLOQUE DE TEXTO Y BARRA XP A LA DERECHA DEL BADGE -->
+            <div class="os-level-card__body">
+              <div class="os-level-card__title">Nivel 1 · Aprendiz</div>
+              <div class="os-level-card__xp">0 / 100 XP</div>
+              <!-- BARRA DE PROGRESO DE XP ACTUAL — EMPIEZA EN 0% PORQUE EL USUARIO ES NUEVO -->
+              <div class="os-xpbar" aria-hidden="true">
+                <span class="os-xpbar__fill"></span>
+              </div>
+            </div>
+          </div>
+          <!-- TITULO PEQUENO QUE INTRODUCE LA REJILLA DE LOGROS -->
+          <div class="os-ach-title os-reveal">Logros que desbloquearás</div>
+          <!-- REJILLA DE LOGROS — LOS HOT (2 PRIMEROS) A COLOR PARA CREAR DESEO -->
+          <div class="os-ach-grid os-reveal">
+            <div *ngFor="let ach of achievements"
+              class="os-ach-card"
+              [class.os-ach-card--hot]="ach.hot">
+              <!-- ICONO PHOSPHOR SELECCIONADO POR NGSWITCH SEGUN LA CLAVE DEL LOGRO -->
+              <span class="os-ach-card__ico" aria-hidden="true"
+                [ngSwitch]="ach.icon">
+                <ph-vault          *ngSwitchCase="'ph-vault'"          weight="fill" size="22"></ph-vault>
+                <ph-flame          *ngSwitchCase="'ph-flame'"          weight="fill" size="22"></ph-flame>
+                <ph-fish-simple    *ngSwitchCase="'ph-fish-simple'"    weight="fill" size="22"></ph-fish-simple>
+                <ph-shield-check   *ngSwitchCase="'ph-shield-check'"   weight="fill" size="22"></ph-shield-check>
+                <ph-graduation-cap *ngSwitchCase="'ph-graduation-cap'" weight="fill" size="22"></ph-graduation-cap>
+                <ph-trophy         *ngSwitchCase="'ph-trophy'"         weight="fill" size="22"></ph-trophy>
+              </span>
+              <span class="os-ach-card__lbl">{{ach.label}}</span>
+            </div>
+          </div>
+        </div>
+      </swiper-slide>
 
-        <!-- TITULO PRINCIPAL DE LA LLAMADA A LA ACCION -->
-        <h1 class="argos-title argos-title--cta">Empieza en 10 minutos</h1>
-        <!-- SUBTITULO QUE ELIMINA OBJECCIONES Y BAJA LA BARRERA DE ENTRADA -->
-        <p class="argos-subtitle">Sin conocimientos técnicos. Sin excusas.</p>
+      <!-- SLIDE 3 — CTA FINAL: MASCOTA EXCITED + PROMESA DE 10 MIN + BOTONES -->
+      <swiper-slide class="os-slide" data-slide="3">
+        <div class="os-slide__inner">
+          <!-- MASCOTA ENTUSIASMADA AL FINAL DEL FLUJO -->
+          <div class="os-mascot os-reveal">
+            <app-argus [size]="argusSize" [mood]="argusMood"></app-argus>
+          </div>
+          <!-- PILL DE TIEMPO QUE REFUERZA LA PROMESA DE EMPEZAR EN 10 MINUTOS -->
+          <div class="os-time-pill os-reveal">
+            <ph-timer weight="bold" size="14"></ph-timer>
+            <span>Empieza en 10 minutos</span>
+          </div>
+          <!-- TITULO Y SUB CENTRALES -->
+          <div class="os-copy os-reveal">
+            <h2 class="os-title">¿Activamos al guardián?</h2>
+            <p class="os-sub">Sin conocimientos técnicos. Sin tarjeta. Sin excusas.</p>
+          </div>
+          <!-- GRUPO DE ACCIONES — PRIMARIO + SECUNDARIO -->
+          <div class="os-actions os-reveal">
+            <button
+              type="button"
+              class="os-btn os-btn--primary"
+              (click)="goToSignUp()">
+              <ph-shield-plus weight="fill" size="18"></ph-shield-plus>
+              <span>Crear mi cuenta gratis</span>
+            </button>
+            <button
+              type="button"
+              class="os-btn os-btn--ghost"
+              (click)="goToLogin()">
+              Ya tengo cuenta
+            </button>
+          </div>
+        </div>
+      </swiper-slide>
 
-        <!-- BOTON PRIMARIO — USA CLASES GLOBALES .btn-primary Y .shadow-glow-primary -->
-        <button
-          type="button"
-          class="btn-primary shadow-glow-primary"
-          (click)="goToSignUp()">
-          Crear mi cuenta
-        </button>
+    </swiper-container>
 
-        <!-- BOTON SECUNDARIO — USA CLASE GLOBAL .btn-ghost -->
-        <button
-          type="button"
-          class="btn-ghost"
-          (click)="goToLogin()">
-          Ya tengo cuenta
-        </button>
+    <!-- INDICADOR DE PROGRESO TIPO "OJOS DE ARGUS" QUE SE ABREN AL ACTIVARSE -->
+    <div class="os-eyes" role="tablist" aria-label="Progreso del onboarding">
+      <span
+        *ngFor="let i of dotIndices"
+        class="os-eye"
+        [class.os-eye--active]="i === activeIndex"
+        [class.os-eye--past]="i < activeIndex"
+        role="tab"
+        [attr.aria-selected]="i === activeIndex"
+        [attr.aria-label]="'Slide ' + (i + 1) + ' de ' + totalSlides">
+        <!-- SVG INLINE DEL OJO — IRIS Y PARPADO QUE SE ABRE AL ACTIVARSE -->
+        <svg viewBox="0 0 24 16" aria-hidden="true">
+          <!-- ALMENDRA EXTERIOR DEL OJO -->
+          <path class="os-eye__shape" d="M2 8 Q12 -1 22 8 Q12 17 2 8 Z" fill="none"/>
+          <!-- IRIS QUE BRILLA EN EL OJO ACTIVO -->
+          <circle class="os-eye__iris" cx="12" cy="8" r="3.4"/>
+          <!-- PARPADO QUE CUBRE EL OJO CUANDO NO ESTA ACTIVO -->
+          <rect class="os-eye__lid" x="0" y="0" width="24" height="16" rx="8"/>
+        </svg>
+      </span>
+    </div>
 
-      </div>
-    </swiper-slide>
-
-  </swiper-container>
-
-  <!-- INDICADORES DE PROGRESO (DOTS) — EL ACTIVO USA LA VARIABLE --color-primary -->
-  <div class="argos-dots" role="tablist" aria-label="Progreso del onboarding">
-    <span
-      *ngFor="let i of dotIndices"
-      class="argos-dots__dot"
-      [class.argos-dots__dot--active]="i === activeIndex"
-      role="tab"
-      [attr.aria-selected]="i === activeIndex">
-    </span>
   </div>
 
 </ion-content>

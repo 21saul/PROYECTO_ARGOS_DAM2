@@ -24,6 +24,14 @@ export class ThemeService implements OnDestroy {
   // OBSERVABLE PUBLICO PARA QUE LOS COMPONENTES SE SUSCRIBAN AL TEMA EFECTIVO
   public readonly isDark$: Observable<boolean> = this.isDarkSubject.asObservable();
 
+  // SUBJECT QUE EMITE EL MODO SELECCIONADO POR EL USUARIO (light|dark|auto)
+  // EXISTE EN PARALELO A isDark$ — UNO REPRESENTA LA INTENCION DEL USUARIO,
+  // EL OTRO EL EFECTO REAL TENIENDO EN CUENTA EL SISTEMA.
+  private readonly modeSubject = new BehaviorSubject<ArgosTheme>('auto');
+
+  // OBSERVABLE PUBLICO DEL MODO ELEGIDO POR EL USUARIO
+  public readonly mode$: Observable<ArgosTheme> = this.modeSubject.asObservable();
+
   // CONSTRUCTOR — INICIALIZA EL TEMA LEYENDO LOCALSTORAGE Y SUSCRIBIENDOSE AL SISTEMA
   constructor() {
     // LEEMOS LA PREFERENCIA PERSISTIDA DE SESIONES ANTERIORES
@@ -58,6 +66,20 @@ export class ThemeService implements OnDestroy {
     this.persistTheme('auto');
   }
 
+  // ESTABLECE EXPLICITAMENTE EL MODO ELEGIDO (light|dark|auto) Y LO PERSISTE
+  public setMode(mode: ArgosTheme): void {
+    // APLICAMOS EL TEMA AL DOCUMENTO MUTANDO LAS CLASES DEL BODY
+    this.applyTheme(mode);
+    // PERSISTIMOS LA PREFERENCIA PARA QUE SOBREVIVA RECARGAS
+    this.persistTheme(mode);
+  }
+
+  // GETTER DEL MODO ACTUAL ELEGIDO POR EL USUARIO
+  public getMode(): ArgosTheme {
+    // DEVUELVE EL ULTIMO VALOR EMITIDO POR EL SUBJECT DE MODO
+    return this.modeSubject.value;
+  }
+
   // GETTER PUBLICO PARA QUE LOS COMPONENTES CONSULTEN SI EL TEMA EFECTIVO ES OSCURO
   public isEffectiveDarkMode(): boolean {
     // SI EL USUARIO HA FORZADO MANUALMENTE OSCURO LA RESPUESTA ES INMEDIATA
@@ -85,6 +107,9 @@ export class ThemeService implements OnDestroy {
     }
     // EMITIMOS EL NUEVO ESTADO EFECTIVO PARA QUE LOS SUSCRIPTORES SE ACTUALICEN
     this.isDarkSubject.next(this.isEffectiveDarkMode());
+    // EMITIMOS TAMBIEN EL MODO SOLICITADO POR EL USUARIO (INTENCION) PARA LOS UI
+    // QUE QUIERAN PINTAR EL CHIP ACTIVO (light|dark|auto)
+    this.modeSubject.next(theme);
   }
 
   // LEE LA PREFERENCIA DE TEMA GUARDADA EN LOCALSTORAGE Y LA VALIDA

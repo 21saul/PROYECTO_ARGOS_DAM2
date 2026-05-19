@@ -13,6 +13,10 @@ import { RegisterPageRoutingModule } from './register-routing.module';
 
 // IMPORTACION DEL COMPONENTE DE LA PAGINA DE REGISTRO
 import { RegisterPage } from './register.page';
+// COMPONENTE STANDALONE DE LA MASCOTA ARGUS USADO EN EL HERO REACTIVO
+import { ArgusComponent } from '../shared/components/argus/argus.component';
+// COMPONENTE STANDALONE DE LA RED DE PARTICULAS USADO COMO FONDO ANIMADO
+import { ParticleNetworkComponent } from '../shared/components/particle-network/particle-network.component';
 
 // MODULO DE LA PAGINA DE REGISTRO — DECLARA EL COMPONENTE Y LAS DEPENDENCIAS
 @NgModule({
@@ -20,7 +24,9 @@ import { RegisterPage } from './register.page';
     CommonModule,
     FormsModule,
     IonicModule,
-    RegisterPageRoutingModule
+    RegisterPageRoutingModule,
+    ArgusComponent,
+    ParticleNetworkComponent
   ],
   declarations: [RegisterPage],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]

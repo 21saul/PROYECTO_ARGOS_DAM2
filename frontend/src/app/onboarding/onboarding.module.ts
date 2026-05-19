@@ -15,6 +15,8 @@ import { OnboardingPageRoutingModule } from './onboarding-routing.module';
 import { OnboardingPage } from './onboarding.page';
 // COMPONENTE STANDALONE DE LA MASCOTA ARGUS
 import { ArgusComponent } from '../shared/components/argus/argus.component';
+// COMPONENTE STANDALONE DE LA RED DE PARTICULAS USADO COMO FONDO ANIMADO
+import { ParticleNetworkComponent } from '../shared/components/particle-network/particle-network.component';
 
 // DEFINICION DEL MODULO ANGULAR DE LA PAGINA DE ONBOARDING
 @NgModule({
@@ -24,7 +26,8 @@ import { ArgusComponent } from '../shared/components/argus/argus.component';
     FormsModule,
     IonicModule,
     OnboardingPageRoutingModule,
-    ArgusComponent
+    ArgusComponent,
+    ParticleNetworkComponent
   ],
   // DECLARACION DEL COMPONENTE DE LA PAGINA DENTRO DEL MODULO
   declarations: [OnboardingPage],

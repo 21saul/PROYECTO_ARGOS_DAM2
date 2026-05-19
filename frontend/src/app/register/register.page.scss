@@ -1,144 +1,789 @@
-/* ESTILOS BASE COMPARTIDOS CON LOGIN */
-.register-content {
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  REGISTRO DE ARGOS — "LA FORJA DE LA LLAVE MAESTRA"          ║
+// ║  HEADER CON MASCOTA REACTIVA + RUNAS DE FORTALEZA + ZK CARD  ║
+// ║  TODO EN TOKENS DEL TEMA — JAMAS HEX SUELTO                  ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// CONTENIDO PRINCIPAL DE IONIC EN FONDO DARK
+.rg-content {
   --background: var(--color-bg);
-}
-.register-scroll {
-  padding: 0 0 24px;
+  --padding-top: 0;
+  --padding-bottom: 0;
+  --padding-start: 0;
+  --padding-end: 0;
 }
 
-/* INPUTS — MISMO LENGUAJE VISUAL QUE LOGIN */
-.input-group { display: flex; flex-direction: column; gap: 6px; }
-.input-label {
-  font-size: 0.78rem; font-weight: 800;
-  text-transform: uppercase; letter-spacing: 0.06em;
+// BOTON BACK FLOTANTE EN ESQUINA SUPERIOR IZQUIERDA
+.rg-back {
+  // POSICIONAMIENTO FIJO POR ENCIMA DE TODAS LAS CAPAS
+  position: fixed;
+  top: calc(14px + env(safe-area-inset-top, 0));
+  left: 14px;
+  z-index: 10;
+  // CHIP CIRCULAR CON FONDO SURFACE PARA TOCAR FACIL
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  // FONDO SUTIL CON BORDE
+  background: color-mix(in srgb, var(--color-surface) 80%, transparent);
+  backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent);
+  // COLOR DEL ICONO
+  color: var(--color-text);
+  cursor: pointer;
+  // TRANSICION SUAVE EN PRESS
+  transition: transform 200ms var(--ease-spring), background 200ms var(--ease-quick);
+  &:active { transform: scale(0.94); }
+}
+
+// RAIZ DEL REGISTRO — POSICION RELATIVA PARA ANCLAR DECORACIONES
+.rg-root {
+  // POSICION RELATIVA PARA QUE PARTICULAS Y HALO ESTEN ANCLADOS
+  position: relative;
+  // ANCHO COMPLETO
+  width: 100%;
+  // ALTURA MINIMA QUE OCUPA EL VIEWPORT PARA CENTRAR VERTICALMENTE
+  min-height: 100%;
+  // FLEX EN COLUMNA PARA APILAR HERO Y CARD
+  display: flex;
+  flex-direction: column;
+  // CENTRADO HORIZONTAL DE LOS HIJOS
+  align-items: center;
+  // PADDING ARRIBA QUE DEJA ESPACIO PARA EL BACK FLOTANTE + NOTCH
+  padding: calc(64px + env(safe-area-inset-top, 0)) 18px
+           calc(40px + env(safe-area-inset-bottom, 0)) 18px;
+  // GAP VERTICAL ENTRE HERO Y CARD
+  gap: 18px;
+  // CAJA INCLUYENDO PADDING
+  box-sizing: border-box;
+}
+
+// PARTICULAS DECORATIVAS DE FONDO
+.rg-particles {
+  position: absolute;
+  inset: 0;
+  // POR ENCIMA DEL FONDO Y POR DEBAJO DEL CONTENIDO
+  z-index: 0;
+  // OPACIDAD BAJA PARA NO ROBAR FOCO
+  opacity: 0.28;
+  pointer-events: none;
+}
+
+// HALO RADIAL EN LA PARTE SUPERIOR DETRAS DE LA MASCOTA
+.rg-halo {
+  // POSICIONAMIENTO ABSOLUTO EN EL CENTRO SUPERIOR
+  position: absolute;
+  top: -10%;
+  left: 50%;
+  transform: translateX(-50%);
+  // TAMANO GRANDE PARA QUE SE DIFUMINE
+  width: 130vw;
+  height: 50vh;
+  // DEGRADADO RADIAL DEL COLOR PRIMARIO
+  background: radial-gradient(closest-side,
+    color-mix(in srgb, var(--color-primary) 22%, transparent) 0%,
+    color-mix(in srgb, var(--color-accent)  10%, transparent) 35%,
+    transparent 70%);
+  // BORDE TOTAL PARA FORMAR ELIPSE
+  border-radius: 50%;
+  // LATIDO SUTIL
+  animation: rgHalo 5s ease-in-out infinite;
+  // CAPA POR ENCIMA DE PARTICULAS Y POR DEBAJO DEL CONTENIDO
+  z-index: 1;
+  pointer-events: none;
+  will-change: opacity, transform;
+}
+
+// LATIDO DEL HALO PRINCIPAL
+@keyframes rgHalo {
+  0%, 100% { opacity: 0.7; transform: translateX(-50%) scale(1); }
+  50%      { opacity: 1;   transform: translateX(-50%) scale(1.05); }
+}
+
+// HERO EMOCIONAL DEL REGISTRO — MASCOTA + TITULO + SUB + STEPPER
+.rg-hero {
+  // POSICIONAMIENTO RELATIVO POR ENCIMA DE PARTICULAS Y HALO
+  position: relative;
+  z-index: 2;
+  // FLEX EN COLUMNA PARA APILAR ELEMENTOS DEL HERO
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  // SEPARACION ENTRE ELEMENTOS DEL HERO
+  gap: 10px;
+  // ANCHO COMPLETO HASTA UN MAXIMO PARA NO ESTIRARSE EN ESCRITORIO
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+}
+
+// CONTENEDOR DE LA MASCOTA REACTIVA EN EL HERO
+.rg-mascot {
+  // CENTRADO INTERNO
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  // SOMBRA SUTIL PARA DAR PESO
+  filter: drop-shadow(0 8px 24px color-mix(in srgb, var(--color-primary) 30%, transparent));
+}
+
+// TITULO DEL FLUJO DE FORJA
+.rg-title {
+  // FUENTE DISPLAY
+  font-family: 'Bricolage Grotesque', 'Inter', sans-serif;
+  // TAMANO RESPONSIVO MEDIO-GRANDE
+  font-size: clamp(22px, 5.6vw, 28px);
+  // PESO BOLD
+  font-weight: 700;
+  // INTERLINEADO COMPACTO
+  line-height: 1.15;
+  // COLOR PRINCIPAL DEL TEMA
+  color: var(--color-text);
+  // SIN MARGEN — CONTROL VIA GAP
+  margin: 0;
+  // ANCHO MAXIMO PARA LECTURA
+  max-width: 18ch;
+  // BALANCED PARA QUE NO ROMPA LINEAS RARO
+  text-wrap: balance;
+}
+
+// SUBTITULO DEL HERO
+.rg-sub {
+  // TAMANO COMPACTO
+  font-size: 14px;
+  // INTERLINEADO MEDIO
+  line-height: 1.45;
+  // COLOR ATENUADO
+  color: var(--color-text-muted);
+  // SIN MARGEN
+  margin: 0;
+  // ANCHO MAXIMO
+  max-width: 28ch;
+}
+
+// STEPPER DE 3 OJOS QUE SE ABREN AL COMPLETAR BLOQUES
+.rg-stepper {
+  // FLEX HORIZONTAL CON ESPACIADO ENTRE OJOS
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  // MARGEN SUPERIOR PEQUENO
+  margin-top: 6px;
+}
+
+// NODO DE OJO INDIVIDUAL DEL STEPPER
+.rg-stepper__node {
+  // DIMENSION TACTIL DEL OJO
+  display: inline-block;
+  width: 32px;
+  height: 22px;
+  // OPACIDAD POR DEFECTO REDUCIDA
+  opacity: 0.55;
+  // TRANSICION SUAVE
+  transition: opacity 240ms var(--ease-quick);
+}
+
+// SVG DENTRO DEL NODO DEL STEPPER
+.rg-stepper__node svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+// CONTORNO ALMENDRA DE LOS OJOS DEL STEPPER
+.rg-stepper__shape {
+  stroke: color-mix(in srgb, var(--color-text-muted) 60%, transparent);
+  stroke-width: 1.6;
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+// IRIS DE LOS OJOS DEL STEPPER
+.rg-stepper__iris {
+  fill: var(--color-text-muted);
+  transition: fill 240ms var(--ease-quick);
+}
+
+// PARPADO DE LOS OJOS DEL STEPPER — TAPADO POR DEFECTO
+.rg-stepper__lid {
+  fill: var(--color-bg);
+  transform-origin: 12px 0px;
+  transform: scaleY(1);
+  transition: transform 360ms var(--ease-spring);
+}
+
+// VARIANTE ACTIVA — OJO ABIERTO E IRIS BRILLANDO
+.rg-stepper__node--active {
+  opacity: 1;
+}
+.rg-stepper__node--active .rg-stepper__lid { transform: scaleY(0); }
+.rg-stepper__node--active .rg-stepper__iris { fill: var(--color-primary); }
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  TARJETA PRINCIPAL DE LA FORJA — FIELDS / FORGE / ZK / CTA   ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// TARJETA PRINCIPAL — APILA TODOS LOS BLOQUES DEL FORMULARIO
+.rg-card {
+  // POSICIONAMIENTO RELATIVO POR ENCIMA DE LAS CAPAS DECORATIVAS
+  position: relative;
+  z-index: 2;
+  // ANCHO COMPLETO HASTA UN MAXIMO
+  width: 100%;
+  max-width: 460px;
+  // FONDO TOMADO DE LA SUPERFICIE PRINCIPAL DEL TEMA
+  background: color-mix(in srgb, var(--color-surface) 92%, var(--color-surface-2));
+  // BORDE REDONDEADO GRANDE TIPO TARJETA
+  border-radius: 22px;
+  // PADDING INTERNO HOLGADO
+  padding: 20px 18px;
+  // FLEX EN COLUMNA PARA APILAR FIELDS Y BLOQUES
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  // BORDE SUTIL QUE INTEGRA LA TARJETA EN EL TEMA
+  border: 1px solid color-mix(in srgb, var(--color-text) 6%, transparent);
+  // SOMBRA DE ELEVACION
+  box-shadow: 0 18px 48px color-mix(in srgb, #000 40%, transparent);
+}
+
+// BLOQUE DE FIELD INDIVIDUAL — LABEL + INPUT
+.rg-field {
+  // FLEX EN COLUMNA PARA APILAR LABEL E INPUT
+  display: flex;
+  flex-direction: column;
+  // SEPARACION ENTRE LABEL Y INPUT
+  gap: 6px;
+}
+
+// LABEL DEL FIELD — MAYUSCULAS Y TRACKING PARA AIRE EDITORIAL
+.rg-field__label {
+  // TAMANO PEQUENO
+  font-size: 11.5px;
+  // PESO MUY BOLD
+  font-weight: 800;
+  // MAYUSCULAS PARA AIRE DE FORMULARIO PRO
+  text-transform: uppercase;
+  // TRACKING
+  letter-spacing: 0.08em;
+  // COLOR ATENUADO
   color: var(--color-text-muted);
 }
-.input-wrap {
-  display: flex; align-items: center; gap: 10px;
-  background: var(--color-bg);
-  border: 2px solid var(--color-surface-2);
-  border-radius: 14px; padding: 14px 16px;
-  transition: border-color 0.2s ease;
-  &:focus-within {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 15%, transparent);
-  }
-  &.filled { border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-surface-2)); }
-  &.match { border-color: var(--color-success); }
-  &.no-match { border-color: var(--color-danger); }
+
+// HINT SECUNDARIO DENTRO DEL LABEL — MINUSCULAS DE NUEVO
+.rg-field__hint {
+  // TAMANO IGUAL DE PEQUENO
+  font-size: 11px;
+  // PESO MEDIO
+  font-weight: 600;
+  // SIN MAYUSCULAS
+  text-transform: none;
+  letter-spacing: 0;
+  // COLOR ATENUADO LIGERAMENTE MAS APAGADO
+  color: color-mix(in srgb, var(--color-text-muted) 80%, transparent);
 }
-.input-icon { color: var(--color-text-muted); flex-shrink: 0; }
-.form-input {
-  flex: 1; border: none; background: transparent;
-  font-size: 0.95rem; font-weight: 600;
-  color: var(--color-text); outline: none;
+
+// CONTENEDOR DEL INPUT — FLEX HORIZONTAL CON ICONO + INPUT + ACCIONES
+.rg-input {
+  // FLEX HORIZONTAL CON ALINEACION VERTICAL CENTRADA
+  display: flex;
+  align-items: center;
+  // SEPARACION ENTRE ICONO Y CONTENIDO
+  gap: 10px;
+  // FONDO DE LA SUPERFICIE PROFUNDA PARA CONTRASTAR CON LA TARJETA
+  background: var(--color-bg);
+  // BORDE INICIAL ATENUADO QUE CAMBIA EN FOCO/FILLED
+  border: 1.5px solid color-mix(in srgb, var(--color-text) 8%, var(--color-surface-2));
+  // BORDE REDONDEADO GRANDE TIPO PILL CARD
+  border-radius: 14px;
+  // PADDING INTERNO CONFORTABLE
+  padding: 12px 14px;
+  // TRANSICION DE BORDE Y SOMBRA
+  transition: border-color 220ms var(--ease-quick),
+              box-shadow 220ms var(--ease-quick),
+              background 220ms var(--ease-quick);
+}
+
+// ESTADO FOCUS DEL INPUT — BORDE PRIMARIO Y HALO SUTIL
+.rg-input--focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 18%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--color-bg));
+}
+
+// ESTADO FILLED DEL INPUT — BORDE PRIMARIO ATENUADO PARA INDICAR CAMPO COMPLETO
+.rg-input--filled:not(.rg-input--focus) {
+  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-surface-2));
+}
+
+// ESTADO WEAK DE LA CONTRASEÑA — BORDE DANGER PARA AVISAR
+.rg-input--weak {
+  border-color: color-mix(in srgb, var(--color-danger) 55%, transparent);
+}
+
+// ESTADO MATCH DEL CONFIRM — BORDE SUCCESS
+.rg-input--match {
+  border-color: color-mix(in srgb, var(--color-success) 60%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-success) 14%, transparent);
+}
+
+// ESTADO MISMATCH DEL CONFIRM — BORDE DANGER
+.rg-input--mismatch {
+  border-color: color-mix(in srgb, var(--color-danger) 60%, transparent);
+}
+
+// ICONO PRINCIPAL DEL INPUT
+.rg-input__icon {
+  // COLOR ATENUADO POR DEFECTO
+  color: var(--color-text-muted);
+  // EVITA QUE SE ENCOJA SI EL TEXTO ES LARGO
+  flex-shrink: 0;
+}
+
+// EL ICONO HEREDA COLOR PRIMARIO EN FOCO
+.rg-input--focus .rg-input__icon { color: var(--color-primary); }
+// EL ICONO HEREDA COLOR SUCCESS EN MATCH
+.rg-input--match .rg-input__icon { color: var(--color-success); }
+// EL ICONO HEREDA COLOR DANGER EN MISMATCH
+.rg-input--mismatch .rg-input__icon { color: var(--color-danger); }
+
+// CAMPO DE TEXTO REAL
+.rg-input__field {
+  // OCUPA EL ESPACIO RESTANTE
+  flex: 1;
+  // ANCHO MINIMO 0 PARA QUE NO DESBORDE EN FLEX
+  min-width: 0;
+  // SIN BORDE NI FONDO PROPIO
+  border: 0;
+  background: transparent;
+  // TIPOGRAFIA DEL FORM
+  font-size: 15px;
+  font-weight: 600;
   font-family: 'Inter', sans-serif;
+  // COLOR DEL TEXTO PRIMARIO
+  color: var(--color-text);
+  // ELIMINAMOS EL OUTLINE NATIVO YA QUE PINTAMOS NOSOTROS EL FOCO EN EL WRAP
+  outline: none;
+  // ELIMINAMOS PADDINGS NATIVOS
+  padding: 0;
+  // PLACEHOLDER ATENUADO
   &::placeholder { color: var(--color-text-muted); }
 }
-.toggle-pass {
-  background: none; border: none; cursor: pointer;
-  color: var(--color-text-muted); display: flex;
-  align-items: center; padding: 0;
+
+// BOTON OJO PARA MOSTRAR/OCULTAR CONTRASEÑA
+.rg-input__toggle {
+  // ELIMINAR ESTILO NATIVO DE BOTON
+  background: none;
+  border: 0;
+  // CURSOR INTERACTIVO
+  cursor: pointer;
+  // COLOR DEL ICONO ATENUADO
+  color: var(--color-text-muted);
+  // CENTRADO INTERNO
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  flex-shrink: 0;
+  // TRANSICION SUTIL
+  transition: transform 220ms var(--ease-spring), color 220ms var(--ease-quick);
 }
 
-/* TARJETA PRINCIPAL DE REGISTRO */
-.register-card {
-  background: var(--color-surface);
-  border-radius: 0 0 28px 28px;
-  padding: 24px 20px;
-  display: flex; flex-direction: column; gap: 16px;
-  border-bottom: 1px solid var(--color-surface-2);
-  margin-bottom: 0;
-}
-.register-title {
-  font-size: 1.3rem; font-weight: 900; color: var(--color-text);
-}
-.register-sub {
-  font-size: 0.85rem; font-weight: 600;
-  color: var(--color-text-muted); margin-top: -8px;
-}
-.label-hint {
-  font-size: 0.72rem; font-weight: 600;
-  color: var(--color-text-muted); text-transform: none;
-  letter-spacing: 0;
+// INDICADOR DE MATCH DEL CONFIRM
+.rg-input__match {
+  // CENTRADO INTERNO
+  display: inline-flex;
+  align-items: center;
+  // COLOR SUCCESS
+  color: var(--color-success);
+  flex-shrink: 0;
+  // POP DEL CHECK CON SOFT BOUNCE
+  animation: rgPop 360ms var(--ease-spring) both;
 }
 
-/* MEDIDOR DE FORTALEZA */
-.strength-meter {
-  display: flex; align-items: center; gap: 8px; margin-top: 6px;
+// POP DEL CHECK DE MATCH — ESCALA 0 -> 1 CON SOFT BOUNCE
+@keyframes rgPop {
+  0%   { transform: scale(0.4); opacity: 0; }
+  60%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1);    opacity: 1; }
 }
-.strength-bars { display: flex; gap: 4px; flex: 1; }
-.strength-bar {
-  flex: 1; height: 6px; border-radius: 999px;
-  transition: background 0.3s ease;
-}
-.strength-label { font-size: 0.75rem; font-weight: 800; }
 
-/* TERMINOS */
-.terms-row { display: flex; align-items: flex-start; gap: 10px; }
-.custom-checkbox {
-  width: 22px; height: 22px; border-radius: 7px; flex-shrink: 0;
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  FORJA: RUNAS DE FORTALEZA                                   ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// CONTENEDOR DE LA FORJA — RUNAS + LABEL
+.rg-forge {
+  // FLEX HORIZONTAL CON ESPACIO ENTRE RUNAS Y LABEL
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  // MARGEN SUPERIOR PEQUENO RESPECTO AL INPUT
+  margin-top: 6px;
+  // WRAP PARA QUE EN MOVILES MUY ESTRECHOS EL LABEL CAIGA DEBAJO
+  flex-wrap: wrap;
+}
+
+// ANILLO QUE ENVUELVE LAS RUNAS — TARGET DE BURST AL ALCANZAR FORTALEZA MAXIMA
+.rg-forge-ring {
+  // FLEX HORIZONTAL DE LAS RUNAS
+  display: inline-flex;
+  align-items: center;
+  // SEPARACION ENTRE RUNAS
+  gap: 8px;
+  // PADDING INTERNO PARA EL HALO
+  padding: 6px 10px;
+  // BORDE PILL TENIDO DEL COLOR DE FORTALEZA
+  border: 1px solid color-mix(in srgb, var(--rg-strength-color, var(--color-primary)) 38%, transparent);
+  // BORDE PILL TOTAL
+  border-radius: 999px;
+  // FONDO MUY SUAVE TENIDO DEL COLOR DE FORTALEZA
+  background: color-mix(in srgb, var(--rg-strength-color, var(--color-primary)) 6%, transparent);
+  // TRANSICION DE COLOR DEL BORDE/FONDO
+  transition: border-color 240ms var(--ease-quick), background 240ms var(--ease-quick);
+  // ORIGEN DE TRANSFORMACION CENTRADO PARA EL BURST DE CUSTOMBOUNCE
+  transform-origin: center;
+  will-change: transform;
+}
+
+// RUNA INDIVIDUAL — CIRCULO PEQUENO QUE SE ILUMINA AL ALCANZAR EL NIVEL
+.rg-rune {
+  // CONTENEDOR CUADRADO QUE ALOJA EL DOT INTERIOR
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  // TAMANO COMPACTO
+  width: 14px;
+  height: 14px;
+  // BORDE CIRCULAR ATENUADO QUE INSINUA LA RUNA APAGADA
+  border: 1.5px solid color-mix(in srgb, var(--color-text-muted) 40%, transparent);
+  // BORDE CIRCULAR
+  border-radius: 50%;
+  // TRANSICION DE BORDE Y CONTENIDO
+  transition: border-color 240ms var(--ease-quick),
+              transform 240ms var(--ease-spring);
+}
+
+// DOT INTERIOR DE LA RUNA — APARECE SOLO CUANDO LA RUNA ESTA ENCENDIDA
+.rg-rune__dot {
+  // BLOQUE CIRCULAR PEQUENO
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  // SIN FONDO POR DEFECTO
+  background: transparent;
+  // TRANSICION SUAVE
+  transition: background 240ms var(--ease-quick), transform 240ms var(--ease-spring);
+}
+
+// VARIANTE ENCENDIDA DE LA RUNA
+.rg-rune--lit {
+  border-color: var(--rg-strength-color, var(--color-primary));
+  transform: scale(1.08);
+}
+
+// EL DOT DE LA RUNA ENCENDIDA SE PINTA DEL COLOR DE FORTALEZA
+.rg-rune--lit .rg-rune__dot {
+  background: var(--rg-strength-color, var(--color-primary));
+  // GLOW SUTIL ALREDEDOR DEL DOT
+  box-shadow: 0 0 8px var(--rg-strength-color, var(--color-primary));
+}
+
+// LABEL TEXTUAL DE LA FORTALEZA AL LADO DEL ANILLO
+.rg-forge__label {
+  // TAMANO COMPACTO
+  font-size: 12px;
+  // PESO MUY BOLD
+  font-weight: 800;
+  // TRACKING LIGERO
+  letter-spacing: 0.04em;
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  PROMESA ZERO-KNOWLEDGE — TARJETA DESTACADA                  ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// TARJETA DE PROMESA ZK
+.rg-zk {
+  // FLEX HORIZONTAL CON ICONO + COPY
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  // PADDING INTERNO
+  padding: 12px 14px;
+  // FONDO TENIDO DEL SUCCESS PARA REFORZAR LA PROMESA
+  background: color-mix(in srgb, var(--color-success) 12%, var(--color-surface));
+  // BORDE FINO TENIDO DEL SUCCESS
+  border: 1px solid color-mix(in srgb, var(--color-success) 30%, transparent);
+  // BORDE REDONDEADO GRANDE
+  border-radius: 14px;
+}
+
+// CHIP DEL ICONO CANDADO DENTRO DE LA TARJETA ZK
+.rg-zk__icon {
+  // CHIP CUADRADO DEL TONO SUCCESS
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-success) 22%, transparent);
+  // CENTRADO INTERNO DEL SVG
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  // COLOR DEL ICONO HEREDADO POR EL SVG
+  color: var(--color-success);
+}
+
+// SVG DEL CANDADO QUE LATE SUAVE
+.rg-zk__icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+// ANIMACION DEL ARO DEL CANDADO — SUBE Y BAJA PARA INSINUAR QUE SE CIERRA
+.rg-zk__shackle {
+  transform-origin: 16px 14px;
+  animation: rgZkShackle 3.4s ease-in-out infinite;
+}
+
+// KEYFRAMES DEL ARO — DESPLAZAMIENTO VERTICAL SUTIL
+@keyframes rgZkShackle {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-1.5px); }
+}
+
+// COPY DE LA TARJETA ZK
+.rg-zk__copy {
+  // FLEX EN COLUMNA PARA APILAR TITULO Y DESC
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  // ALINEACION A LA IZQUIERDA
+  text-align: left;
+  // FLEX 1 PARA OCUPAR EL RESTO
+  flex: 1;
+  // EVITA OVERFLOW EN FLEX
+  min-width: 0;
+}
+
+// TITULO DE LA PROMESA ZK
+.rg-zk__title {
+  font-family: 'Bricolage Grotesque', 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+// DESCRIPCION DE LA PROMESA ZK
+.rg-zk__desc {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--color-text-muted);
+  // EL STRONG SE RESALTA EN COLOR TEXTO PRINCIPAL
+  strong { color: var(--color-text); font-weight: 800; }
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  TERMINOS DE USO Y CHECKBOX                                  ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// BLOQUE DE TERMINOS — CHECKBOX + TEXTO
+.rg-terms {
+  // FLEX HORIZONTAL CON CHECKBOX ALINEADO ARRIBA
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  // ALINEACION A LA IZQUIERDA DEL TEXTO
+  text-align: left;
+}
+
+// CHECKBOX CUSTOM DEL CONSENTIMIENTO
+.rg-check {
+  // BLOQUE PEQUENO TACTIL
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  // BORDE REDONDEADO MEDIO
+  border-radius: 7px;
+  // BORDE ATENUADO POR DEFECTO
   border: 2px solid var(--color-surface-2);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: all 0.2s ease;
-  &.checked {
-    background: var(--color-primary);
-    border-color: var(--color-primary);
-    color: white;
-  }
-}
-.terms-text {
-  font-size: 0.82rem; font-weight: 600;
-  color: var(--color-text-muted); line-height: 1.4;
-  strong { color: var(--color-primary); }
-}
-
-/* INFORMACION ZERO KNOWLEDGE */
-.zk-info {
-  display: flex; align-items: flex-start; gap: 10px;
-  background: color-mix(in srgb, var(--color-success) 10%, var(--color-surface));
-  border-radius: 12px; padding: 12px 14px;
-  font-size: 0.82rem; font-weight: 600;
-  color: var(--color-text-muted); line-height: 1.4;
-  strong { color: var(--color-text); }
+  // FONDO TRANSPARENTE POR DEFECTO
+  background: transparent;
+  // CURSOR INTERACTIVO
+  cursor: pointer;
+  // COLOR DEL TICK BLANCO
+  color: #ffffff;
+  // EVITA QUE SE ENCOJA
+  flex-shrink: 0;
+  // TRANSICION SUAVE
+  transition: background 220ms var(--ease-quick),
+              border-color 220ms var(--ease-quick),
+              transform 220ms var(--ease-spring);
 }
 
-.register-submit-btn {
-  width: 100%; padding: 16px; border-radius: 14px;
-  background: var(--color-primary); color: white;
-  font-size: 1rem; font-weight: 900; border: none;
-  cursor: pointer; font-family: 'Inter', sans-serif;
-  box-shadow: 0 4px 20px color-mix(in srgb, var(--color-primary) 40%, transparent);
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  transition: transform 0.15s ease, opacity 0.15s ease;
-  &:disabled { opacity: 0.4; cursor: not-allowed; }
-  &:active { transform: scale(0.97); }
+// VARIANTE ACTIVADA DEL CHECKBOX — FONDO PRIMARIO
+.rg-check--on {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  transform: scale(1.05);
 }
-.back-login-btn {
-  width: 100%; padding: 14px; border-radius: 14px;
-  background: transparent; color: var(--color-text-muted);
-  font-size: 0.9rem; font-weight: 600; border: 2px solid var(--color-surface-2);
-  cursor: pointer; font-family: 'Inter', sans-serif;
+
+// TEXTO DE LOS TERMINOS
+.rg-terms__text {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--color-text-muted);
   strong { color: var(--color-primary); font-weight: 800; }
 }
 
-.spin {
-  animation: spin 1s linear infinite;
-}
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  ERROR DE AUTENTICACION                                      ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// BLOQUE DE ERROR
+.rg-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--color-danger) 14%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-danger) 36%, transparent);
+  border-radius: 12px;
+  color: var(--color-danger);
+  font-size: 12.5px;
+  font-weight: 700;
+  text-align: left;
 }
 
-/* MENSAJE DE ERROR DE AUTENTICACION */
-.auth-error {
-  margin: 12px 0;
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.35);
-  color: var(--color-danger, #ef4444);
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-align: center;
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  BOTONES — SUBMIT ENERGIZADO + SECONDARY                     ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// BOTON PRINCIPAL DE SUBMIT — DOS ESTADOS VISUALES
+.rg-submit {
+  // FLEX HORIZONTAL CON ICONO + TEXTO
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  // BLOQUE DE ANCHO COMPLETO
+  width: 100%;
+  // PADDING INTERNO TACTIL
+  padding: 16px 20px;
+  // BORDE REDONDEADO GRANDE
+  border-radius: 14px;
+  // FONDO POR DEFECTO ATENUADO (CTA APAGADO)
+  background: color-mix(in srgb, var(--color-primary) 35%, var(--color-surface-2));
+  // COLOR DEL TEXTO ATENUADO POR DEFECTO
+  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+  // TIPOGRAFIA COMPACTA Y MUY BOLD
+  font-size: 15px;
+  font-weight: 800;
+  font-family: 'Inter', sans-serif;
+  // ELIMINAMOS BORDES POR DEFECTO
+  border: 0;
+  // CURSOR DEFECTO BLOQUEADO MIENTRAS NO CUMPLE CONDICIONES
+  cursor: not-allowed;
+  // TRANSICION DE FONDO Y SOMBRA
+  transition: background 320ms var(--ease-quick),
+              box-shadow 320ms var(--ease-quick),
+              color 320ms var(--ease-quick),
+              transform 220ms var(--ease-spring);
+}
+
+// VARIANTE ENERGIZADA — CUANDO CUMPLE LAS CONDICIONES, EL BOTON SE CARGA
+.rg-submit--charged {
+  // FONDO CON GRADIENTE PRIMARIO-ACCENT
+  background: linear-gradient(135deg,
+    var(--color-primary) 0%,
+    color-mix(in srgb, var(--color-primary) 60%, var(--color-accent)) 100%);
+  // COLOR DEL TEXTO BLANCO PARA CONTRASTE
+  color: #ffffff;
+  // GLOW PRINCIPAL TENIDO DEL PRIMARIO
+  box-shadow:
+    0 10px 28px color-mix(in srgb, var(--color-primary) 45%, transparent),
+    inset 0 1px 0 color-mix(in srgb, #ffffff 22%, transparent);
+  // CURSOR INTERACTIVO
+  cursor: pointer;
+  // PULSO SUAVE DE ENERGIA
+  animation: rgSubmitCharged 2s ease-in-out infinite;
+  will-change: box-shadow, transform;
+}
+
+// PULSO DEL CTA CARGADO — ALTERNA INTENSIDAD DEL GLOW
+@keyframes rgSubmitCharged {
+  0%, 100% {
+    box-shadow:
+      0 10px 28px color-mix(in srgb, var(--color-primary) 45%, transparent),
+      inset 0 1px 0 color-mix(in srgb, #ffffff 22%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 16px 44px color-mix(in srgb, var(--color-primary) 65%, transparent),
+      inset 0 1px 0 color-mix(in srgb, #ffffff 28%, transparent);
+  }
+}
+
+// PRESS DEL CTA CARGADO
+.rg-submit--charged:active {
+  transform: translateY(1px);
+}
+
+// SPINNER DENTRO DEL SUBMIT MIENTRAS CARGA
+.rg-submit__spin {
+  animation: rgSpin 1s linear infinite;
+}
+
+// KEYFRAMES DEL SPINNER
+@keyframes rgSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+// BOTON SECUNDARIO — IR A LOGIN
+.rg-secondary {
+  // FONDO TRANSPARENTE
+  background: transparent;
+  // BORDE FINO ATENUADO
+  border: 1.5px solid var(--color-surface-2);
+  // BORDE REDONDEADO MEDIO
+  border-radius: 14px;
+  // PADDING INTERNO MEDIO
+  padding: 12px 16px;
+  // COLOR ATENUADO
+  color: var(--color-text-muted);
+  // TIPOGRAFIA COMPACTA
+  font-size: 13.5px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  // CURSOR INTERACTIVO
+  cursor: pointer;
+  // STRONG RESALTA EL ENLACE DE LOGIN
+  strong { color: var(--color-primary); font-weight: 800; }
+  // TRANSICION DE BORDE/COLOR
+  transition: border-color 220ms var(--ease-quick), color 220ms var(--ease-quick);
+  &:hover { border-color: color-mix(in srgb, var(--color-primary) 50%, var(--color-surface-2)); }
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  ACCESIBILIDAD — RESPETO DE PREFERS-REDUCED-MOTION           ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+@media (prefers-reduced-motion: reduce) {
+  .rg-halo,
+  .rg-submit--charged,
+  .rg-zk__shackle,
+  .rg-input__match,
+  .rg-stepper__lid {
+    animation: none !important;
+    transition: none !important;
+  }
 }

@@ -9,6 +9,8 @@ import { AuditorPageRoutingModule } from './auditor-routing.module';
 import { AuditorPage } from './auditor.page';
 // COMPONENTE STANDALONE DE RED DE PARTÍCULAS PARA FONDO DECORATIVO DEL HERO
 import { ParticleNetworkComponent } from '../shared/components/particle-network/particle-network.component';
+// MASCOTA CUB QUE APARECE EN LA ESQUINA DEL RADAR DE HABILIDADES
+import { ArgusCubComponent } from '../shared/components/argus-cub/argus-cub.component';
 
 @NgModule({
   imports: [
@@ -16,7 +18,8 @@ import { ParticleNetworkComponent } from '../shared/components/particle-network/
     FormsModule,
     IonicModule,
     AuditorPageRoutingModule,
-    ParticleNetworkComponent
+    ParticleNetworkComponent,
+    ArgusCubComponent
   ],
   declarations: [AuditorPage],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]

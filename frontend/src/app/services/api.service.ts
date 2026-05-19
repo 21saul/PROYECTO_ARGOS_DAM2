@@ -17,6 +17,8 @@
 import { Injectable } from '@angular/core';
 // IMPORTACION DEL CLIENTE HTTP Y TIPOS RELACIONADOS
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
+// IMPORTACION DEL ROUTER PARA REDIRIGIR AL LOGIN CUANDO CADUCA LA SESION
+import { Router } from '@angular/router';
 // IMPORTACION DE OBSERVABLE Y UTILIDADES RXJS
 import { Observable, throwError } from 'rxjs';
 // IMPORTACION DE OPERADORES RXJS PARA TRANSFORMAR FLUJOS
@@ -53,8 +55,8 @@ export class ApiService {
   // CLAVE EN LOCALSTORAGE DONDE SE GUARDA EL JWT
   private readonly TOKEN_KEY = 'argos-jwt';
 
-  // CONSTRUCTOR QUE INYECTA EL HTTPCLIENT DE ANGULAR
-  constructor(private http: HttpClient) {}
+  // CONSTRUCTOR QUE INYECTA EL HTTPCLIENT Y EL ROUTER DE ANGULAR
+  constructor(private http: HttpClient, private router: Router) {}
 
   // GUARDA EL JWT EN STORAGE TRAS LOGIN O REGISTER
   setToken(token: string): void {
@@ -172,6 +174,13 @@ export class ApiService {
         code: 'HTTP_ERROR',
         message: `Error HTTP ${error.status}`,
       };
+    }
+
+    // SI LA SESION CADUCO O EL TOKEN ES INVALIDO, LIMPIAMOS EL JWT
+    // GUARDADO Y MANDAMOS AL USUARIO AL LOGIN PARA QUE SE REAUTENTIQUE
+    if (error.status === 401) {
+      this.clearToken();
+      this.router.navigate(['/login']);
     }
 
     // PROPAGA EL ERROR NORMALIZADO POR EL OBSERVABLE

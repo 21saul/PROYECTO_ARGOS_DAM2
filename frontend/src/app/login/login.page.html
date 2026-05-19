@@ -1,102 +1,114 @@
-<ion-content class="login-content" fullscreen="true">
-  <div class="login-scroll">
+<!-- CONTENIDO PRINCIPAL DEL LOGIN — RAIZ AISLADA PARA EL CONTEXTO DE GSAP -->
+<ion-content class="lg-content" [fullscreen]="true">
+  <div #rootEl class="lg-root scroll-clean">
 
-    <!-- LOGO -->
-    <div class="login-logo">
-      <div class="logo-icon-wrap">
-        <ph-shield-check weight="fill" size="64"
-          style="color: var(--color-primary)">
-        </ph-shield-check>
+    <!-- CAPA DE PARTICULAS AL FONDO — MUY ATENUADA -->
+    <app-particle-network
+      class="lg-particles"
+      [particleCount]="34"
+      [maxDistance]="120"
+      [speed]="0.28"
+      particleColor="#7C3AED"
+      lineColor="#A78BFA">
+    </app-particle-network>
+
+    <!-- HALO RADIAL DETRAS DE LA MASCOTA — DA SENSACION DE GUARDIAN -->
+    <div class="lg-halo" aria-hidden="true"></div>
+
+    <!-- HERO EMOCIONAL CON LA MASCOTA COMO LOGO + WORDMARK -->
+    <header class="lg-hero">
+      <!-- MASCOTA REACTIVA A LOS EVENTOS DEL FORMULARIO -->
+      <div class="lg-mascot">
+        <app-argus [size]="128" [mood]="argusMood"></app-argus>
       </div>
-      <div class="logo-title">ARGOS</div>
-      <div class="logo-sub">Tu entrenador de ciberseguridad</div>
-    </div>
+      <!-- WORDMARK ARGOS EN BRICOLAGE -->
+      <div class="lg-wordmark text-hero">ARGOS</div>
+      <!-- TITULO DEL FLUJO DE LOGIN -->
+      <h1 class="lg-title">Te estaba esperando</h1>
+      <!-- SUBTITULO SECUNDARIO -->
+      <p class="lg-sub lg-reveal">Identifícate para volver a tu cuartel.</p>
+    </header>
 
-    <!-- FORMULARIO -->
-    <div class="login-form-wrap">
+    <!-- TARJETA DEL FORMULARIO -->
+    <section class="lg-card lg-reveal">
 
-      <div class="form-title">Iniciar sesión</div>
-
-      <!-- EMAIL -->
-      <div class="input-group">
-        <div class="input-label">Email</div>
-        <div class="input-wrap" [class.filled]="email">
-          <ph-envelope weight="bold" size="20"
-            class="input-icon">
-          </ph-envelope>
-          <input
-            class="form-input"
+      <!-- BLOQUE EMAIL -->
+      <div class="lg-field">
+        <label class="lg-field__label" for="lg-email">Email</label>
+        <div class="lg-input"
+          [class.lg-input--focus]="focusedField === 'email'"
+          [class.lg-input--filled]="!!email">
+          <ph-envelope weight="bold" size="20" class="lg-input__icon"></ph-envelope>
+          <input id="lg-email"
+            class="lg-input__field"
             type="email"
             placeholder="tu@email.com"
+            autocomplete="email"
             [(ngModel)]="email"
-            autocomplete="email">
+            (focus)="onFocus('email')"
+            (blur)="onBlur('email')">
         </div>
       </div>
 
-      <!-- CONTRASEÑA -->
-      <div class="input-group">
-        <div class="input-label">Contraseña</div>
-        <div class="input-wrap" [class.filled]="password">
-          <ph-lock weight="bold" size="20"
-            class="input-icon">
-          </ph-lock>
-          <input
-            class="form-input"
+      <!-- BLOQUE CONTRASEÑA -->
+      <div class="lg-field">
+        <div class="lg-field__row">
+          <label class="lg-field__label" for="lg-password">Contraseña</label>
+          <!-- LINK SUTIL DE OLVIDO — DENTRO DE LA MISMA FILA QUE EL LABEL -->
+          <button type="button" class="lg-forgot">¿Olvidaste tu contraseña?</button>
+        </div>
+        <div class="lg-input lg-input--password"
+          [class.lg-input--focus]="focusedField === 'password'"
+          [class.lg-input--filled]="!!password">
+          <ph-lock weight="bold" size="20" class="lg-input__icon"></ph-lock>
+          <input id="lg-password"
+            class="lg-input__field"
             [type]="showPassword ? 'text' : 'password'"
-            placeholder="Tu contraseña maestra"
+            placeholder="Tu llave maestra"
+            autocomplete="current-password"
             [(ngModel)]="password"
-            autocomplete="current-password">
-          <button class="toggle-pass"
+            (focus)="onFocus('password')"
+            (blur)="onBlur('password')"
+            (keyup.enter)="login()">
+          <button type="button"
+            class="lg-input__toggle"
+            [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
             (click)="showPassword = !showPassword">
-            <ph-eye weight="bold" size="20"
-              *ngIf="!showPassword">
-            </ph-eye>
-            <ph-eye-slash weight="bold" size="20"
-              *ngIf="showPassword">
-            </ph-eye-slash>
+            <ph-eye       *ngIf="!showPassword" weight="bold" size="20"></ph-eye>
+            <ph-eye-slash *ngIf="showPassword"  weight="bold" size="20"></ph-eye-slash>
           </button>
         </div>
       </div>
 
-      <!-- OLVIDÉ CONTRASEÑA -->
-      <div class="forgot-row">
-        <button class="forgot-btn">¿Olvidaste tu contraseña?</button>
-      </div>
-
       <!-- MENSAJE DE ERROR DEVUELTO POR EL BACKEND -->
-      <div class="auth-error" *ngIf="errorMessage">
-        {{ errorMessage }}
+      <div class="lg-error" *ngIf="errorMessage" role="alert">
+        <ph-warning-circle weight="fill" size="18"></ph-warning-circle>
+        <span>{{ errorMessage }}</span>
       </div>
 
-      <!-- BOTÓN LOGIN -->
-      <button class="login-btn"
+      <!-- BOTON PRIMARIO DEL LOGIN -->
+      <button type="button"
+        class="lg-submit"
         [disabled]="!email || !password || isLoading"
         (click)="login()">
-        <ph-spinner weight="bold" size="20"
-          *ngIf="isLoading" class="spin">
-        </ph-spinner>
+        <ph-spinner   *ngIf="isLoading"  weight="bold" size="20" class="lg-submit__spin"></ph-spinner>
+        <ph-sign-in   *ngIf="!isLoading" weight="bold" size="18"></ph-sign-in>
         <span *ngIf="!isLoading">Entrar</span>
+        <span *ngIf="isLoading">Reconociéndote…</span>
       </button>
 
-      <!-- DIVIDER -->
-      <div class="divider">
-        <div class="divider-line"></div>
-        <span class="divider-text">o</span>
-        <div class="divider-line"></div>
-      </div>
-
-      <!-- REGISTRO -->
-      <button class="register-btn" (click)="goToRegister()">
+      <!-- BOTON SECUNDARIO PARA NUEVOS USUARIOS -->
+      <button type="button"
+        class="lg-secondary"
+        (click)="goToRegister()">
         ¿No tienes cuenta? <strong>Regístrate gratis</strong>
       </button>
 
-    </div>
+    </section>
 
-    <!-- SEGURIDAD BADGE -->
-    <div class="security-badge">
-      <ph-shield-check weight="fill" size="16"
-        style="color:var(--color-success)">
-      </ph-shield-check>
+    <!-- PILL ZERO-KNOWLEDGE AL PIE DE LA PANTALLA — PROMESA CONSTANTE -->
+    <div class="lg-zk-pill lg-reveal" role="status">
+      <ph-shield-check weight="fill" size="16" class="lg-zk-pill__ico"></ph-shield-check>
       <span>Zero-Knowledge · Tus datos nunca salen de tu dispositivo</span>
     </div>
 
