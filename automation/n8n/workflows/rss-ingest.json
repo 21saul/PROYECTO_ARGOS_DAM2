@@ -20,7 +20,7 @@
     },
     {
       "parameters": {
-        "url": "https://www.incibe.es/incibe/feeds/avisos-seguridad.rss"
+        "url": "https://www.incibe.es/ciudadania/avisos/feed"
       },
       "id": "rss-incibe",
       "name": "RSS INCIBE",
@@ -30,7 +30,7 @@
     },
     {
       "parameters": {
-        "url": "https://unaaldia.hispasec.com/feed"
+        "url": "https://unaaldia.hispasec.com/feed/"
       },
       "id": "rss-hispasec",
       "name": "RSS Hispasec",
