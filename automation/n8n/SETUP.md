@@ -42,13 +42,20 @@ de conexion a MariaDB:
 2. Boton "+ Add credential"
 3. Tipo: MySQL
 4. Rellena:
-   - Host: `host.docker.internal`
+   - Host: `ddev-argos-db`  (nombre del contenedor de ddev, NO
+     `host.docker.internal` — el puerto host de ddev solo escucha
+     en 127.0.0.1 y desde otro contenedor no es alcanzable)
    - Database: `db`
    - User: `db`
    - Password: `db`
-   - Port: `44621`  (puerto expuesto por ddev — verificalo con
-     `ddev describe | grep "db:3306"` si tu entorno difiere)
+   - Port: `3306`  (puerto INTERNO del contenedor de ddev, no el
+     puerto expuesto al host)
    - SSL: Disabled
+
+   NOTA DE RED: el `docker-compose.yml` conecta el contenedor
+   `argos-n8n` a la red `ddev_default` (external) para que pueda
+   resolver `ddev-argos-db` por DNS interno. Por tanto debes
+   tener ddev arrancado ANTES de levantar n8n.
 5. Boton "Test connection" -> debe decir "Connection successful"
 6. Boton "Save" -> ponle nombre `ARGOS MariaDB`
 

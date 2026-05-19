@@ -31,3 +31,11 @@ services:
       - ./workflows:/workflows:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - ddev
+
+networks:
+  ddev:
+    external: true
+    name: ddev_default
