@@ -32,30 +32,34 @@ export type ArgusMood =
            [attr.data-mood]="effectiveMood"
            aria-hidden="true">
 
-        <!-- DEFINICIONES — GRADIENTES Y FILTROS PARAMETRIZADOS POR CSS VARS -->
+        <!-- DEFINICIONES — GRADIENTES Y FILTROS PARAMETRIZADOS POR CSS VARS.
+             LOS id SON UNICOS POR INSTANCIA (uid) PORQUE url(#id) RESUELVE
+             A NIVEL DE DOCUMENTO: VARIAS MASCOTAS A LA VEZ (IONIC MANTIENE
+             PAGINAS EN EL DOM) COLISIONABAN Y EL RELLENO SE RESOLVIA A UN
+             <defs> DE UNA PAGINA OCULTA/DESTRUIDA → MASCOTA INVISIBLE. -->
         <defs>
           <!-- CUERPO Y MANTO — DEGRADADO DE TONO PRINCIPAL -->
-          <radialGradient id="bodyGrad" cx="50%" cy="40%" r="80%">
+          <radialGradient [attr.id]="'bodyGrad-' + uid" cx="50%" cy="40%" r="80%">
             <stop offset="0%"  [attr.stop-color]="'var(--mascot-body-1)'"/>
             <stop offset="100%" [attr.stop-color]="'var(--mascot-body-2)'"/>
           </radialGradient>
           <!-- HOOD / CAPUCHA — TONO MAS PROFUNDO QUE EL CUERPO -->
-          <linearGradient id="hoodGrad" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient [attr.id]="'hoodGrad-' + uid" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%"  [attr.stop-color]="'var(--mascot-hood-1)'"/>
             <stop offset="100%" [attr.stop-color]="'var(--mascot-hood-2)'"/>
           </linearGradient>
           <!-- CARA / PIEL — TONO INTERMEDIO LUMINOSO -->
-          <radialGradient id="faceGrad" cx="50%" cy="40%" r="70%">
+          <radialGradient [attr.id]="'faceGrad-' + uid" cx="50%" cy="40%" r="70%">
             <stop offset="0%"  [attr.stop-color]="'var(--mascot-face-1)'"/>
             <stop offset="100%" [attr.stop-color]="'var(--mascot-face-2)'"/>
           </radialGradient>
           <!-- IRIS — DEGRADADO INTERNO DEL OJO QUE EMITE LUZ -->
-          <radialGradient id="irisGrad" cx="50%" cy="40%" r="60%">
+          <radialGradient [attr.id]="'irisGrad-' + uid" cx="50%" cy="40%" r="60%">
             <stop offset="0%"  [attr.stop-color]="'var(--mascot-iris-1)'"/>
             <stop offset="100%" [attr.stop-color]="'var(--mascot-iris-2)'"/>
           </radialGradient>
           <!-- GLOW BIO-LUMINISCENTE DE LOS OJOS — FILTRO COMPARTIDO -->
-          <filter id="eyeBloom" x="-50%" y="-50%" width="200%" height="200%">
+          <filter [attr.id]="'eyeBloom-' + uid" x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="1.4" result="blur"/>
             <feMerge>
               <feMergeNode in="blur"/>
@@ -63,7 +67,7 @@ export type ArgusMood =
             </feMerge>
           </filter>
           <!-- HALO SUTIL ALREDEDOR DEL HOOD — MISTICA DE TITAN -->
-          <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+          <radialGradient [attr.id]="'halo-' + uid" cx="50%" cy="50%" r="50%">
             <stop offset="60%" stop-color="transparent"/>
             <stop offset="100%" [attr.stop-color]="'var(--mascot-glow)'"
                   stop-opacity="0.18"/>
@@ -71,7 +75,7 @@ export type ArgusMood =
         </defs>
 
         <!-- HALO DETRAS DE LA CABEZA — DA SENSACION DE GUARDIAN -->
-        <circle class="halo" cx="60" cy="48" r="44" fill="url(#halo)"/>
+        <circle class="halo" cx="60" cy="48" r="44" [attr.fill]="halo"/>
 
         <!-- SOMBRA EN EL SUELO -->
         <ellipse class="floor-shadow" cx="60" cy="114" rx="34" ry="3.6"
@@ -84,17 +88,17 @@ export type ArgusMood =
                    Q 60 72 90 78
                    L 96 104
                    Q 60 110 24 104 Z"
-                fill="url(#bodyGrad)"/>
+                [attr.fill]="bodyGrad"/>
           <!-- CINTURON / BANDA INFERIOR -->
           <path d="M 26 100 Q 60 106 94 100"
                 [attr.stroke]="'var(--mascot-rim)'"
                 stroke-width="1.2" fill="none" opacity="0.7"/>
           <!-- PAULDRON IZQUIERDO — HOMBRO REDONDEADO -->
-          <ellipse cx="22" cy="80" rx="11" ry="10" fill="url(#bodyGrad)"
+          <ellipse cx="22" cy="80" rx="11" ry="10" [attr.fill]="bodyGrad"
                    [attr.stroke]="'var(--mascot-rim)'" stroke-width="0.8"
                    opacity="0.95"/>
           <!-- PAULDRON DERECHO -->
-          <ellipse cx="98" cy="80" rx="11" ry="10" fill="url(#bodyGrad)"
+          <ellipse cx="98" cy="80" rx="11" ry="10" [attr.fill]="bodyGrad"
                    [attr.stroke]="'var(--mascot-rim)'" stroke-width="0.8"
                    opacity="0.95"/>
         </g>
@@ -102,9 +106,9 @@ export type ArgusMood =
         <!-- ═══════════ BRAZOS / MANITAS ═══════════ -->
         <g class="arms" [class.thinking]="effectiveMood === 'thinking'">
           <ellipse class="arm arm-left"  cx="16" cy="94" rx="6" ry="6"
-                   fill="url(#bodyGrad)"/>
+                   [attr.fill]="bodyGrad"/>
           <ellipse class="arm arm-right" cx="104" cy="94" rx="6" ry="6"
-                   fill="url(#bodyGrad)"/>
+                   [attr.fill]="bodyGrad"/>
         </g>
 
         <!-- ═══════════ HOOD / CAPUCHA QUE ENVUELVE LA CABEZA ═══════════ -->
@@ -114,7 +118,7 @@ export type ArgusMood =
                  Q 92 14 94 50
                  L 90 60
                  Q 60 52 30 60 Z"
-              fill="url(#hoodGrad)"/>
+              [attr.fill]="hoodGrad"/>
         <!-- BORDE INFERIOR DEL HOOD -->
         <path d="M 30 58 Q 60 50 90 58"
               [attr.stroke]="'var(--mascot-rim)'"
@@ -122,12 +126,12 @@ export type ArgusMood =
 
         <!-- ═══════════ CARA ═══════════ -->
         <ellipse class="face" cx="60" cy="52" rx="26" ry="26"
-                 fill="url(#faceGrad)"/>
+                 [attr.fill]="faceGrad"/>
 
         <!-- ═══════════ OJO FOREHEAD (TERCER OJO ORNAMENTAL EN HOOD) ═══════════ -->
         <g class="eye-secondary eye-forehead">
           <circle cx="60" cy="28" r="3.2"
-                  fill="url(#irisGrad)" filter="url(#eyeBloom)"/>
+                  [attr.fill]="irisGrad" [attr.filter]="eyeBloom"/>
           <circle cx="60" cy="28" r="1.6"
                   [attr.fill]="'var(--mascot-pupil)'"/>
         </g>
@@ -147,7 +151,7 @@ export type ArgusMood =
                    [attr.fill]="'var(--mascot-eye-bg)'"/>
           <circle class="iris" [attr.cx]="46 + irisOffsetX"
                   [attr.cy]="56 + irisOffsetY" r="5"
-                  fill="url(#irisGrad)" filter="url(#eyeBloom)"/>
+                  [attr.fill]="irisGrad" [attr.filter]="eyeBloom"/>
           <circle class="pupil" [attr.cx]="46 + irisOffsetX"
                   [attr.cy]="56 + irisOffsetY" r="2.6"
                   [attr.fill]="'var(--mascot-pupil)'"/>
@@ -156,7 +160,7 @@ export type ArgusMood =
                   fill="#FFFFFF" opacity="0.95"/>
           <!-- PARPADO SUPERIOR — BAJA PARA PARPADEAR -->
           <rect class="lid" x="39" y="47" width="14" height="0"
-                fill="url(#faceGrad)"/>
+                [attr.fill]="faceGrad"/>
         </g>
         <!-- OJO DERECHO (ESPEJO) -->
         <g class="eye eye-main eye-right">
@@ -164,7 +168,7 @@ export type ArgusMood =
                    [attr.fill]="'var(--mascot-eye-bg)'"/>
           <circle class="iris" [attr.cx]="74 + irisOffsetX"
                   [attr.cy]="56 + irisOffsetY" r="5"
-                  fill="url(#irisGrad)" filter="url(#eyeBloom)"/>
+                  [attr.fill]="irisGrad" [attr.filter]="eyeBloom"/>
           <circle class="pupil" [attr.cx]="74 + irisOffsetX"
                   [attr.cy]="56 + irisOffsetY" r="2.6"
                   [attr.fill]="'var(--mascot-pupil)'"/>
@@ -172,7 +176,7 @@ export type ArgusMood =
                   [attr.cy]="53 + irisOffsetY" r="1.6"
                   fill="#FFFFFF" opacity="0.95"/>
           <rect class="lid" x="67" y="47" width="14" height="0"
-                fill="url(#faceGrad)"/>
+                [attr.fill]="faceGrad"/>
         </g>
 
         <!-- ═══════════ BOCA EXPRESIVA ═══════════ -->
@@ -191,13 +195,13 @@ export type ArgusMood =
         <!-- ═══════════ OJOS PAULDRON (HOMBROS) ═══════════ -->
         <g class="eye-secondary eye-pauldron-left">
           <circle cx="22" cy="80" r="2.8"
-                  fill="url(#irisGrad)" filter="url(#eyeBloom)"/>
+                  [attr.fill]="irisGrad" [attr.filter]="eyeBloom"/>
           <circle cx="22" cy="80" r="1.3"
                   [attr.fill]="'var(--mascot-pupil)'"/>
         </g>
         <g class="eye-secondary eye-pauldron-right">
           <circle cx="98" cy="80" r="2.8"
-                  fill="url(#irisGrad)" filter="url(#eyeBloom)"/>
+                  [attr.fill]="irisGrad" [attr.filter]="eyeBloom"/>
           <circle cx="98" cy="80" r="1.3"
                   [attr.fill]="'var(--mascot-pupil)'"/>
         </g>
@@ -216,7 +220,7 @@ export type ArgusMood =
           <ellipse cx="60" cy="94" rx="6.5" ry="4.5"
                    [attr.fill]="'var(--mascot-eye-bg)'"/>
           <circle class="sigil-iris" cx="60" cy="94" r="3.2"
-                  fill="url(#irisGrad)" filter="url(#eyeBloom)"/>
+                  [attr.fill]="irisGrad" [attr.filter]="eyeBloom"/>
           <circle class="sigil-pupil" cx="60" cy="94" r="1.6"
                   [attr.fill]="'var(--mascot-pupil)'"/>
           <!-- MARCAS RADIALES DE GRABADO (4 PUNTOS CARDINALES) -->
@@ -262,6 +266,21 @@ export type ArgusMood =
        ║ TOKENS DE LA MASCOTA — DUAL-THEME VIA CSS VARIABLES     ║
        ╚══════════════════════════════════════════════════════════╝ */
 
+    /* HOST DEL COMPONENTE — FUERZA UN BLOQUE FLEX LIMPIO PARA EVITAR
+       BASELINE GAPS DE INLINE Y QUE EL DROP-SHADOW QUEDE CLIPADO POR
+       LA LINE-BOX DEL PADRE (CAUSA TIPICA DE "PARTE INVISIBLE PARTE NO"). */
+    :host {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+      line-height: 0;
+      /* AISLAMOS EL STACKING CONTEXT PARA QUE EL GLOW EXTERNO NO SE
+         COMPONGA CON LOS FILTROS SVG INTERNOS (BUG DE COMPOSICION
+         CSS-FILTER + SVG-FILTER QUE ROMPIA EL RENDER DEL HOOD/SIGIL). */
+      isolation: isolate;
+    }
+
     /* DARK MODE — COSMIC GUARDIAN (DEFECTO) */
     .argus-wrap {
       --mascot-body-1: #2d2a5e;
@@ -280,11 +299,27 @@ export type ArgusMood =
       --mascot-cheek: #ec4899;
       --mascot-floor: rgba(0, 0, 0, 0.45);
 
+      position: relative;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      filter: drop-shadow(0 8px 24px
-              color-mix(in srgb, var(--mascot-glow) 22%, transparent));
+      /* NO MAS filter: drop-shadow AQUI — EL GLOW SE PINTA CON UN
+         PSEUDO-ELEMENTO (::before) PARA NO PISAR LOS FILTROS SVG. */
+    }
+
+    /* GLOW EXTERNO COMO RADIAL-GRADIENT EN ::before — SIN CSS FILTER,
+       SIN COMPOSICION CON FILTROS SVG, MISMO LOOK QUE EL ORIGINAL. */
+    .argus-wrap::before {
+      content: '';
+      position: absolute;
+      inset: -16% -16% -10% -16%;
+      border-radius: 50%;
+      background: radial-gradient(closest-side,
+        color-mix(in srgb, var(--mascot-glow) 26%, transparent) 0%,
+        color-mix(in srgb, var(--mascot-glow) 12%, transparent) 45%,
+        transparent 75%);
+      pointer-events: none;
+      z-index: 0;
     }
 
     /* LIGHT MODE — FRIENDLY GUARDIAN */
@@ -304,11 +339,20 @@ export type ArgusMood =
       --mascot-line:  #1f4a3a;
       --mascot-cheek: #ffb3a0;
       --mascot-floor: rgba(40, 80, 60, 0.22);
-      filter: drop-shadow(0 8px 24px
-              color-mix(in srgb, var(--mascot-glow) 26%, transparent));
+    }
+    .argus-wrap.theme-light::before {
+      background: radial-gradient(closest-side,
+        color-mix(in srgb, var(--mascot-glow) 30%, transparent) 0%,
+        color-mix(in srgb, var(--mascot-glow) 14%, transparent) 45%,
+        transparent 75%);
     }
 
+    /* SVG POR ENCIMA DEL GLOW (z-index: 1) Y SIN CLIP PARA QUE EL
+       FLOOR-SHADOW Y EL HOP DEL HAPPY-MOOD NO SE CORTEN. */
     .argus-svg {
+      position: relative;
+      z-index: 1;
+      display: block;
       transition: transform 0.3s ease;
       will-change: transform;
       overflow: visible;
@@ -362,12 +406,15 @@ export type ArgusMood =
       0%, 100% { opacity: 0.92; }
       50%      { opacity: 1; }
     }
+    /* EL IRIS DEL SIGIL PULSA SOLO CON opacity — NO TOCAMOS LA PROPIEDAD
+       filter PARA NO PISAR EL ATRIBUTO filter="url(#eyeBloom-uid)" DEL SVG
+       (UNA REGLA filter EN CSS REEMPLAZARIA EL BLOOM, NO LO COMPONDRIA). */
     .sigil-iris {
       animation: sigilGlow 3.6s ease-in-out infinite;
     }
     @keyframes sigilGlow {
-      0%, 100% { filter: url(#eyeBloom) brightness(1); }
-      50%      { filter: url(#eyeBloom) brightness(1.25); }
+      0%, 100% { opacity: 0.88; }
+      50%      { opacity: 1; }
     }
 
     /* ╔══════════════════════════════════════════════════════════╗
@@ -561,6 +608,21 @@ export type ArgusMood =
   `]
 })
 export class ArgusComponent {
+  // CONTADOR GLOBAL PARA GENERAR IDs DE <defs> UNICOS POR INSTANCIA.
+  // SIN ESTO, VARIAS MASCOTAS EN EL DOM (IONIC CACHEA PAGINAS) COMPARTEN
+  // url(#bodyGrad) ETC Y EL RELLENO SE RESOLVIA A UN <defs> DE OTRA PAGINA
+  // OCULTA O DESTRUIDA → LA MASCOTA APARECIA INVISIBLE INTERMITENTEMENTE.
+  private static _seq = 0;
+  readonly uid = `a${++ArgusComponent._seq}`;
+
+  // REFERENCIAS url(#...) PARAMETRIZADAS CON EL uid DE ESTA INSTANCIA
+  get bodyGrad(): string { return `url(#bodyGrad-${this.uid})`; }
+  get hoodGrad(): string { return `url(#hoodGrad-${this.uid})`; }
+  get faceGrad(): string { return `url(#faceGrad-${this.uid})`; }
+  get irisGrad(): string { return `url(#irisGrad-${this.uid})`; }
+  get halo(): string { return `url(#halo-${this.uid})`; }
+  get eyeBloom(): string { return `url(#eyeBloom-${this.uid})`; }
+
   // TAMANO EN PIXELES DEL CUADRADO QUE OCUPA LA MASCOTA
   @Input() size = 80;
   // ESTADO DE ANIMO QUE CONTROLA ANIMACION Y EXPRESION

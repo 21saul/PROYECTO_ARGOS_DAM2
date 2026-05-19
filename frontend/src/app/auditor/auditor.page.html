@@ -1,4 +1,4 @@
-<ion-header>
+<ion-header class="glass-header">
   <ion-toolbar>
     <ion-buttons slot="start">
       <ion-back-button defaultHref="/dashboard" text="">
@@ -7,7 +7,10 @@
     </ion-buttons>
     <ion-title>Auditor Digital</ion-title>
     <ion-buttons slot="end">
-      <ion-button>
+      <ion-button aria-label="Compartir auditoría">
+        <ph-share-fat weight="bold" size="22" slot="icon-only"></ph-share-fat>
+      </ion-button>
+      <ion-button aria-label="Exportar reporte">
         <ph-export weight="bold" size="22" slot="icon-only"></ph-export>
       </ion-button>
     </ion-buttons>
@@ -15,236 +18,385 @@
 </ion-header>
 
 <ion-content class="auditor-content">
-  <div class="auditor-scroll scroll-clean">
+  <div #pageRoot class="auditor-scroll scroll-clean">
 
-    <div class="score-hero">
+    <!-- ═════════════ [A] HERO REACTOR — SCORE GLOBAL ═════════════ -->
+    <section class="reactor-hero" aria-label="Puntuación de privacidad">
       <app-particle-network
-        class="auditor-particles"
+        class="reactor-particles"
         [particleColor]="'#7C3AED'"
         [lineColor]="'#A78BFA'"
-        [particleCount]="25"
-        [maxDistance]="90"
+        [particleCount]="30"
+        [maxDistance]="100"
         [speed]="0.25">
       </app-particle-network>
-      <div class="score-arc-wrap">
-        <svg width="200" height="200" viewBox="0 0 200 200" class="score-svg">
-          <circle cx="100" cy="100" r="80"
-            fill="none" stroke="var(--color-surface-2)" stroke-width="12"/>
-          <circle class="score-arc" cx="100" cy="100" r="80"
-            fill="none" stroke="url(#scoreGrad)" stroke-width="12"
-            stroke-linecap="round"
-            stroke-dasharray="502"
-            stroke-dashoffset="502"
-            transform="rotate(-90 100 100)"/>
-          <defs>
-            <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="var(--color-primary)"/>
-              <stop offset="100%" stop-color="var(--color-secondary)"/>
-            </linearGradient>
-          </defs>
-        </svg>
-        <div class="score-center">
-          <div class="score-big-num">0</div>
-          <div class="score-max-text">/100</div>
-          <div class="score-status-pill" [style.background]="getScoreColor() + '22'"
-            [style.color]="getScoreColor()">
-            {{getScoreLabel()}}
+
+      <!-- ANILLOS ORBITALES CONCENTRICOS — ROTAN A VELOCIDADES DISTINTAS -->
+      <div class="orbit-stage" aria-hidden="true">
+        <div class="orbit-ring orbit-ring-1">
+          <svg viewBox="0 0 300 300" preserveAspectRatio="xMidYMid meet">
+            <circle cx="150" cy="150" r="138" fill="none"
+              stroke="rgba(124,58,237,0.22)" stroke-width="1"
+              stroke-dasharray="2 6"/>
+            <circle cx="150" cy="12" r="3" fill="var(--color-primary)"/>
+          </svg>
+        </div>
+        <div class="orbit-ring orbit-ring-2">
+          <svg viewBox="0 0 300 300" preserveAspectRatio="xMidYMid meet">
+            <circle cx="150" cy="150" r="115" fill="none"
+              stroke="rgba(236,72,153,0.18)" stroke-width="1"/>
+            <circle cx="265" cy="150" r="2.5" fill="var(--color-secondary)"/>
+          </svg>
+        </div>
+        <div class="orbit-ring orbit-ring-3">
+          <svg viewBox="0 0 300 300" preserveAspectRatio="xMidYMid meet">
+            <circle cx="150" cy="150" r="94" fill="none"
+              stroke="rgba(6,182,212,0.18)" stroke-width="1"
+              stroke-dasharray="1 5"/>
+            <circle cx="150" cy="56" r="2" fill="var(--color-accent)"/>
+          </svg>
+        </div>
+        <div class="orbit-ring orbit-ring-4">
+          <svg viewBox="0 0 300 300" preserveAspectRatio="xMidYMid meet">
+            <circle cx="150" cy="150" r="74" fill="none"
+              stroke="rgba(16,185,129,0.16)" stroke-width="1"/>
+            <circle cx="224" cy="150" r="1.8" fill="var(--color-success)"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- CORE DEL REACTOR — ARCO PRINCIPAL + NUMERO PROTAGONICO.
+           EL SVG ESCALA AL CONTENEDOR; LOS NUMEROS DE viewBox SE
+           QUEDAN A 200 PARA NO RECALCULAR EL stroke-dasharray=502. -->
+      <div class="reactor-core">
+        <div class="score-arc-wrap">
+          <svg viewBox="0 0 200 200" class="score-svg" aria-hidden="true">
+            <circle cx="100" cy="100" r="80"
+              fill="none" stroke="var(--color-surface-2)" stroke-width="12"/>
+            <circle class="score-arc" cx="100" cy="100" r="80"
+              fill="none" stroke="url(#scoreGrad)" stroke-width="12"
+              stroke-linecap="round"
+              stroke-dasharray="502"
+              stroke-dashoffset="502"
+              transform="rotate(-90 100 100)"/>
+            <defs>
+              <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%"   stop-color="var(--color-primary)"/>
+                <stop offset="100%" stop-color="var(--color-secondary)"/>
+              </linearGradient>
+            </defs>
+          </svg>
+
+          <div class="score-center">
+            <ng-container *ngIf="!loading; else scoreSkeleton">
+              <div class="score-big-num number-display">0</div>
+            </ng-container>
+            <ng-template #scoreSkeleton>
+              <div class="score-skeleton" aria-label="Calculando puntuación">
+                <span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span>
+              </div>
+            </ng-template>
+            <div class="score-max-text">/100</div>
+            <div class="score-status-pill"
+              [style.background]="getScoreColor() + '22'"
+              [style.color]="getScoreColor()"
+              [style.border-color]="getScoreColor() + '55'">
+              {{ getScoreLabel() }}
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="comparison-row">
-        <div class="comparison-item">
-          <ph-trend-up weight="fill" size="18"
-            style="color:var(--color-success)"></ph-trend-up>
-          <span>+{{getDelta()}} este mes</span>
+      <!-- CHIPS DE COMPARATIVA -->
+      <div class="reactor-chips">
+        <div class="reactor-chip chip-success">
+          <ph-trend-up weight="fill" size="14"></ph-trend-up>
+          <span>+{{ getDelta() }} este mes</span>
         </div>
-        <div class="comparison-item">
-          <ph-users-three weight="fill" size="18"
-            style="color:var(--color-primary)"></ph-users-three>
-          <span>Mejor que el {{percentileRank}}%</span>
+        <div class="reactor-chip chip-primary">
+          <ph-users-three weight="fill" size="14"></ph-users-three>
+          <span>Mejor que el {{ percentileRank }}%</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════════ [B] STATS MINI ROW ═════════════ -->
+    <section class="stats-mini-row" aria-label="Estadísticas del auditor">
+      <article class="stat-mini tile-success">
+        <ph-shield-check weight="fill" size="22" class="stat-ico"></ph-shield-check>
+        <div class="stat-num number-display">{{ protectionValue }}€</div>
+        <div class="stat-lbl label-caps">Daño evitado</div>
+      </article>
+      <article class="stat-mini tile-secondary">
+        <ph-clock weight="fill" size="22" class="stat-ico"></ph-clock>
+        <div class="stat-num number-display">{{ hoursSaved }}h</div>
+        <div class="stat-lbl label-caps">Tiempo ahorrado</div>
+      </article>
+      <article class="stat-mini tile-accent">
+        <ph-radar weight="fill" size="22" class="stat-ico"></ph-radar>
+        <div class="stat-num number-display">{{ scansThisMonth }}</div>
+        <div class="stat-lbl label-caps">Escaneos/mes</div>
+      </article>
+    </section>
+
+    <!-- ═════════════ [C] HIBP FORENSIC TERMINAL ═════════════ -->
+    <section class="hibp-terminal" aria-label="Verificación forense de contraseña">
+      <header class="terminal-head">
+        <span class="terminal-dots" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </span>
+        <span class="terminal-title">TERMINAL · K-ANONYMITY HIBP</span>
+        <span class="terminal-live">
+          <span class="terminal-live-dot" aria-hidden="true"></span>
+          <span>LIVE</span>
+        </span>
+      </header>
+
+      <div class="terminal-explainer">
+        Solo viaja el prefijo SHA-1 (5 chars). La contraseña nunca abandona tu dispositivo.
+      </div>
+
+      <!-- STREAM HACKER DE PREFIJOS — SOLO MIENTRAS CHECKEA -->
+      <div class="terminal-stream" *ngIf="checkingPassword" aria-hidden="true">
+        <div class="terminal-stream-line"
+          *ngFor="let l of terminalStreamLines; let i = index"
+          [style.opacity]="(1 - i * 0.16).toFixed(2)">
+          <ph-hash weight="bold" size="11"></ph-hash>
+          <span>{{ l }}</span>
         </div>
       </div>
 
-      <div class="auditor-loading" *ngIf="loading">
-        <ion-spinner name="dots"></ion-spinner>
-        <span>Cargando tu auditoría…</span>
-      </div>
-    </div>
-
-    <div class="section-header">
-      <div>
-        <div class="section-title">Verificar contraseña</div>
-        <div class="section-sub">k-anonymity HIBP · solo viaja prefijo SHA-1</div>
-      </div>
-    </div>
-
-    <div class="hibp-check">
-      <div class="hibp-input-row">
-        <input
-          type="password"
-          class="hibp-input"
-          placeholder="Introduce una contraseña"
-          [(ngModel)]="passwordInput"
-          [disabled]="checkingPassword"
-          (keyup.enter)="onCheckPassword(passwordInput)"/>
-        <button class="hibp-btn"
-          [disabled]="checkingPassword || !passwordInput"
-          (click)="onCheckPassword(passwordInput)">
-          <ion-spinner *ngIf="checkingPassword" name="dots"></ion-spinner>
-          <span *ngIf="!checkingPassword">Verificar</span>
-        </button>
+      <!-- INPUT EN ESTILO CLI -->
+      <div class="terminal-input-row" [class.is-busy]="checkingPassword">
+        <span class="terminal-prompt" aria-hidden="true">$</span>
+        <span class="terminal-cmd" aria-hidden="true">check</span>
+        <span class="terminal-flag" aria-hidden="true">—password</span>
+        <span class="terminal-input-shell">
+          <input
+            type="password"
+            class="terminal-input"
+            placeholder="contraseña a verificar"
+            [(ngModel)]="passwordInput"
+            [disabled]="checkingPassword"
+            (keyup.enter)="onCheckPassword(passwordInput)"
+            aria-label="Contraseña a verificar"/>
+          <span class="terminal-caret" *ngIf="terminalCaret()" aria-hidden="true">▌</span>
+        </span>
       </div>
 
-      <div *ngIf="passwordCheckResult && passwordCheckResult.found"
-        class="hibp-result hibp-result-found">
-        <ph-warning-circle weight="fill" size="20"></ph-warning-circle>
-        <span>Esta contraseña aparece en {{passwordCheckResult.occurrences}} filtraciones</span>
+      <button class="terminal-btn"
+        [disabled]="checkingPassword || !passwordInput"
+        (click)="onCheckPassword(passwordInput)"
+        [attr.aria-busy]="checkingPassword">
+        <span class="terminal-btn-label" *ngIf="!checkingPassword">
+          <span>Verificar</span>
+          <ph-arrow-right weight="bold" size="14"></ph-arrow-right>
+        </span>
+        <span class="terminal-btn-loading" *ngIf="checkingPassword">
+          <ion-spinner name="dots"></ion-spinner>
+          <span>Consultando HIBP…</span>
+        </span>
+      </button>
+
+      <!-- RESULTADO ENCONTRADO -->
+      <div class="terminal-result hibp-found" role="status" aria-live="polite"
+        *ngIf="passwordCheckResult && passwordCheckResult.found">
+        <div class="hibp-found-icon">
+          <ph-warning-octagon weight="fill" size="22"></ph-warning-octagon>
+        </div>
+        <div class="terminal-result-info">
+          <div class="terminal-result-title">FILTRACIÓN DETECTADA</div>
+          <div class="terminal-result-detail">
+            <span class="terminal-result-num number-display">{{ passwordCheckResult.occurrences }}</span>
+            <span class="terminal-result-desc">apariciones en brechas conocidas</span>
+          </div>
+        </div>
       </div>
 
-      <div *ngIf="passwordCheckResult && !passwordCheckResult.found"
-        class="hibp-result hibp-result-clean">
-        <ph-shield-check weight="fill" size="20"></ph-shield-check>
-        <span>Contraseña no encontrada en filtraciones</span>
+      <!-- RESULTADO LIMPIO -->
+      <div class="terminal-result hibp-clean" role="status" aria-live="polite"
+        *ngIf="passwordCheckResult && !passwordCheckResult.found">
+        <div class="hibp-clean-icon">
+          <span class="hibp-clean-ring" aria-hidden="true"></span>
+          <ph-shield-check weight="fill" size="22"></ph-shield-check>
+        </div>
+        <div class="terminal-result-info">
+          <div class="terminal-result-title">SIN FILTRACIONES</div>
+          <div class="terminal-result-desc-only">
+            Esta contraseña no aparece en ninguna brecha documentada.
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
 
-    <div class="value-stats">
-      <div class="stat-mini">
-        <ph-shield-check weight="fill" size="22"
-          style="color:var(--color-success)"></ph-shield-check>
-        <div class="stat-mini-num">{{protectionValue}}€</div>
-        <div class="stat-mini-lbl">Daño evitado</div>
-      </div>
-      <div class="stat-mini">
-        <ph-clock weight="fill" size="22"
-          style="color:var(--color-secondary)"></ph-clock>
-        <div class="stat-mini-num">{{hoursSaved}}h</div>
-        <div class="stat-mini-lbl">Tiempo ahorrado</div>
-      </div>
-      <div class="stat-mini">
-        <ph-radar weight="fill" size="22"
-          style="color:var(--color-accent)"></ph-radar>
-        <div class="stat-mini-num">{{scansThisMonth}}</div>
-        <div class="stat-mini-lbl">Escaneos/mes</div>
-      </div>
-    </div>
-
-    <div class="action-hero">
+    <!-- ═════════════ [D] ACTION HERO RECOMENDADA ═════════════ -->
+    <section class="action-hero" aria-label="Acción recomendada">
+      <div class="action-hero-blob" aria-hidden="true"></div>
       <div class="action-hero-tag">
         <ph-lightning weight="fill" size="14"></ph-lightning>
         <span>RECOMENDADO</span>
       </div>
-      <div class="action-hero-title">{{topAction.title}}</div>
-      <div class="action-hero-sub">{{topAction.subtitle}}</div>
+      <div class="action-hero-title">{{ topAction.title }}</div>
+      <div class="action-hero-sub">{{ topAction.subtitle }}</div>
       <div class="action-hero-stats">
         <div class="action-stat">
-          <ph-trend-up weight="fill" size="16"></ph-trend-up>
-          <span>+{{topAction.points}} puntos</span>
+          <ph-sparkle weight="fill" size="13"></ph-sparkle>
+          <span>+{{ topAction.points }} puntos</span>
         </div>
         <div class="action-stat">
-          <ph-clock weight="fill" size="16"></ph-clock>
-          <span>{{topAction.minutes}} min</span>
+          <ph-clock weight="fill" size="13"></ph-clock>
+          <span>{{ topAction.minutes }} min</span>
         </div>
       </div>
-      <button class="action-hero-btn">
-        Empezar ahora
+      <button class="action-hero-btn interactive" (click)="onTopActionTap()">
+        <span>Empezar ahora</span>
         <ph-arrow-right weight="bold" size="18"></ph-arrow-right>
       </button>
-    </div>
+    </section>
 
-    <div class="section-header">
+    <!-- ═════════════ [E] LIVE EVOLUTION ═════════════ -->
+    <header class="section-header">
       <div>
-        <div class="section-title">Tu evolución</div>
-        <div class="section-sub">Últimas 8 semanas</div>
+        <div class="section-eyebrow">EVOLUCIÓN</div>
+        <div class="section-title">Tu salud digital · 8 semanas</div>
       </div>
       <div class="trend-badge">
-        <ph-trend-up weight="fill" size="14"></ph-trend-up>
-        +{{getDelta()}}
+        <ph-trend-up weight="fill" size="12"></ph-trend-up>
+        <span>+{{ getDelta() }}</span>
       </div>
-    </div>
+    </header>
+    <section class="trend-wrap" aria-label="Tendencia histórica del score">
+      <canvas #trendCanvas aria-hidden="true"></canvas>
+      <div class="trend-here-tag" aria-hidden="true">
+        <span class="trend-here-dot"></span>
+        <span class="trend-here-lbl">TÚ ESTÁS AQUÍ</span>
+      </div>
+    </section>
 
-    <div class="trend-wrap">
-      <canvas #trendCanvas></canvas>
-    </div>
-
-    <div class="section-header">
+    <!-- ═════════════ [F] LOS 3 PILARES ═════════════ -->
+    <header class="section-header">
       <div>
-        <div class="section-title">Los 3 Pilares</div>
-        <div class="section-sub">Toca cualquiera para mejorarlo</div>
+        <div class="section-eyebrow">PILARES</div>
+        <div class="section-title">Los 3 ejes de tu seguridad</div>
       </div>
-    </div>
-
+      <div class="section-hint">Toca para mejorar</div>
+    </header>
     <div class="pillars-list">
-      <div *ngFor="let p of pillars" class="pillar-card interactive">
-        <div class="pillar-icon-wrap" [style.background]="p.color + '22'">
+      <article *ngFor="let p of pillars" class="pillar-card interactive"
+        [attr.data-status]="p.status"
+        (click)="onPillarTap(p)">
+        <div class="pillar-icon-wrap"
+          [style.background]="p.color + '1F'"
+          [style.color]="p.color">
           <ph-identification-card *ngIf="p.icon === 'identification-card'"
-            weight="fill" size="22" [style.color]="p.color"></ph-identification-card>
+            weight="fill" size="22"></ph-identification-card>
           <ph-key *ngIf="p.icon === 'key'"
-            weight="fill" size="22" [style.color]="p.color"></ph-key>
+            weight="fill" size="22"></ph-key>
           <ph-device-mobile *ngIf="p.icon === 'device-mobile'"
-            weight="fill" size="22" [style.color]="p.color"></ph-device-mobile>
+            weight="fill" size="22"></ph-device-mobile>
         </div>
         <div class="pillar-info">
           <div class="pillar-top-row">
-            <span class="pillar-label">{{p.label}}</span>
-            <span class="pillar-score">{{p.score}}<span class="pillar-max">/100</span></span>
+            <span class="pillar-label">{{ p.label }}</span>
+            <span class="pillar-score number-display">
+              {{ p.score }}<span class="pillar-max">/100</span>
+            </span>
           </div>
-          <div class="pillar-bar-track">
-            <div class="pillar-bar-fill"
-              [style.width]="getBarWidth(p.score, p.max)"
-              [style.background]="p.color"></div>
+          <!-- BARRA POR SEGMENTOS — ESTILO RPG / STAT BAR -->
+          <div class="pillar-segments" aria-hidden="true">
+            <div class="pillar-seg" *ngFor="let on of pillarSegments(p.score)">
+              <div class="pillar-seg-fill"
+                [class.is-on]="on"
+                [style.background]="on ? p.color : 'transparent'"
+                [style.box-shadow]="on ? ('0 0 10px ' + p.color) : 'none'"></div>
+            </div>
           </div>
           <div class="pillar-bottom-row">
-            <span class="pillar-desc">{{p.desc}}</span>
-            <span class="pillar-improve" *ngIf="p.improvement > 0">
-              +{{p.improvement}}
+            <span class="pillar-desc">{{ p.desc }}</span>
+            <span class="pillar-improve" *ngIf="p.improvement > 0"
+              [style.color]="p.color"
+              [style.background]="p.color + '1F'">
+              +{{ p.improvement }}
             </span>
           </div>
         </div>
-      </div>
+        <ph-caret-right weight="bold" size="16" class="pillar-chevron"></ph-caret-right>
+      </article>
     </div>
 
-    <div class="section-header">
+    <!-- ═════════════ [G] AMENAZAS — TIMELINE FORENSE ═════════════ -->
+    <header class="section-header">
       <div>
-        <div class="section-title">Amenazas activas</div>
-        <div class="section-sub">{{threats.length}} filtraciones que te afectan</div>
+        <div class="section-eyebrow">INCIDENTES</div>
+        <div class="section-title">{{ threats.length }} filtraciones activas</div>
       </div>
-    </div>
+      <div class="section-badge section-badge-danger">
+        <ph-warning-circle weight="fill" size="11"></ph-warning-circle>
+        <span>{{ threats.length }}</span>
+      </div>
+    </header>
+    <section class="threats-timeline" aria-label="Línea de tiempo de amenazas">
+      <div class="threats-rail" aria-hidden="true"></div>
 
-    <div class="threats-list">
-      <div *ngFor="let t of threats" class="threat-card interactive"
-        [style.border-left-color]="getThreatColor(t.severity)">
-        <div class="threat-top">
-          <div class="threat-service">
-            <ph-warning-circle weight="fill" size="18"
-              [style.color]="getThreatColor(t.severity)"></ph-warning-circle>
-            <span>{{t.service}}</span>
+      <article *ngFor="let t of threats" class="threat-node"
+        [attr.data-severity]="t.severity">
+        <div class="threat-dot"
+          [style.background]="getThreatColor(t.severity)"
+          [style.box-shadow]="'0 0 0 4px ' + getThreatColor(t.severity) + '22, 0 0 14px ' + getThreatColor(t.severity) + '88'"
+          aria-hidden="true"></div>
+
+        <div class="threat-card interactive"
+          [style.border-left-color]="getThreatColor(t.severity)">
+          <div class="threat-top">
+            <div class="threat-service">
+              <span class="threat-sev-badge"
+                [style.background]="getThreatColor(t.severity) + '22'"
+                [style.color]="getThreatColor(t.severity)">
+                {{ getThreatLabel(t.severity) }}
+              </span>
+              <span class="threat-name">{{ t.service }}</span>
+            </div>
+            <div class="threat-date">
+              <ph-clock-counter-clockwise weight="fill" size="11"></ph-clock-counter-clockwise>
+              <span>{{ t.date }}</span>
+            </div>
           </div>
-          <span class="threat-date">{{t.date}}</span>
-        </div>
-        <div class="threat-exposed">
-          <span class="threat-exposed-label">Expuestos:</span>
-          <span class="threat-tag" *ngFor="let e of t.exposed">{{e}}</span>
-        </div>
-        <div class="threat-recommendation">
-          <ph-arrow-right weight="bold" size="14"
-            style="color:var(--color-primary)"></ph-arrow-right>
-          <span>{{t.recommendation}}</span>
-        </div>
-      </div>
-    </div>
 
-    <div class="section-header">
+          <div class="threat-exposed">
+            <span class="threat-exposed-lbl">EXPUESTOS</span>
+            <span class="threat-tag" *ngFor="let e of t.exposed">{{ e }}</span>
+          </div>
+
+          <div class="threat-recommendation">
+            <ph-arrow-right weight="bold" size="12"></ph-arrow-right>
+            <span>{{ t.recommendation }}</span>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- ═════════════ [H] RADAR DE HABILIDADES + CUB ═════════════ -->
+    <header class="section-header">
       <div>
-        <div class="section-title">Mapa de habilidades</div>
-        <div class="section-sub">Basado en tu progreso del Roadmap</div>
+        <div class="section-eyebrow">HABILIDADES</div>
+        <div class="section-title">Mapa táctico</div>
       </div>
-    </div>
-    <div class="radar-wrap">
-      <canvas #radarCanvas width="280" height="280"></canvas>
-    </div>
+    </header>
+    <section class="radar-panel-card" aria-label="Radar de habilidades y mascota Cub">
+      <div class="radar-mesh gradient-mesh" aria-hidden="true"></div>
+      <div class="radar-canvas-wrap">
+        <canvas #radarCanvas width="280" height="280" aria-hidden="true"></canvas>
+      </div>
+      <div class="radar-cub-corner" aria-hidden="true">
+        <app-argus-cub [size]="80" [mood]="radarMood()"></app-argus-cub>
+      </div>
+      <div class="radar-helper">
+        <ph-sparkle weight="fill" size="12"></ph-sparkle>
+        <span>{{ radarMoodLabel() }} — crece con tu progreso del Roadmap.</span>
+      </div>
+    </section>
 
-    <div style="height:80px"></div>
+    <div class="auditor-tail-spacer" aria-hidden="true"></div>
   </div>
 </ion-content>

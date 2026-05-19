@@ -1,21 +1,9 @@
-/* DASHBOARD — DARK GAMIFICADO TIPO DUOLINGO + MASCOTA ARGUS */
-/* FUERZA PALETA DARK DENTRO DEL DASHBOARD SIN AFECTAR AL RESTO DE LA APP */
+/* DASHBOARD — GAMIFICADO TIPO DUOLINGO + MASCOTA ARGUS */
+/* HEREDA EL TEMA GLOBAL (body.force-light / body.force-dark / auto) DESDE global.scss */
 :host {
   display: flex;
   flex-direction: column;
   height: 100%;
-  --color-bg: #0E1117;
-  --color-surface: #1A1F2E;
-  --color-surface-2: #242938;
-  --color-primary: #7C3AED;
-  --color-primary-soft: #A78BFA;
-  --color-secondary: #EC4899;
-  --color-accent: #06B6D4;
-  --color-success: #10B981;
-  --color-warning: #F59E0B;
-  --color-danger: #EF4444;
-  --color-text: #F1F5F9;
-  --color-text-muted: #94A3B8;
   --ion-background-color: var(--color-bg);
   --ion-text-color: var(--color-text);
 }
@@ -237,9 +225,16 @@
   z-index: 1;
 }
 .score-mascot {
-  /* DEJAMOS QUE EL COMPONENTE GESTIONE SU PROPIO HALO Y NO DUPLICAMOS
-     FILTROS NI VARIABLES QUE ARGUS NO LEE (USA --mascot-* INTERNAS). */
-  display: inline-block;
+  /* EL COMPONENTE ARGUS YA AISLA SU PROPIO STACKING CONTEXT Y PINTA EL
+     HALO CON UN PSEUDO-ELEMENTO. AQUI SOLO RESERVAMOS HUECO LIMPIO Y
+     EVITAMOS QUE EL OVERFLOW DEL SCORE-CARD CORTE EL GLOW SUPERIOR. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* MARGEN NEGATIVO MINUSCULO ARRIBA — COMPENSA EL AIRE QUE OCUPA EL
+     GLOW DEL ::before PARA QUE LA MASCOTA QUEDE OPTICAMENTE CENTRADA
+     CON RESPECTO A LA PILL Y EL DELTA QUE LE SIGUEN. */
+  margin-top: -4px;
 }
 .score-pill {
   display: inline-flex;

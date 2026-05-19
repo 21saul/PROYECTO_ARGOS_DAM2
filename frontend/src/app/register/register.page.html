@@ -1,137 +1,233 @@
-<ion-header>
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-back-button defaultHref="/onboarding" text=""></ion-back-button>
-    </ion-buttons>
-    <ion-title>Crear cuenta</ion-title>
-  </ion-toolbar>
-</ion-header>
+<!-- CONTENIDO PRINCIPAL DEL REGISTRO — SIN ION-HEADER PARA NO BLOQUEAR EL HERO -->
+<ion-content class="rg-content" [fullscreen]="true">
 
-<ion-content class="register-content">
-  <div class="register-scroll">
+  <!-- BOTON BACK FLOTANTE EN ESQUINA SUPERIOR IZQUIERDA -->
+  <button type="button"
+    class="rg-back"
+    aria-label="Volver"
+    (click)="goBack()">
+    <ph-arrow-left weight="bold" size="20"></ph-arrow-left>
+  </button>
 
-    <div class="register-card">
-      <div class="register-title">Crea tu cuenta gratuita</div>
-      <div class="register-sub">Empieza a protegerte en menos de 2 minutos</div>
+  <!-- RAIZ DEL REGISTRO — ANCHO COMPLETO Y CONTENIDO CENTRADO HORIZONTALMENTE -->
+  <div #rootEl class="rg-root">
 
-      <!-- NOMBRE -->
-      <div class="input-group">
-        <div class="input-label">Nombre</div>
-        <div class="input-wrap" [class.filled]="name">
-          <ph-user weight="bold" size="20" class="input-icon"></ph-user>
-          <input class="form-input" type="text"
+    <!-- CAPA DE PARTICULAS DECORATIVA AL FONDO — MUY ATENUADA -->
+    <app-particle-network
+      class="rg-particles"
+      [particleCount]="32"
+      [maxDistance]="120"
+      [speed]="0.28"
+      particleColor="#7C3AED"
+      lineColor="#A78BFA">
+    </app-particle-network>
+
+    <!-- HALO RADIAL DETRAS DE LA MASCOTA QUE DA SENSACION DE GUARDIAN -->
+    <div class="rg-halo" aria-hidden="true"></div>
+
+    <!-- CABECERA EMOCIONAL DEL REGISTRO — MASCOTA + TITULO + STEPPER DE OJOS -->
+    <header class="rg-hero">
+      <!-- MASCOTA REACTIVA AL ESTADO DEL FORMULARIO -->
+      <div class="rg-mascot">
+        <app-argus [size]="84" [mood]="argusMood"></app-argus>
+      </div>
+      <!-- TITULO DEL FLUJO DE FORJA -->
+      <h1 class="rg-title">Forja tu llave maestra</h1>
+      <!-- SUBTITULO QUE BAJA LA BARRERA DE ENTRADA -->
+      <p class="rg-sub">La única contraseña que necesitarás recordar.</p>
+
+      <!-- STEPPER DE 3 OJOS QUE SE VAN ABRIENDO AL COMPLETAR BLOQUES -->
+      <div class="rg-stepper" aria-label="Progreso del registro">
+        <span *ngFor="let s of [1,2,3]"
+          class="rg-stepper__node"
+          [class.rg-stepper__node--active]="currentStep >= s">
+          <svg viewBox="0 0 24 16" aria-hidden="true">
+            <path class="rg-stepper__shape" d="M2 8 Q12 -1 22 8 Q12 17 2 8 Z"/>
+            <circle class="rg-stepper__iris" cx="12" cy="8" r="3.4"/>
+            <rect class="rg-stepper__lid" x="0" y="0" width="24" height="16" rx="8"/>
+          </svg>
+        </span>
+      </div>
+    </header>
+
+    <!-- TARJETA PRINCIPAL DE LA FORJA — CONTIENE TODOS LOS INPUTS Y BLOQUES -->
+    <section class="rg-card">
+
+      <!-- BLOQUE NOMBRE -->
+      <div class="rg-field">
+        <label class="rg-field__label" for="rg-name">Nombre</label>
+        <div class="rg-input"
+          [class.rg-input--focus]="focusedField === 'name'"
+          [class.rg-input--filled]="!!name">
+          <ph-user weight="bold" size="20" class="rg-input__icon"></ph-user>
+          <input id="rg-name"
+            class="rg-input__field"
+            type="text"
             placeholder="Tu nombre"
-            [(ngModel)]="name">
+            autocomplete="given-name"
+            [(ngModel)]="name"
+            (focus)="onFocus('name')"
+            (blur)="onBlur('name')">
         </div>
       </div>
 
-      <!-- EMAIL -->
-      <div class="input-group">
-        <div class="input-label">Email</div>
-        <div class="input-wrap" [class.filled]="email">
-          <ph-envelope weight="bold" size="20" class="input-icon"></ph-envelope>
-          <input class="form-input" type="email"
+      <!-- BLOQUE EMAIL -->
+      <div class="rg-field">
+        <label class="rg-field__label" for="rg-email">Email</label>
+        <div class="rg-input"
+          [class.rg-input--focus]="focusedField === 'email'"
+          [class.rg-input--filled]="!!email">
+          <ph-envelope weight="bold" size="20" class="rg-input__icon"></ph-envelope>
+          <input id="rg-email"
+            class="rg-input__field"
+            type="email"
             placeholder="tu@email.com"
-            [(ngModel)]="email">
+            autocomplete="email"
+            [(ngModel)]="email"
+            (focus)="onFocus('email')"
+            (blur)="onBlur('email')">
         </div>
       </div>
 
-      <!-- CONTRASEÑA MAESTRA -->
-      <div class="input-group">
-        <div class="input-label">
+      <!-- BLOQUE CONTRASEÑA MAESTRA -->
+      <div class="rg-field">
+        <label class="rg-field__label" for="rg-password">
           Contraseña maestra
-          <span class="label-hint">— La única que necesitarás recordar</span>
-        </div>
-        <div class="input-wrap" [class.filled]="password">
-          <ph-lock weight="bold" size="20" class="input-icon"></ph-lock>
-          <input class="form-input"
+          <span class="rg-field__hint">— Mínimo 12 caracteres</span>
+        </label>
+        <div class="rg-input rg-input--password"
+          [class.rg-input--focus]="focusedField === 'password'"
+          [class.rg-input--filled]="!!password"
+          [class.rg-input--weak]="password && passwordStrength <= 1">
+          <ph-lock weight="bold" size="20" class="rg-input__icon"></ph-lock>
+          <input id="rg-password"
+            class="rg-input__field"
             [type]="showPassword ? 'text' : 'password'"
-            placeholder="Mínimo 12 caracteres"
-            [(ngModel)]="password">
-          <button class="toggle-pass"
+            placeholder="Crea tu llave maestra"
+            autocomplete="new-password"
+            [(ngModel)]="password"
+            (input)="onPasswordInput()"
+            (focus)="onFocus('password')"
+            (blur)="onBlur('password')">
+          <button type="button"
+            class="rg-input__toggle"
+            [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
             (click)="showPassword = !showPassword">
-            <ph-eye weight="bold" size="20" *ngIf="!showPassword"></ph-eye>
-            <ph-eye-slash weight="bold" size="20" *ngIf="showPassword"></ph-eye-slash>
+            <ph-eye      *ngIf="!showPassword" weight="bold" size="20"></ph-eye>
+            <ph-eye-slash *ngIf="showPassword"  weight="bold" size="20"></ph-eye-slash>
           </button>
         </div>
 
-        <!-- MEDIDOR DE FORTALEZA -->
-        <div *ngIf="password" class="strength-meter">
-          <div class="strength-bars">
-            <div *ngFor="let i of [1,2,3,4,5]"
-              class="strength-bar"
-              [style.background]="i <= passwordStrength ?
-                passwordStrengthColor : 'var(--color-surface-2)'">
-            </div>
+        <!-- FORJA: 5 RUNAS QUE SE ILUMINAN CON LA FORTALEZA -->
+        <div class="rg-forge" *ngIf="password" aria-live="polite">
+          <!-- ANILLO QUE ENVUELVE LAS RUNAS PARA EL BURST DE LOGRO -->
+          <div class="rg-forge-ring"
+            [style.--rg-strength-color]="passwordStrengthColor">
+            <span *ngFor="let r of runeIndices"
+              class="rg-rune"
+              [class.rg-rune--lit]="r < passwordStrength">
+              <span class="rg-rune__dot"></span>
+            </span>
           </div>
-          <span class="strength-label"
+          <!-- ETIQUETA TEXTUAL DE LA FORTALEZA -->
+          <span class="rg-forge__label"
             [style.color]="passwordStrengthColor">
-            {{passwordStrengthLabel}}
+            {{ passwordStrengthLabel }}
           </span>
         </div>
       </div>
 
-      <!-- CONFIRMAR CONTRASEÑA -->
-      <div class="input-group">
-        <div class="input-label">Confirmar contraseña</div>
-        <div class="input-wrap"
-          [class.filled]="confirmPassword"
-          [class.match]="passwordsMatch"
-          [class.no-match]="confirmPassword && !passwordsMatch">
-          <ph-lock-key weight="bold" size="20" class="input-icon"></ph-lock-key>
-          <input class="form-input"
+      <!-- BLOQUE CONFIRMAR CONTRASEÑA -->
+      <div class="rg-field">
+        <label class="rg-field__label" for="rg-confirm">Confirmar contraseña</label>
+        <div class="rg-input"
+          [class.rg-input--focus]="focusedField === 'confirm'"
+          [class.rg-input--filled]="!!confirmPassword"
+          [class.rg-input--match]="passwordsMatch"
+          [class.rg-input--mismatch]="confirmPassword && !passwordsMatch">
+          <ph-lock-key weight="bold" size="20" class="rg-input__icon"></ph-lock-key>
+          <input id="rg-confirm"
+            class="rg-input__field"
             type="password"
-            placeholder="Repite tu contraseña"
-            [(ngModel)]="confirmPassword">
-          <ph-check-circle weight="fill" size="20"
-            *ngIf="passwordsMatch"
-            style="color:var(--color-success); flex-shrink:0">
-          </ph-check-circle>
+            placeholder="Repite tu llave maestra"
+            autocomplete="new-password"
+            [(ngModel)]="confirmPassword"
+            (focus)="onFocus('confirm')"
+            (blur)="onBlur('confirm')">
+          <span class="rg-input__match" *ngIf="passwordsMatch" aria-hidden="true">
+            <ph-check-circle weight="fill" size="20"></ph-check-circle>
+          </span>
         </div>
       </div>
 
-      <!-- TÉRMINOS -->
-      <div class="terms-row">
-        <div class="custom-checkbox"
-          [class.checked]="acceptTerms"
-          (click)="acceptTerms = !acceptTerms">
-          <ph-check weight="bold" size="14" *ngIf="acceptTerms"></ph-check>
+      <!-- TARJETA PROMESA ZERO-KNOWLEDGE CON CANDADO ANIMADO -->
+      <div class="rg-zk" role="note" aria-label="Promesa Zero-Knowledge">
+        <!-- ICONO CANDADO QUE PULSA SUAVEMENTE -->
+        <div class="rg-zk__icon" aria-hidden="true">
+          <svg viewBox="0 0 32 32">
+            <!-- CUERPO DEL CANDADO -->
+            <rect x="6" y="14" width="20" height="14" rx="3"
+              fill="none" stroke="currentColor" stroke-width="2"/>
+            <!-- ARO DEL CANDADO QUE SE CIERRA EN LOOP -->
+            <path class="rg-zk__shackle"
+              d="M10 14 V10 a6 6 0 0 1 12 0 V14"
+              fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round"/>
+            <!-- BLOQUE INTERIOR QUE INDICA QUE LA LLAVE ES TUYA -->
+            <circle cx="16" cy="21" r="1.8" fill="currentColor"/>
+            <line x1="16" y1="21" x2="16" y2="24" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
         </div>
-        <span class="terms-text">
+        <div class="rg-zk__copy">
+          <div class="rg-zk__title">Zero-Knowledge real</div>
+          <div class="rg-zk__desc">
+            Tu llave maestra <strong>nunca sale de este dispositivo</strong>.
+            Ni siquiera nosotros podemos verla.
+          </div>
+        </div>
+      </div>
+
+      <!-- BLOQUE TERMINOS DE USO -->
+      <div class="rg-terms">
+        <button type="button"
+          class="rg-check"
+          [class.rg-check--on]="acceptTerms"
+          [attr.aria-pressed]="acceptTerms"
+          (click)="acceptTerms = !acceptTerms">
+          <ph-check *ngIf="acceptTerms" weight="bold" size="14"></ph-check>
+        </button>
+        <span class="rg-terms__text">
           Acepto los <strong>Términos de uso</strong> y la
-          <strong>Política de privacidad</strong>
+          <strong>Política de privacidad</strong>.
         </span>
       </div>
 
-      <!-- ZERO KNOWLEDGE INFO -->
-      <div class="zk-info">
-        <ph-shield-check weight="fill" size="20"
-          style="color:var(--color-success); flex-shrink:0">
-        </ph-shield-check>
-        <span>Tu contraseña maestra <strong>nunca sale de tu dispositivo</strong>. Ni nosotros podemos verla.</span>
-      </div>
-
       <!-- MENSAJE DE ERROR DEVUELTO POR EL BACKEND -->
-      <div class="auth-error" *ngIf="errorMessage">
-        {{ errorMessage }}
+      <div class="rg-error" *ngIf="errorMessage" role="alert">
+        <ph-warning-circle weight="fill" size="18"></ph-warning-circle>
+        <span>{{ errorMessage }}</span>
       </div>
 
-      <!-- BOTÓN REGISTRO -->
-      <button class="register-submit-btn"
-        [disabled]="!name || !email || !password ||
-          !passwordsMatch || !acceptTerms || isLoading"
+      <!-- BOTON DE SUBMIT — DOS ESTADOS VISUALES SEGUN canSubmit -->
+      <button type="button"
+        class="rg-submit"
+        [class.rg-submit--charged]="canSubmit"
+        [disabled]="!canSubmit"
         (click)="register()">
-        <ph-spinner weight="bold" size="20"
-          *ngIf="isLoading" class="spin">
-        </ph-spinner>
+        <ph-spinner *ngIf="isLoading" weight="bold" size="20" class="rg-submit__spin"></ph-spinner>
+        <ph-shield-plus *ngIf="!isLoading" weight="fill" size="18"></ph-shield-plus>
         <span *ngIf="!isLoading">Crear mi cuenta gratis</span>
+        <span *ngIf="isLoading">Forjando…</span>
       </button>
 
-      <button class="back-login-btn" (click)="goToLogin()">
+      <!-- BOTON PARA IR A LOGIN PARA USUARIOS QUE YA TIENEN CUENTA -->
+      <button type="button"
+        class="rg-secondary"
+        (click)="goToLogin()">
         ¿Ya tienes cuenta? <strong>Inicia sesión</strong>
       </button>
-    </div>
 
-    <div style="height: 40px"></div>
+    </section>
+
   </div>
 </ion-content>

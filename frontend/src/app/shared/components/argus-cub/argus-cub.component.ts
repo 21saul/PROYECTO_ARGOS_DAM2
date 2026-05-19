@@ -35,30 +35,34 @@ export type ArgusCubMood = 'sleeping' | 'wink';
            [attr.data-mood]="mood"
            aria-hidden="true">
 
-        <!-- ═══════ DEFINICIONES DE GRADIENTES Y FILTROS ═══════ -->
+        <!-- ═══════ DEFINICIONES DE GRADIENTES Y FILTROS ═══════
+             LOS id LLEVAN uid UNICO POR INSTANCIA: url(#id) RESUELVE A
+             NIVEL DE DOCUMENTO Y VARIAS MASCOTAS A LA VEZ (IONIC CACHEA
+             PAGINAS EN EL DOM) COLISIONABAN, RESOLVIENDO EL RELLENO A UN
+             <defs> DE OTRA PAGINA OCULTA → MASCOTA INVISIBLE A RATOS. -->
         <defs>
           <!-- GRADIENTE DEL CUERPO ACURRUCADO -->
-          <radialGradient id="cubBody" cx="50%" cy="35%" r="80%">
+          <radialGradient [attr.id]="'cubBody-' + uid" cx="50%" cy="35%" r="80%">
             <stop offset="0%"  [attr.stop-color]="'var(--mascot-body-1)'"/>
             <stop offset="100%" [attr.stop-color]="'var(--mascot-body-2)'"/>
           </radialGradient>
           <!-- GRADIENTE DE LA CAPUCHA ENCIMA DE LA CABEZA -->
-          <linearGradient id="cubHood" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient [attr.id]="'cubHood-' + uid" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%"  [attr.stop-color]="'var(--mascot-hood-1)'"/>
             <stop offset="100%" [attr.stop-color]="'var(--mascot-hood-2)'"/>
           </linearGradient>
           <!-- GRADIENTE DE LA CARA -->
-          <radialGradient id="cubFace" cx="50%" cy="40%" r="70%">
+          <radialGradient [attr.id]="'cubFace-' + uid" cx="50%" cy="40%" r="70%">
             <stop offset="0%"  [attr.stop-color]="'var(--mascot-face-1)'"/>
             <stop offset="100%" [attr.stop-color]="'var(--mascot-face-2)'"/>
           </radialGradient>
           <!-- GRADIENTE DEL IRIS — SOLO VISIBLE EN WINK -->
-          <radialGradient id="cubIris" cx="50%" cy="40%" r="60%">
+          <radialGradient [attr.id]="'cubIris-' + uid" cx="50%" cy="40%" r="60%">
             <stop offset="0%"  [attr.stop-color]="'var(--mascot-iris-1)'"/>
             <stop offset="100%" [attr.stop-color]="'var(--mascot-iris-2)'"/>
           </radialGradient>
           <!-- FILTRO BLOOM PARA EL OJO ABIERTO -->
-          <filter id="cubBloom" x="-50%" y="-50%" width="200%" height="200%">
+          <filter [attr.id]="'cubBloom-' + uid" x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="1.2" result="blur"/>
             <feMerge>
               <feMergeNode in="blur"/>
@@ -66,7 +70,7 @@ export type ArgusCubMood = 'sleeping' | 'wink';
             </feMerge>
           </filter>
           <!-- HALO COSMICO ATMOSFERICO DETRAS DEL CUB -->
-          <radialGradient id="cubHalo" cx="50%" cy="50%" r="55%">
+          <radialGradient [attr.id]="'cubHalo-' + uid" cx="50%" cy="50%" r="55%">
             <stop offset="55%" stop-color="transparent"/>
             <stop offset="100%" [attr.stop-color]="'var(--mascot-glow)'"
                   stop-opacity="0.20"/>
@@ -75,7 +79,7 @@ export type ArgusCubMood = 'sleeping' | 'wink';
 
         <!-- HALO ATMOSFERICO QUE PULSA DETRAS DEL CUERPO -->
         <ellipse class="cub-halo" cx="60" cy="56" rx="52" ry="34"
-                 fill="url(#cubHalo)"/>
+                 [attr.fill]="cubHalo"/>
 
         <!-- SOMBRA DE SUELO LIGERAMENTE OVALADA -->
         <ellipse class="cub-floor" cx="60" cy="88" rx="40" ry="3"
@@ -94,7 +98,7 @@ export type ArgusCubMood = 'sleeping' | 'wink';
                    Q 102 82 78 84
                    Q 50 86 28 82
                    Q 18 80 18 72 Z"
-                fill="url(#cubBody)"/>
+                [attr.fill]="cubBody"/>
 
           <!-- LOMO — LINEA SUTIL DE GRABADO -->
           <path d="M 28 60 Q 60 50 96 56"
@@ -115,17 +119,17 @@ export type ArgusCubMood = 'sleeping' | 'wink';
         <g class="cub-ears">
           <!-- OREJA TRASERA — MAS PEQUENA Y LIGERAMENTE INCLINADA -->
           <path d="M 62 32 L 66 14 L 74 30 Z"
-                fill="url(#cubHood)"
+                [attr.fill]="cubHood"
                 [attr.stroke]="'var(--mascot-rim)'"
                 stroke-width="0.6" opacity="0.95"/>
           <!-- OREJA DELANTERA — MAS GRANDE, DOMINA LA SILUETA -->
           <path d="M 80 30 L 86 10 L 94 32 Z"
-                fill="url(#cubHood)"
+                [attr.fill]="cubHood"
                 [attr.stroke]="'var(--mascot-rim)'"
                 stroke-width="0.6" opacity="0.95"/>
           <!-- INTERIOR DE LA OREJA DELANTERA — UN POCO MAS CLARO -->
           <path d="M 82.5 28 L 86 16 L 91 30 Z"
-                fill="url(#cubFace)" opacity="0.55"/>
+                [attr.fill]="cubFace" opacity="0.55"/>
         </g>
 
         <!-- ═══════ CAPUCHA SOBRE LA CABEZA (DERECHA) ═══════
@@ -136,7 +140,7 @@ export type ArgusCubMood = 'sleeping' | 'wink';
                  Q 102 44 96 56
                  Q 86 50 70 52
                  Q 56 52 54 44 Z"
-              fill="url(#cubHood)"/>
+              [attr.fill]="cubHood"/>
 
         <!-- BORDE INFERIOR DE LA CAPUCHA -->
         <path d="M 54 46 Q 72 52 96 50"
@@ -145,12 +149,12 @@ export type ArgusCubMood = 'sleeping' | 'wink';
 
         <!-- ═══════ CARA DEL CUB ═══════ -->
         <ellipse class="cub-face" cx="78" cy="50" rx="16" ry="13"
-                 fill="url(#cubFace)"/>
+                 [attr.fill]="cubFace"/>
 
         <!-- ═══════ JOYA FRONTAL (HERENCIA DEL "TERCER OJO" DE ARGUS) ═══════ -->
         <g class="cub-jewel">
           <circle cx="78" cy="36" r="2.4"
-                  fill="url(#cubIris)" filter="url(#cubBloom)"/>
+                  [attr.fill]="cubIris" [attr.filter]="cubBloom"/>
           <circle cx="78" cy="36" r="1.1"
                   [attr.fill]="'var(--mascot-pupil)'"/>
         </g>
@@ -179,7 +183,7 @@ export type ArgusCubMood = 'sleeping' | 'wink';
             <ellipse cx="76" cy="50" rx="5" ry="5.5"
                      [attr.fill]="'var(--mascot-eye-bg)'"/>
             <circle cx="76" cy="50" r="3.4"
-                    fill="url(#cubIris)" filter="url(#cubBloom)"/>
+                    [attr.fill]="cubIris" [attr.filter]="cubBloom"/>
             <circle cx="76" cy="50" r="1.7"
                     [attr.fill]="'var(--mascot-pupil)'"/>
             <circle cx="75" cy="48.5" r="1"
@@ -194,9 +198,9 @@ export type ArgusCubMood = 'sleeping' | 'wink';
         <!-- ═══════ PATAS DELANTERAS (SUTILES, CRUZADAS) ═══════ -->
         <g class="cub-paws">
           <ellipse cx="52" cy="80" rx="6" ry="4"
-                   fill="url(#cubBody)" opacity="0.95"/>
+                   [attr.fill]="cubBody" opacity="0.95"/>
           <ellipse cx="66" cy="82" rx="6" ry="4"
-                   fill="url(#cubBody)" opacity="0.95"/>
+                   [attr.fill]="cubBody" opacity="0.95"/>
           <!-- DEDITOS — TRES PUNTOS PEQUEÑOS POR PATA -->
           <circle cx="50" cy="82" r="0.7"
                   [attr.fill]="'var(--mascot-rim)'" opacity="0.6"/>
@@ -404,6 +408,20 @@ export type ArgusCubMood = 'sleeping' | 'wink';
   `]
 })
 export class ArgusCubComponent {
+  // CONTADOR GLOBAL PARA IDs DE <defs> UNICOS POR INSTANCIA — EVITA
+  // QUE VARIOS CUBS EN EL DOM (IONIC CACHEA PAGINAS) COMPARTAN
+  // url(#cubBody) ETC Y SE QUEDEN INVISIBLES INTERMITENTEMENTE.
+  private static _seq = 0;
+  readonly uid = `c${++ArgusCubComponent._seq}`;
+
+  // REFERENCIAS url(#...) PARAMETRIZADAS CON EL uid DE ESTA INSTANCIA
+  get cubBody(): string { return `url(#cubBody-${this.uid})`; }
+  get cubHood(): string { return `url(#cubHood-${this.uid})`; }
+  get cubFace(): string { return `url(#cubFace-${this.uid})`; }
+  get cubIris(): string { return `url(#cubIris-${this.uid})`; }
+  get cubBloom(): string { return `url(#cubBloom-${this.uid})`; }
+  get cubHalo(): string { return `url(#cubHalo-${this.uid})`; }
+
   // TAMANO EN PIXELES DE ANCHO; LA ALTURA SE CALCULA EN 0.78 PARA
   // RESPETAR EL VIEWBOX 120x94 (RATIO TUMBADO) Y NO DEFORMAR EL DIBUJO.
   @Input() size = 64;

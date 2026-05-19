@@ -13,6 +13,10 @@ import { LoginPageRoutingModule } from './login-routing.module';
 
 // IMPORTACION DEL COMPONENTE DE LA PAGINA DE LOGIN
 import { LoginPage } from './login.page';
+// COMPONENTE STANDALONE DE LA MASCOTA ARGUS USADO COMO LOGO EMOCIONAL DEL LOGIN
+import { ArgusComponent } from '../shared/components/argus/argus.component';
+// COMPONENTE STANDALONE DE LA RED DE PARTICULAS USADO COMO FONDO ANIMADO
+import { ParticleNetworkComponent } from '../shared/components/particle-network/particle-network.component';
 
 // MODULO DE LA PAGINA DE LOGIN — DECLARA EL COMPONENTE Y LAS DEPENDENCIAS
 @NgModule({
@@ -20,7 +24,9 @@ import { LoginPage } from './login.page';
     CommonModule,
     FormsModule,
     IonicModule,
-    LoginPageRoutingModule
+    LoginPageRoutingModule,
+    ArgusComponent,
+    ParticleNetworkComponent
   ],
   declarations: [LoginPage],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]

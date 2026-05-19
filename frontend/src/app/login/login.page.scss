@@ -1,142 +1,392 @@
-.login-content {
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  LOGIN DE ARGOS — "EL RECONOCIMIENTO"                        ║
+// ║  MASCOTA REACTIVA AL FOCUS + SHAKE EN ERROR + SUCCESS FLASH  ║
+// ║  TODO EN TOKENS DEL TEMA — JAMAS HEX SUELTO                  ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// CONTENIDO PRINCIPAL DEL LOGIN CON FONDO DARK
+.lg-content {
   --background: var(--color-bg);
+  --padding-top: 0;
+  --padding-bottom: 0;
+  --padding-start: 0;
+  --padding-end: 0;
 }
-.login-scroll {
-  min-height: 100vh;
+
+// RAIZ DEL LOGIN — RELATIVE PARA ANCLAR DECORACIONES
+.lg-root {
+  position: relative;
+  // ANCHO COMPLETO
+  width: 100%;
+  // ALTURA MINIMA QUE OCUPA EL VIEWPORT
+  min-height: 100%;
+  // FLEX EN COLUMNA QUE CENTRA EL CARD VERTICALMENTE
   display: flex;
   flex-direction: column;
   align-items: center;
+  // PADDING SUPERIOR/INFERIOR RESPETANDO NOTCH Y HOME-BAR
+  padding: calc(48px + env(safe-area-inset-top, 0)) 22px
+           calc(28px + env(safe-area-inset-bottom, 0)) 22px;
+  // GAP VERTICAL ENTRE HERO Y CARD
+  gap: 22px;
+  // CAJA INCLUYENDO PADDING
+  box-sizing: border-box;
+}
+
+// PARTICULAS DE FONDO MUY ATENUADAS
+.lg-particles {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.28;
+  pointer-events: none;
+}
+
+// HALO RADIAL EN LA PARTE SUPERIOR DETRAS DE LA MASCOTA
+.lg-halo {
+  position: absolute;
+  top: -14%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 130vw;
+  height: 60vh;
+  background: radial-gradient(closest-side,
+    color-mix(in srgb, var(--color-primary) 22%, transparent) 0%,
+    color-mix(in srgb, var(--color-accent)  10%, transparent) 35%,
+    transparent 70%);
+  border-radius: 50%;
+  animation: lgHalo 5s ease-in-out infinite;
+  z-index: 1;
+  pointer-events: none;
+  will-change: opacity, transform;
+}
+
+// KEYFRAMES DEL LATIDO DEL HALO
+@keyframes lgHalo {
+  0%, 100% { opacity: 0.7; transform: translateX(-50%) scale(1); }
+  50%      { opacity: 1;   transform: translateX(-50%) scale(1.05); }
+}
+
+// HERO EMOCIONAL CON MASCOTA + WORDMARK + TITULO
+.lg-hero {
+  // POSICIONAMIENTO RELATIVO POR ENCIMA DE LAS CAPAS DECORATIVAS
+  position: relative;
+  z-index: 2;
+  // FLEX EN COLUMNA CENTRADO
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  // ANCHO COMPLETO HASTA UN MAXIMO
+  width: 100%;
+  max-width: 420px;
+  // ALINEACION CENTRADA DEL TEXTO
+  text-align: center;
+}
+
+// MASCOTA DEL HERO
+.lg-mascot {
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  padding: 40px 24px;
-  gap: 32px;
+  // SOMBRA SUTIL PARA DAR PESO
+  filter: drop-shadow(0 10px 32px color-mix(in srgb, var(--color-primary) 32%, transparent));
+  // MARGEN INFERIOR PEQUENO PARA SEPARARLA DEL WORDMARK
+  margin-bottom: 4px;
 }
 
-/* LOGO */
-.login-logo {
-  display: flex; flex-direction: column;
-  align-items: center; gap: 8px; text-align: center;
+// WORDMARK ARGOS DEL LOGIN
+.lg-wordmark {
+  font-family: 'Bricolage Grotesque', 'Inter', sans-serif;
+  font-size: clamp(26px, 6.4vw, 32px);
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  color: var(--color-text);
+  margin: 0;
+  line-height: 1;
 }
-.logo-icon-wrap {
-  width: 96px; height: 96px; border-radius: 28px;
-  background: color-mix(in srgb, var(--color-primary) 15%, var(--color-surface));
-  display: flex; align-items: center; justify-content: center;
-  border: 2px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
-  box-shadow: 0 8px 32px color-mix(in srgb, var(--color-primary) 25%, transparent);
-  margin-bottom: 8px;
+
+// TITULO DEL LOGIN
+.lg-title {
+  font-family: 'Bricolage Grotesque', 'Inter', sans-serif;
+  font-size: clamp(20px, 5vw, 24px);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-text);
+  margin: 6px 0 0 0;
+  max-width: 20ch;
+  text-wrap: balance;
 }
-.logo-title {
-  font-size: 2rem; font-weight: 900; color: var(--color-text);
+
+// SUBTITULO DEL LOGIN
+.lg-sub {
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+  margin: 0;
+  max-width: 30ch;
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  TARJETA DEL FORMULARIO                                      ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// TARJETA PRINCIPAL DEL FORMULARIO DE LOGIN
+.lg-card {
+  // POSICIONAMIENTO RELATIVO POR ENCIMA DE LAS DECORACIONES
+  position: relative;
+  z-index: 2;
+  // ANCHO COMPLETO HASTA UN MAXIMO
+  width: 100%;
+  max-width: 380px;
+  // FONDO TENIDO DE LA SUPERFICIE PRINCIPAL
+  background: color-mix(in srgb, var(--color-surface) 92%, var(--color-surface-2));
+  // BORDE REDONDEADO GRANDE
+  border-radius: 22px;
+  // PADDING INTERNO
+  padding: 22px 18px;
+  // FLEX EN COLUMNA PARA APILAR FIELDS Y BOTONES
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  // BORDE SUTIL
+  border: 1px solid color-mix(in srgb, var(--color-text) 6%, transparent);
+  // SOMBRA DE ELEVACION
+  box-shadow: 0 18px 48px color-mix(in srgb, #000 40%, transparent);
+}
+
+// BLOQUE DE FIELD INDIVIDUAL
+.lg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+// FILA INTERNA DEL LABEL CUANDO HAY UN LINK A LA DERECHA
+.lg-field__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+// LABEL DEL FIELD
+.lg-field__label {
+  font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
   letter-spacing: 0.08em;
-}
-.logo-sub {
-  font-size: 0.85rem; font-weight: 600;
   color: var(--color-text-muted);
 }
 
-/* FORM */
-.login-form-wrap {
-  width: 100%; max-width: 360px;
-  display: flex; flex-direction: column; gap: 16px;
+// LINK DISCRETO DE OLVIDO DE CONTRASEÑA
+.lg-forgot {
+  // ELIMINAR ESTILO NATIVO DE BOTON
+  background: none;
+  border: 0;
+  padding: 0;
+  // TIPOGRAFIA PEQUENA
+  font-size: 11.5px;
+  font-weight: 700;
+  // COLOR PRIMARIO SOFT PARA NO COMPETIR CON EL CTA
+  color: var(--color-primary-soft);
+  // CURSOR INTERACTIVO
+  cursor: pointer;
+  // TRANSICION SUAVE
+  transition: color 220ms var(--ease-quick);
+  &:hover { color: var(--color-primary); }
 }
-.form-title {
-  font-size: 1.4rem; font-weight: 900;
-  color: var(--color-text); margin-bottom: 4px;
+
+// CONTENEDOR DEL INPUT — REUTILIZA EL LENGUAJE VISUAL DEL REGISTRO
+.lg-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-bg);
+  border: 1.5px solid color-mix(in srgb, var(--color-text) 8%, var(--color-surface-2));
+  border-radius: 14px;
+  padding: 12px 14px;
+  transition: border-color 220ms var(--ease-quick),
+              box-shadow 220ms var(--ease-quick),
+              background 220ms var(--ease-quick);
 }
-.input-group { display: flex; flex-direction: column; gap: 6px; }
-.input-label {
-  font-size: 0.78rem; font-weight: 800;
-  text-transform: uppercase; letter-spacing: 0.06em;
+
+// FOCUS RING DEL INPUT
+.lg-input--focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 18%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--color-bg));
+}
+
+// ESTADO FILLED DEL INPUT
+.lg-input--filled:not(.lg-input--focus) {
+  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-surface-2));
+}
+
+// ICONO PRINCIPAL DEL INPUT
+.lg-input__icon {
   color: var(--color-text-muted);
+  flex-shrink: 0;
 }
-.input-wrap {
-  display: flex; align-items: center; gap: 10px;
-  background: var(--color-surface);
-  border: 2px solid var(--color-surface-2);
-  border-radius: 14px; padding: 14px 16px;
-  transition: border-color 0.2s ease;
-  &:focus-within {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 15%, transparent);
-  }
-  &.filled { border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-surface-2)); }
-}
-.input-icon { color: var(--color-text-muted); flex-shrink: 0; }
-.form-input {
-  flex: 1; border: none; background: transparent;
-  font-size: 0.95rem; font-weight: 600;
-  color: var(--color-text); outline: none;
+.lg-input--focus .lg-input__icon { color: var(--color-primary); }
+
+// CAMPO DE TEXTO REAL
+.lg-input__field {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 600;
   font-family: 'Inter', sans-serif;
+  color: var(--color-text);
+  outline: none;
+  padding: 0;
   &::placeholder { color: var(--color-text-muted); }
 }
-.toggle-pass {
-  background: none; border: none; cursor: pointer;
-  color: var(--color-text-muted); display: flex;
-  align-items: center; padding: 0;
-}
 
-.forgot-row { text-align: right; margin-top: -8px; }
-.forgot-btn {
-  background: none; border: none; cursor: pointer;
-  font-size: 0.82rem; font-weight: 700;
-  color: var(--color-primary); font-family: 'Inter', sans-serif;
-}
-
-.login-btn {
-  width: 100%; padding: 16px; border-radius: 14px;
-  background: var(--color-primary); color: white;
-  font-size: 1rem; font-weight: 900; border: none;
-  cursor: pointer; font-family: 'Inter', sans-serif;
-  box-shadow: 0 4px 20px color-mix(in srgb, var(--color-primary) 40%, transparent);
-  transition: transform 0.15s ease, opacity 0.15s ease;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  margin-top: 8px;
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
-  &:active { transform: scale(0.97); }
-}
-
-.divider {
-  display: flex; align-items: center; gap: 12px;
-}
-.divider-line {
-  flex: 1; height: 1px; background: var(--color-surface-2);
-}
-.divider-text {
-  font-size: 0.8rem; font-weight: 700;
+// BOTON OJO PARA MOSTRAR/OCULTAR CONTRASEÑA
+.lg-input__toggle {
+  background: none;
+  border: 0;
+  cursor: pointer;
   color: var(--color-text-muted);
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  transition: transform 220ms var(--ease-spring), color 220ms var(--ease-quick);
 }
 
-.register-btn {
-  width: 100%; padding: 14px; border-radius: 14px;
-  background: var(--color-surface); color: var(--color-text-muted);
-  font-size: 0.9rem; font-weight: 600; border: 2px solid var(--color-surface-2);
-  cursor: pointer; font-family: 'Inter', sans-serif;
-  strong { color: var(--color-primary); font-weight: 800; }
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  ERROR DE AUTENTICACION                                      ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+.lg-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--color-danger) 14%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-danger) 36%, transparent);
+  border-radius: 12px;
+  color: var(--color-danger);
+  font-size: 12.5px;
+  font-weight: 700;
+  text-align: left;
 }
 
-.spin {
-  animation: spin 1s linear infinite;
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  BOTONES — SUBMIT + SECONDARY                                ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// BOTON PRIMARIO DEL LOGIN
+.lg-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 20px;
+  border-radius: 14px;
+  // FONDO GRADIENTE PRIMARIO-ACCENT PARA UN AIRE PREMIUM
+  background: linear-gradient(135deg,
+    var(--color-primary) 0%,
+    color-mix(in srgb, var(--color-primary) 60%, var(--color-accent)) 100%);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  font-family: 'Inter', sans-serif;
+  border: 0;
+  cursor: pointer;
+  // SOMBRA Y GLOW DEL CTA
+  box-shadow:
+    0 10px 28px color-mix(in srgb, var(--color-primary) 45%, transparent),
+    inset 0 1px 0 color-mix(in srgb, #ffffff 22%, transparent);
+  // TRANSICION SUAVE
+  transition: transform 220ms var(--ease-spring),
+              box-shadow 220ms var(--ease-quick),
+              opacity 220ms var(--ease-quick);
+  will-change: transform, box-shadow;
 }
-@keyframes spin {
+
+// ESTADO DESHABILITADO DEL CTA
+.lg-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--color-primary) 22%, transparent);
+}
+
+// PRESS DEL CTA
+.lg-submit:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+// SPINNER DEL CTA
+.lg-submit__spin {
+  animation: lgSpin 1s linear infinite;
+}
+@keyframes lgSpin {
   from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  to   { transform: rotate(360deg); }
 }
 
-/* SECURITY BADGE */
-.security-badge {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 0.72rem; font-weight: 700;
-  color: var(--color-text-muted); text-align: center;
+// BOTON SECUNDARIO DEL LOGIN
+.lg-secondary {
+  background: transparent;
+  border: 1.5px solid var(--color-surface-2);
+  border-radius: 14px;
+  padding: 12px 16px;
+  color: var(--color-text-muted);
+  font-size: 13.5px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  strong { color: var(--color-primary); font-weight: 800; }
+  transition: border-color 220ms var(--ease-quick), color 220ms var(--ease-quick);
+  &:hover { border-color: color-mix(in srgb, var(--color-primary) 50%, var(--color-surface-2)); }
 }
 
-/* MENSAJE DE ERROR DE AUTENTICACION */
-.auth-error {
-  margin: 12px 0;
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.35);
-  color: var(--color-danger, #ef4444);
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-align: center;
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  PILL ZERO-KNOWLEDGE                                         ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// PILL ZK AL PIE
+.lg-zk-pill {
+  // POSICIONAMIENTO RELATIVO POR ENCIMA DE LAS CAPAS DECORATIVAS
+  position: relative;
+  z-index: 2;
+  // FLEX HORIZONTAL CON ICONO + TEXTO
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  // FONDO TENIDO DEL SUCCESS PARA REFORZAR LA PROMESA
+  background: color-mix(in srgb, var(--color-success) 14%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-success) 38%, transparent);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  // PULSACION SUAVE DE OPACIDAD
+  animation: lgZkPulse 3.6s ease-in-out infinite;
+  will-change: opacity;
+  // MARGEN SUPERIOR PARA SEPARARLO DEL CARD
+  margin-top: auto;
+}
+
+.lg-zk-pill__ico { color: var(--color-success); flex-shrink: 0; }
+
+@keyframes lgZkPulse {
+  0%, 100% { opacity: 0.9; }
+  50%      { opacity: 1;   }
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  ACCESIBILIDAD — RESPETO DE PREFERS-REDUCED-MOTION           ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+@media (prefers-reduced-motion: reduce) {
+  .lg-halo,
+  .lg-zk-pill {
+    animation: none !important;
+  }
 }
