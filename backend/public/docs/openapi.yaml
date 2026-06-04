@@ -1,0 +1,942 @@
+openapi: 3.0.3
+
+# ============================================================
+# ARGOS API v1 - ESPECIFICACION OPENAPI
+# DOCUMENTACION DE LOS ENDPOINTS REST ZERO-KNOWLEDGE.
+# GENERADA A PARTIR DE app/Config/Routes.php Y LOS
+# CONTROLADORES DE app/Controllers/Api/V1.
+# ============================================================
+
+info:
+  title: ARGOS API
+  description: >
+    API REST Zero-Knowledge de la suite de ciberseguridad ARGOS.
+    El servidor nunca recibe ni almacena datos sensibles en claro:
+    todo lo cifrable llega como bloque opaco (base64) y se guarda tal cual.
+    Todas las respuestas siguen el sobre estandar `{ success, data, error }`.
+  version: v1
+  contact:
+    name: Equipo ARGOS
+
+servers:
+  - url: https://argos.ddev.site/api/v1
+    description: Entorno local DDEV
+
+tags:
+  - name: Auth
+    description: Registro y login Zero-Knowledge
+  - name: TOTP
+    description: Doble factor de autenticacion (2FA)
+  - name: Vault - Items
+    description: CRUD de elementos cifrados de la boveda
+  - name: Vault - Folders
+    description: CRUD de carpetas organizativas
+  - name: Auditor
+    description: Have I Been Pwned y Privacy Score
+  - name: Phishing
+    description: Proxies de deteccion de phishing
+  - name: News
+    description: Panel de noticias de ciberseguridad
+
+# ------------------------------------------------------------
+# COMPONENTES REUTILIZABLES
+# ------------------------------------------------------------
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT emitido por /auth/login o /auth/register.
+
+  schemas:
+    Meta:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-05-21T10:30:00Z"
+        version:
+          type: string
+          example: v1
+
+    ErrorEnvelope:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        data:
+          nullable: true
+          example: null
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: VALIDATION_ERROR
+            message:
+              type: string
+              example: El email no tiene un formato valido
+
+    VaultItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12
+        user_id:
+          type: integer
+          example: 3
+        folder_id:
+          type: integer
+          nullable: true
+          example: 5
+        item_type:
+          type: string
+          example: password
+        encrypted_blob:
+          type: string
+          description: Bloque cifrado en base64 (opaco para el servidor)
+          example: "U2FsdGVkX1+..."
+        size_bytes:
+          type: integer
+          example: 248
+
+    Folder:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 5
+        user_id:
+          type: integer
+          example: 3
+        name:
+          type: string
+          example: Trabajo
+        color:
+          type: string
+          example: "#7C3AED"
+        icon:
+          type: string
+          example: folder
+        item_count:
+          type: integer
+          example: 4
+
+  responses:
+    Unauthorized:
+      description: JWT ausente o invalido
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    ValidationError:
+      description: Validacion fallida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+
+# ------------------------------------------------------------
+# RUTAS
+# ------------------------------------------------------------
+paths:
+
+  # ===================== AUTH =====================
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Registro Zero-Knowledge
+      description: >
+        Recibe email, auth_hash ya derivado en cliente con Argon2id,
+        parametros KDF y el vault_blob inicial cifrado. Crea el usuario
+        y devuelve un JWT.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, auth_hash, kdf_salt, kdf_params]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: usuario@ejemplo.com
+                auth_hash:
+                  type: string
+                  example: "a1b2c3..."
+                kdf_salt:
+                  type: string
+                  example: "9f8e7d..."
+                kdf_params:
+                  type: object
+                  example: { memory_cost: 65536, time_cost: 3, parallelism: 1 }
+                vault_blob:
+                  type: string
+                  description: Boveda inicial cifrada (base64)
+      responses:
+        '201':
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      user_id: { type: integer, example: 3 }
+                      email: { type: string, example: usuario@ejemplo.com }
+                      token: { type: string, example: "eyJhbGciOi..." }
+        '409':
+          description: Email ya registrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/challenge:
+    get:
+      tags: [Auth]
+      summary: Parametros KDF del usuario
+      description: >
+        Devuelve kdf_salt y kdf_params para que el cliente re-derive la
+        clave maestra antes del login. Si el usuario no existe devuelve
+        parametros dummy (proteccion contra enumeracion por timing).
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+            format: email
+      responses:
+        '200':
+          description: Parametros KDF
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      kdf_salt: { type: string }
+                      kdf_algorithm: { type: string, example: argon2id }
+                      kdf_params: { type: object }
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login Zero-Knowledge
+      description: Recibe email y auth_hash. Si coincide, emite JWT y devuelve el vault_blob cifrado.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, auth_hash]
+              properties:
+                email: { type: string, format: email, example: usuario@ejemplo.com }
+                auth_hash: { type: string, example: "a1b2c3..." }
+      responses:
+        '200':
+          description: Login correcto
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      user_id: { type: integer, example: 3 }
+                      email: { type: string }
+                      token: { type: string, example: "eyJhbGciOi..." }
+                      vault_blob: { type: string, nullable: true, description: Boveda cifrada en base64 }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  # ===================== TOTP =====================
+  /totp/setup:
+    post:
+      tags: [TOTP]
+      summary: Generar secreto y URI del QR
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Secreto generado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      qr_uri: { type: string, example: "otpauth://totp/ARGOS:usuario@ejemplo.com?secret=..." }
+                      secret: { type: string, example: "JBSWY3DPEHPK3PXP" }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /totp/verify:
+    post:
+      tags: [TOTP]
+      summary: Verificar codigo y activar 2FA
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string, pattern: '^\d{6}$', example: "123456" }
+      responses:
+        '200':
+          description: 2FA activado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { type: object, properties: { enabled: { type: boolean, example: true } } }
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /totp/disable:
+    post:
+      tags: [TOTP]
+      summary: Desactivar 2FA
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string, pattern: '^\d{6}$', example: "123456" }
+      responses:
+        '200':
+          description: 2FA desactivado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { type: object, properties: { enabled: { type: boolean, example: false } } }
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ===================== VAULT ITEMS =====================
+  /vault/items:
+    get:
+      tags: [Vault - Items]
+      summary: Listar elementos de la boveda
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: folder_id
+          in: query
+          schema: { type: integer }
+          description: Filtra por carpeta (0 o vacio = sin carpeta)
+        - name: item_type
+          in: query
+          schema: { type: string }
+          description: Filtra por tipo (p.ej. password, note, card)
+      responses:
+        '200':
+          description: Lista de elementos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/VaultItem' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Vault - Items]
+      summary: Crear elemento cifrado
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [item_type, encrypted_blob]
+              properties:
+                item_type: { type: string, example: password }
+                folder_id: { type: integer, nullable: true, example: 5 }
+                encrypted_blob: { type: string, description: Bloque cifrado en base64 (max 5MB) }
+      responses:
+        '201':
+          description: Elemento creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      id: { type: integer, example: 12 }
+                      item_type: { type: string }
+                      folder_id: { type: integer, nullable: true }
+                      size_bytes: { type: integer }
+        '403':
+          description: La carpeta no pertenece al usuario
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '413':
+          description: Bloque mayor de 5MB
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /vault/items/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Vault - Items]
+      summary: Obtener un elemento
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Elemento encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: '#/components/schemas/VaultItem' }
+        '404':
+          description: Elemento no encontrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    put:
+      tags: [Vault - Items]
+      summary: Actualizar elemento
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                encrypted_blob: { type: string, description: Nuevo bloque cifrado base64 }
+                folder_id: { type: integer, nullable: true, description: 0 para sacar de carpeta }
+      responses:
+        '200':
+          description: Elemento actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { type: object, properties: { id: { type: integer }, updated: { type: boolean } } }
+        '400':
+          description: Sin cambios
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '404':
+          description: Elemento no encontrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    delete:
+      tags: [Vault - Items]
+      summary: Eliminar elemento
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Elemento eliminado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { type: object, properties: { id: { type: integer }, deleted: { type: boolean } } }
+        '404':
+          description: Elemento no encontrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+
+  # ===================== VAULT FOLDERS =====================
+  /vault/folders:
+    get:
+      tags: [Vault - Folders]
+      summary: Listar carpetas con contador de items
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de carpetas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Folder' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Vault - Folders]
+      summary: Crear carpeta
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, example: Trabajo }
+                color: { type: string, example: "#7C3AED" }
+                icon: { type: string, example: folder }
+      responses:
+        '201':
+          description: Carpeta creada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: '#/components/schemas/Folder' }
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /vault/folders/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Vault - Folders]
+      summary: Obtener una carpeta
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Carpeta encontrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: '#/components/schemas/Folder' }
+        '404':
+          description: Carpeta no encontrada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    put:
+      tags: [Vault - Folders]
+      summary: Actualizar carpeta
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                color: { type: string }
+                icon: { type: string }
+      responses:
+        '200':
+          description: Carpeta actualizada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { type: object, properties: { id: { type: integer }, updated: { type: boolean } } }
+        '400':
+          description: Sin cambios
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '404':
+          description: Carpeta no encontrada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    delete:
+      tags: [Vault - Folders]
+      summary: Eliminar carpeta
+      description: Los elementos dentro quedan con folder_id NULL (ON DELETE SET NULL).
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Carpeta eliminada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { type: object, properties: { id: { type: integer }, deleted: { type: boolean } } }
+        '404':
+          description: Carpeta no encontrada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+
+  # ===================== AUDITOR =====================
+  /auditor/hibp/{prefix}:
+    get:
+      tags: [Auditor]
+      summary: Consulta HIBP por prefijo (k-anonymity)
+      description: >
+        Consulta Have I Been Pwned con un prefijo hexadecimal de 5 caracteres
+        del hash SHA-1. Preserva la privacidad mediante el modelo k-anonymity.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: prefix
+          in: path
+          required: true
+          schema: { type: string, pattern: '^[0-9A-Fa-f]{5}$' }
+          example: "21BD1"
+      responses:
+        '200':
+          description: Resultado de HIBP
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { type: object }
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '502':
+          description: Error al consultar HIBP
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+
+  /auditor/score:
+    post:
+      tags: [Auditor]
+      summary: Guardar Privacy Score del dia
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [score, identity_score, passwords_score, device_score]
+              properties:
+                score: { type: integer, example: 82 }
+                identity_score: { type: integer, example: 90 }
+                passwords_score: { type: integer, example: 75 }
+                device_score: { type: integer, example: 80 }
+      responses:
+        '201':
+          description: Score guardado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      id: { type: integer }
+                      recorded_at: { type: string, format: date-time }
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /auditor/score/history:
+    get:
+      tags: [Auditor]
+      summary: Historico del Privacy Score
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: weeks
+          in: query
+          schema: { type: integer, default: 8, minimum: 1, maximum: 52 }
+      responses:
+        '200':
+          description: Historico
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      weeks: { type: integer, example: 8 }
+                      history: { type: array, items: { type: object } }
+
+  /auditor/score/latest:
+    get:
+      tags: [Auditor]
+      summary: Ultimo Privacy Score registrado
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Ultimo score
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { type: object, nullable: true }
+
+  # ===================== PHISHING =====================
+  /phishing/safebrowsing:
+    post:
+      tags: [Phishing]
+      summary: Comprobar URL con Google Safe Browsing
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url: { type: string, format: uri, example: "https://ejemplo-sospechoso.com" }
+      responses:
+        '200':
+          description: Veredicto del motor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { type: object }
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '502':
+          description: Error del servicio externo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+
+  /phishing/phishtank:
+    post:
+      tags: [Phishing]
+      summary: Comprobar URL con PhishTank
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url: { type: string, format: uri, example: "https://ejemplo-sospechoso.com" }
+      responses:
+        '200':
+          description: Veredicto del motor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { type: object }
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '502':
+          description: Error del servicio externo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+
+  /phishing/virustotal:
+    post:
+      tags: [Phishing]
+      summary: Comprobar URL con VirusTotal
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url: { type: string, format: uri, example: "https://ejemplo-sospechoso.com" }
+      responses:
+        '200':
+          description: Veredicto del motor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { type: object }
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          description: Limite de tasa alcanzado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '502':
+          description: Error del servicio externo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+
+  # ===================== NEWS =====================
+  /news:
+    get:
+      tags: [News]
+      summary: Listado paginado de noticias
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: category
+          in: query
+          schema: { type: string, enum: [cve, phishing, breach, resource] }
+        - name: severity
+          in: query
+          schema: { type: string, enum: [low, medium, high, critical] }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1, minimum: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20, minimum: 1, maximum: 50 }
+      responses:
+        '200':
+          description: Noticias paginadas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      items: { type: array, items: { type: object } }
+                      pagination:
+                        type: object
+                        properties:
+                          page: { type: integer }
+                          limit: { type: integer }
+                          total: { type: integer }
+                          pages: { type: integer }
+                      filters:
+                        type: object
+                        properties:
+                          category: { type: string, nullable: true }
+                          severity: { type: string, nullable: true }
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /news/stats:
+    get:
+      tags: [News]
+      summary: Estadisticas diarias del panel
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Estadisticas agregadas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { type: object }
+
+  /news/breaking:
+    get:
+      tags: [News]
+      summary: Noticia critica mas reciente (hero card)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Noticia breaking
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { type: object, nullable: true }

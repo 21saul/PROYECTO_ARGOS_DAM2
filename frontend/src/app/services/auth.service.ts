@@ -198,6 +198,15 @@ export class AuthService {
     return this.api.getToken() !== null;
   }
 
+  // INDICA SI LA SESION ESTA "VIVA": HAY JWT Y ADEMAS LA CLAVE DE CIFRADO
+  // SIGUE EN MEMORIA. TRAS UN HARD-REFRESH EL TOKEN PERSISTE PERO LA CLAVE
+  // ZERO-KNOWLEDGE SE PIERDE (NUNCA SE GUARDA EN DISCO), POR LO QUE LA SESION
+  // DEJA DE SER UTIL: LA BOVEDA NO PODRIA DESCIFRARSE. EL AUTHGUARD USA ESTO
+  // PARA FORZAR UN RE-LOGIN EN LUGAR DE DEJAR LA APP EN ESTADO ROTO.
+  hasLiveSession(): boolean {
+    return this.api.getToken() !== null && this.encryptionKey !== null;
+  }
+
   // DEVUELVE LA CLAVE DE CIFRADO EN MEMORIA (NULL SI NO HAY SESION)
   getEncryptionKey(): CryptoKey | null {
     return this.encryptionKey;

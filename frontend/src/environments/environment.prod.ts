@@ -11,6 +11,8 @@ export const environment = {
   // FLAG DE PRODUCCION ACTIVADO
   production: true,
 
-  // URL BASE DEL BACKEND EN EL VPS DE PRODUCCION (PLACEHOLDER)
-  apiBaseUrl: 'https://argos.tu-dominio-produccion.com/api/v1',
+  // URL BASE DEL BACKEND - APUNTA A LA IP LAN DEL HOST DE DESARROLLO
+  // PUERTO 8080 FIJADO EN .ddev/config.yaml PARA QUE NO CAMBIE EN CADA REINICIO
+  // EL MOVIL DEBE ESTAR EN LA MISMA RED WIFI QUE EL HOST PARA ALCANZARLO
+  apiBaseUrl: 'http://192.168.1.137:8080/api/v1',
 };

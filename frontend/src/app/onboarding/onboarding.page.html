@@ -187,14 +187,23 @@
         role="tab"
         [attr.aria-selected]="i === activeIndex"
         [attr.aria-label]="'Slide ' + (i + 1) + ' de ' + totalSlides">
-        <!-- SVG INLINE DEL OJO — IRIS Y PARPADO QUE SE ABRE AL ACTIVARSE -->
-        <svg viewBox="0 0 24 16" aria-hidden="true">
-          <!-- ALMENDRA EXTERIOR DEL OJO -->
-          <path class="os-eye__shape" d="M2 8 Q12 -1 22 8 Q12 17 2 8 Z" fill="none"/>
-          <!-- IRIS QUE BRILLA EN EL OJO ACTIVO -->
-          <circle class="os-eye__iris" cx="12" cy="8" r="3.4"/>
-          <!-- PARPADO QUE CUBRE EL OJO CUANDO NO ESTA ACTIVO -->
-          <rect class="os-eye__lid" x="0" y="0" width="24" height="16" rx="8"/>
+        <!-- SVG INLINE DEL OJO — IRIS Y PARPADO ENCAJADO DENTRO DEL CLIPPATH ALMENDRA -->
+        <svg viewBox="0 0 24 18" aria-hidden="true">
+          <!-- CLIPPATH ALMENDRA QUE LIMITA IRIS Y PARPADO A LA SILUETA DEL OJO -->
+          <defs>
+            <clipPath [id]="'eye-clip-' + i">
+              <path d="M2 9 Q12 0 22 9 Q12 18 2 9 Z"/>
+            </clipPath>
+          </defs>
+          <!-- ALMENDRA EXTERIOR DEL OJO COMO TRAZO -->
+          <path class="os-eye__shape" d="M2 9 Q12 0 22 9 Q12 18 2 9 Z" fill="none"/>
+          <!-- GRUPO INTERNO CLIPADO PARA QUE IRIS Y PARPADO NO SE SALGAN -->
+          <g [attr.clip-path]="'url(#eye-clip-' + i + ')'">
+            <!-- IRIS QUE BRILLA EN EL OJO ACTIVO -->
+            <circle class="os-eye__iris" cx="12" cy="9" r="3.6"/>
+            <!-- PARPADO COMO RECTANGULO PLENO QUE TAPA TODO EL CLIP -->
+            <rect class="os-eye__lid" x="0" y="0" width="24" height="18"/>
+          </g>
         </svg>
       </span>
     </div>

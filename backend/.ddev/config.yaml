@@ -13,6 +13,9 @@ use_dns_when_possible: true
 composer_version: "2"
 web_environment: []
 corepack_enable: false
+host_webserver_port: "8080"
+host_https_port: "8443"
+host_db_port: "3307"
 
 # Key features of DDEV's config.yaml:
 
@@ -225,7 +228,7 @@ corepack_enable: false
 # This is to enable experimentation with alternate file mounting strategies.
 # For advanced users only!
 
-# bind_all_interfaces: false
+bind_all_interfaces: true
 # If true, host ports will be bound on all network interfaces,
 # not the localhost interface only. This means that ports
 # will be available on the local network if the host firewall

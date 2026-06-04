@@ -1,0 +1,117 @@
+{
+  "password": "Test1234!",
+  "salt": "959bf8c79782be5c9631f2132889045826277495f903fa845700ffa3afd7b6a7",
+  "kdf_params": {
+    "memory_cost": 65536,
+    "time_cost": 3,
+    "parallelism": 1
+  },
+  "auth_hash": "c36f1aa869e28ae0c2cfdb98297ee39adda4a54e0923afb0a78e363c1aaacb6d",
+  "vault_blob": "zB3Z9F89DkgeQ9zsUzAl4LNt8OIt8lDUq4/J6L+N6XUoi52sJCeIFuYllAwg1R4BFXX9d4xfvTjZx/y7jrCrC4U=",
+  "folders": [
+    {
+      "key": "bancos",
+      "name": "Bancos",
+      "color": "#10B981",
+      "icon": "bank"
+    },
+    {
+      "key": "email",
+      "name": "Email",
+      "color": "#7C3AED",
+      "icon": "envelope"
+    },
+    {
+      "key": "redes",
+      "name": "Redes Sociales",
+      "color": "#EC4899",
+      "icon": "users-three"
+    },
+    {
+      "key": "trabajo",
+      "name": "Trabajo",
+      "color": "#06B6D4",
+      "icon": "briefcase"
+    },
+    {
+      "key": "familia",
+      "name": "Familia",
+      "color": "#F59E0B",
+      "icon": "house"
+    }
+  ],
+  "items": [
+    {
+      "folder": "bancos",
+      "item_type": "password",
+      "encrypted_blob": "wuL8pcuPZyOF+goideEdhjG5GSZtS3LuXoI/5kEc+9Y4DuIVoAAc/EZeN9WqLzXNUaXPwQVVMxlvqUh/Yp2FCC9e/iE4lJmrj8D5ZOL3tp1fduoHpVy8SZQpFxd0yLcNdEaDnE0JspwQ0ecxYF59M+c0wgddQiip7GRJQK8lNC0iFTthnnI=",
+      "size_bytes": 180
+    },
+    {
+      "folder": "bancos",
+      "item_type": "password",
+      "encrypted_blob": "bS6ymW+Uf+fbLOXPxrDWa71kmFllWYCZABlGbg/5TczfF1CmnAEH4yBtEdzAE141WCCU5neHypXrVd0DtxqWzVirJtG+YS8L7zbpCLHigV352zZOv4v5Z6hCTaI5UqM9kwsCthCER2LALSsflZR3ZIca3ZvAk3dKgrDl38zFI+YlqtHiCshcs2+M",
+      "size_bytes": 184
+    },
+    {
+      "folder": "bancos",
+      "item_type": "note",
+      "encrypted_blob": "LSvTJ9kY86VvojX0iCR/T+VTR7uprM1pxY5uVw7iHQbwHTnFMaGLqB2FoMsuQZVTMk/mN2xSi9aEpS+ygfd2L1zI+Yv24tcNjTkWS+QmjFjeXhkq/LQ0UHIuNyCPgVP4u6KGGcbvFpv9d8e1RRY8JP7bqYMQkclgtiTlC4Yd",
+      "size_bytes": 168
+    },
+    {
+      "folder": "email",
+      "item_type": "password",
+      "encrypted_blob": "ohquLyWORXTjQLQ6Zjv1tBCIwBQ1Kvo3Gm5YoKFDdnHLD0KE/WqwNa8Qwhh3E2NdFsba1eTzH6TqzyeEUT1QcmXzatD1e20aMpH56zKzbknb2MUq4ji1uyNHUQ+ZDYoGD8trM7UX9cSkpm5xNxW5xwMUTNj9yYviRWAvPmkdOtqpUaRJmRPx+lYPObASNeNICjI0+9ffwah6+A==",
+      "size_bytes": 208
+    },
+    {
+      "folder": "email",
+      "item_type": "password",
+      "encrypted_blob": "XTFu0yld3JapgFzI0tbe7jcwhXN5G4ifvJq8GmWvjAUDys3AlwIfMjm+N62cXJwH+kYp1M8IPGB/Q5g6dFzbJCJnbmgK27JXj6kf+lS086980RtKkksE2AwpmL2zkY/zxnnLwo6J70m7OjsRPGfguuhRX/ZRZJHm7ok+ND0IivbIM8+S3ebi4izKCHc4Z9J8euMP0yF7jTg=",
+      "size_bytes": 204
+    },
+    {
+      "folder": "redes",
+      "item_type": "password",
+      "encrypted_blob": "QnAIUWov2cne7z8jV4b/KgsOYIwKM2wvI3bx6OI+tBcNRwLNiWkj32Yi75dIw2RuyfdaQbAz+IDty2aP7GYJLRvzQ4K2UFbAz67Nq0dNddsLJiEhCBDbPPdQuYIVyMGyFeQREaP8Ly6ci9Ve3/PJhri9tyCG9vDQa4Lq/Vt5rA6E6FkDB/1SAX9KPA==",
+      "size_bytes": 188
+    },
+    {
+      "folder": "redes",
+      "item_type": "password",
+      "encrypted_blob": "11+GOgGbDoQdWey+d4eK8Bsfn8LmvbDDBp75v64VV7/2vtzIiohdUqC+MmTySHbFn/KZjG0JiVEuASzskXdtTP3CooKxXA9rVWtARqYqR6gkSLACEq34CuW/fete/dp5nmlCYtFnBT/8b5rN++cCemJdHMrgcutyjCyVmuiFpvc=",
+      "size_bytes": 172
+    },
+    {
+      "folder": "redes",
+      "item_type": "password",
+      "encrypted_blob": "x+cit8ELl3ztVvRd52unyb/tuoA3rW/65twGAdbTdzW1zx0VBIRvTfVf0/e/y5TQm8tndGiNsKrdg7Yk/OuUFByTBk2lnptKxnTB5Y3HWwf/qcbwQDxKHK5ObS4dbK9Z6Ct2u2+s9UtEWj1cWNxCvCF72YHS7fsaiNBo/GsIYErE6YmvKn0ZlMjUIlapeewpJaXemCQ=",
+      "size_bytes": 200
+    },
+    {
+      "folder": "trabajo",
+      "item_type": "password",
+      "encrypted_blob": "vpqKG7tSp6937nQGYdAtrjIj+mb/Ua+d1Nqzd5LbGrA0KtCD5/z53VBrBnu7HBvwv63VnX9b14r4Lh6hg39Ta6kZhVhHaYv+XtEfS0F0WMPcBPV85blciRzC12AfHYBMhnKpnI4cNxCsJQG2qWxVBueLM+UYY9wWKNzYqDOaJT5zbA==",
+      "size_bytes": 176
+    },
+    {
+      "folder": "trabajo",
+      "item_type": "note",
+      "encrypted_blob": "kPiIOaZvSRaSphzfC8SkVMvNPU2gIllGjk+PoaPupCeoYKE2mh0+21EQki9Uu2z1XpaS31eF68cU9JZPtpY0xmTJLZBiQHq3C+z4RAYUBMPtUWeYwYZJ7jEMC2Wwe3hZ224eygpz0L50wKKZdmfw1WSIOgzgK8qNOXnoMAgOcSe9",
+      "size_bytes": 172
+    },
+    {
+      "folder": "familia",
+      "item_type": "password",
+      "encrypted_blob": "6KRNDd12NduxcmIsFspDBTAZO0YTrWazX+62TUzlmLD0zGLTHgwSbnwPtthPH7q2hXSFjPKT5D9GLxRJjr7GcPoQJRdVO/BY26EO++TK8vyFCfMFqQhqFpkv8Vw9fFwL6xKaUV6/V2rUaUBgvk+G",
+      "size_bytes": 148
+    },
+    {
+      "folder": "familia",
+      "item_type": "note",
+      "encrypted_blob": "ciB18MA1Q64Js0gpjb02eKH5pnKZRfLeK2yzfCIYS6uMuZc074+Bn49O9UTytisSA7Ec4CAf9hPbUxou6HQ4a0xHB9STDu3knNieUkXB8+VtKfQuoIODKiiN2Ll5kOz1jR2JWAZNMeRb6To9ngejhk8yGnWuYxVdURIIVCl4J3Hmzet3YNsyv/BKAdSqdOm8TvqAqB+T9A==",
+      "size_bytes": 204
+    }
+  ]
+}

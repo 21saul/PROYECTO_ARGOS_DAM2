@@ -37,12 +37,18 @@ class Cors extends BaseConfig
             'http://localhost:4200',
             // PETICIONES PROVENIENTES DE FILE/EMBEDS LOCALES SIN PUERTO
             'http://localhost',
+            // ORIGEN SEGURO DE CAPACITOR EN ANDROID (CUANDO androidScheme ES https)
+            'https://localhost',
         ],
 
         // PATRONES REGEX DE ORIGENES PERMITIDOS — CUBRE PUERTOS ALTERNATIVOS DE IONIC SERVE
         // CUANDO 8100 ESTA OCUPADO IONIC RECURRE A 8101, 8102, 8103, ETC.
+        // TAMBIEN CUBRE EL ACCESO POR LAN DESDE EL MOVIL EN LA MISMA WIFI
+        // (POR EJ. http://192.168.1.137:8100 EN SAFARI DEL IPHONE)
         'allowedOriginsPatterns' => [
             'http://localhost:810\d',
+            'http://192\.168\.\d+\.\d+:810\d',
+            'http://10\.\d+\.\d+\.\d+:810\d',
         ],
 
         // NO USAMOS COOKIES NI CREDENCIALES — EL JWT VIAJA EN HEADER Authorization

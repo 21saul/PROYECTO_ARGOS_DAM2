@@ -387,11 +387,12 @@ swiper-slide.os-slide {
 .os-bento__ring {
   // POSICIONAMIENTO ABSOLUTO RESPECTO A LA TARJETA HERO
   position: absolute;
-  bottom: -18px;
-  right: -18px;
-  // TAMANO DE ANILLO DECORATIVO
-  width: 104px;
-  height: 104px;
+  // OFFSET MENOR PARA QUE LA SILUETA DEL ANILLO QUEDE ENTERA DENTRO DEL CARD
+  bottom: 8px;
+  right: 8px;
+  // TAMANO DE ANILLO DECORATIVO REDUCIDO PARA QUEPA SIN RECORTE
+  width: 72px;
+  height: 72px;
   // OPACIDAD MEDIA PARA QUE NO COMPITA CON EL TEXTO
   opacity: 0.55;
   // PULSO SUTIL DEL ANILLO PARA INSINUAR VIDA
@@ -460,21 +461,30 @@ swiper-slide.os-slide {
 .os-level-card__num {
   // POSICIONAMIENTO ABSOLUTO EN ESQUINA INFERIOR DERECHA DEL BADGE
   position: absolute;
-  right: -4px;
-  bottom: -4px;
+  right: -2px;
+  bottom: -2px;
+  // FLEX CENTRADO PARA QUE EL DIGITO QUEDE PERFECTAMENTE EN MEDIO
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   // CHIP CIRCULAR CON FONDO DEL TEMA OSCURO
   background: var(--color-surface-2);
   // TIPOGRAFIA COMPACTA BOLD
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
+  line-height: 1;
   // COLOR DEL TEXTO PRIMARIO PARA CONTRASTE
   color: var(--color-text);
   // BORDE FINO DEL COLOR PRIMARIO PARA INTEGRARSE
   border: 1.5px solid var(--color-primary);
-  // BORDE REDONDEADO TOTAL
-  border-radius: 999px;
-  // PADDING COMPACTO
-  padding: 1px 6px;
+  // CIRCULO FIJO PARA QUE NO SE DEFORME CON EL ANCHO DEL DIGITO
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  // SIN PADDING — EL TAMANO FIJO YA CENTRA
+  padding: 0;
+  // SOMBRA SUTIL QUE LO DESPEGA DEL BADGE
+  box-shadow: 0 2px 6px color-mix(in srgb, #000 40%, transparent);
 }
 
 // CUERPO DE LA TARJETA DE NIVEL — A LA DERECHA DEL BADGE
@@ -794,9 +804,12 @@ swiper-slide.os-slide {
 
 // OJO INDIVIDUAL DEL INDICADOR — SVG INLINE CON IRIS Y PARPADO
 .os-eye {
-  // TAMANO TACTIL CONFORTABLE
-  display: inline-block;
-  width: 36px;
+  // FLEX CENTRADO PARA QUE EL SVG QUEDE PERFECTAMENTE ALINEADO
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  // TAMANO TACTIL CONFORTABLE - ASPECTO 24:18 DEL VIEWBOX
+  width: 32px;
   height: 24px;
   // OPACIDAD POR DEFECTO REDUCIDA PARA QUE SOLO EL ACTIVO BRILLE
   opacity: 0.6;
@@ -808,8 +821,10 @@ swiper-slide.os-slide {
 .os-eye svg {
   width: 100%;
   height: 100%;
-  // OVERFLOW VISIBLE PARA QUE EL IRIS QUE BRILLA NO SE CORTE
+  // OVERFLOW VISIBLE PARA NO RECORTAR EL TRAZO DEL CONTORNO
   overflow: visible;
+  // DISPLAY BLOCK PARA EVITAR BASELINE EXTRA DE INLINE
+  display: block;
 }
 
 // CONTORNO ALMENDRA DEL OJO — TRAZO DEL COLOR DEL TEMA
@@ -830,12 +845,12 @@ swiper-slide.os-slide {
   transition: fill 240ms var(--ease-quick);
 }
 
-// PARPADO QUE CUBRE EL OJO — ARRANCA CERRADO PARA INACTIVOS
+// PARPADO QUE CUBRE EL OJO - VIVE DENTRO DEL CLIPPATH ALMENDRA
 .os-eye__lid {
   // RELLENO IGUAL AL FONDO PARA QUE PAREZCA TAPADO
   fill: var(--color-bg);
-  // TRANSFORM-ORIGIN ARRIBA PARA QUE PARPADEE COMO PERSIANA
-  transform-origin: 12px 0px;
+  // TRANSFORM-ORIGIN ARRIBA-CENTRO PARA QUE PARPADEE COMO PERSIANA
+  transform-origin: 50% 0;
   transform: scaleY(1);
   // TRANSICION DE PARPADEO SUAVE
   transition: transform 360ms var(--ease-spring);
@@ -860,6 +875,7 @@ swiper-slide.os-slide {
 }
 
 // VARIANTE PASADA — EL OJO YA VISITADO QUEDA ABIERTO PERO MAS APAGADO
+.os-eye--past { opacity: 0.85; }
 .os-eye--past .os-eye__lid { transform: scaleY(0); }
 .os-eye--past .os-eye__iris { fill: var(--color-primary-soft); opacity: 0.7; }
 

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<!--
+  ARGOS API DOCS
+  PAGINA QUE RENDERIZA SWAGGER UI A PARTIR DE openapi.yaml.
+  SE SIRVE COMO ARCHIVO ESTATICO DESDE public/docs (NGINX LO
+  ENTREGA DIRECTO SIN PASAR POR EL ROUTER DE CODEIGNITER).
+  ACCESIBLE EN https://argos.ddev.site/docs/
+-->
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ARGOS API — Documentación</title>
+  <!-- CSS DE SWAGGER UI DESDE CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css" />
+  <style>
+    /* AJUSTE VISUAL BASICO ACORDE A LA PALETA MORADA DE ARGOS */
+    body { margin: 0; background: #fafafa; }
+    .topbar { display: none; }
+    #header {
+      background: #1a1625;
+      color: #fff;
+      padding: 14px 24px;
+      font-family: system-ui, sans-serif;
+      border-bottom: 3px solid #7C3AED;
+    }
+    #header strong { color: #7C3AED; }
+  </style>
+</head>
+<body>
+  <!-- CABECERA SIMPLE DE LA DOCUMENTACION -->
+  <div id="header">
+    <strong>ARGOS</strong> — Documentación de la API v1
+  </div>
+
+  <!-- CONTENEDOR DONDE SWAGGER UI INYECTA LA INTERFAZ -->
+  <div id="swagger-ui"></div>
+
+  <!-- BUNDLE JS DE SWAGGER UI DESDE CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  <script>
+    // INICIALIZA SWAGGER UI APUNTANDO AL SPEC LOCAL openapi.yaml
+    window.onload = function () {
+      window.ui = SwaggerUIBundle({
+        url: 'openapi.yaml',
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        presets: [SwaggerUIBundle.presets.apis],
+        layout: 'BaseLayout',
+        persistAuthorization: true
+      });
+    };
+  </script>
+</body>
+</html>

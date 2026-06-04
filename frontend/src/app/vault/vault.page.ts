@@ -1155,17 +1155,45 @@ export class VaultPage implements OnInit, OnDestroy, AfterViewInit {
   isFavorite(item: VaultItem): boolean { return this.favoriteIds.includes(item.id); }
   toggleFavorite(item: VaultItem, event: Event) {
     event.stopPropagation();
-    // CAPTURA EL ESTADO ANTERIOR PARA QUE FLIP ANIME LA REORDENACION
-    const before = this.reducedMotion ? null : Flip.getState('.bento-favorite, .vault-item');
-    if (this.isFavorite(item)) {
-      this.favoriteIds = this.favoriteIds.filter(id => id !== item.id);
-    } else {
+    // CAPTURAMOS EL BOTON PULSADO DE FORMA SINCRONA (currentTarget SE ANULA
+    // DESPUES POR EL POOL DE EVENTOS) PARA ANIMAR SOLO LA ESTRELLA.
+    const starBtn = event.currentTarget as HTMLElement | null;
+    const adding = !this.isFavorite(item);
+
+    if (adding) {
+      // LIMITE DE 6 FAVORITOS; EL NUEVO ENTRA EL PRIMERO
       if (this.favoriteIds.length >= 6) this.favoriteIds.pop();
       this.favoriteIds = [item.id, ...this.favoriteIds];
+    } else {
+      this.favoriteIds = this.favoriteIds.filter(id => id !== item.id);
     }
     this.saveFavorites();
-    // FLIP ANIMA LA DIFERENCIA TRAS EL NEXT FRAME (CUANDO ANGULAR REPINTA)
-    requestAnimationFrame(() => this.animateFavoriteReorder(before));
+
+    // SIN MOVIMIENTO SI EL USUARIO PREFIERE REDUCED-MOTION
+    if (this.reducedMotion) return;
+
+    // MICRO-INTERACCION CONTENIDA EN LUGAR DE UN Flip QUE DESLIZABA TODA LA
+    // LISTA A POSICIONES RARAS: UN "POP" TACTIL EN LA ESTRELLA PULSADA.
+    if (starBtn) {
+      gsap.fromTo(starBtn, { scale: 0.82 },
+        { scale: 1, duration: 0.34, ease: 'power3.out' });
+      // AL AÑADIR, LA ESTRELLA "BROTA" DESDE UN TAMANO MAYOR (SIN REBOTE)
+      if (adding) {
+        const icon = starBtn.querySelector('ph-star') as HTMLElement | null;
+        if (icon) gsap.fromTo(icon, { scale: 1.45 },
+          { scale: 1, duration: 0.4, ease: 'power3.out' });
+      }
+    }
+
+    // EL BENTO SUPERIOR SE ACTUALIZA CON UN FADE BREVE Y CONTENIDO TRAS EL
+    // REPINTADO DE ANGULAR (NADA SE DESLIZA POR LA PANTALLA).
+    requestAnimationFrame(() => {
+      const cards = document.querySelectorAll('.bento-favorite');
+      if (cards.length) {
+        gsap.fromTo(cards, { opacity: 0.5, y: 6 },
+          { opacity: 1, y: 0, duration: 0.3, stagger: 0.03, ease: 'power2.out' });
+      }
+    });
   }
   private saveFavorites() {
     localStorage.setItem('argos-vault-favs', JSON.stringify(this.favoriteIds));
