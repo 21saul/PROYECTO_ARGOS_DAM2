@@ -26,7 +26,9 @@ class AuthService
     public function generateJwt(int $userId, string $email): string
     {
         // CONFIGURACION DE TIEMPO DE VIDA DEL TOKEN EN SEGUNDOS
-        $ttl = (int) (env('JWT_TTL') ?? 3600);
+        // SE LIMITA A 24 HORAS PARA REDUCIR LA VENTANA DE EXPLOTACION
+        // EN CASO DE FUGA, SEGUN LA AUDITORIA OWASP ZAP (SECCION 3.7)
+        $ttl = min((int) (env('JWT_TTL') ?? 3600), 86400);
 
         // PAYLOAD ESTANDAR DEL TOKEN CON CLAIMS BASICOS
         // SHIELD ANADE iss Y exp AUTOMATICAMENTE A PARTIR DE LA

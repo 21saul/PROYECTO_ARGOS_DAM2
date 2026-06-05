@@ -36,6 +36,9 @@ class Filters extends BaseFilters
         'performance'   => PerformanceMetrics::class,
         // ALIAS PARA EL FILTRO QUE VALIDA JWT EN ENDPOINTS PROTEGIDOS DE LA API
         'jwtauth'       => \App\Filters\JwtAuthFilter::class,
+        // ALIAS PARA EL FILTRO QUE ANADE CABECERAS OWASP A TODAS LAS RESPUESTAS
+        // VER docs/security/AUDITORIA_OWASP_ZAP.md SECCION 3
+        'securityheaders' => \App\Filters\SecurityHeaders::class,
     ];
 
     /**
@@ -81,6 +84,9 @@ class Filters extends BaseFilters
         'after' => [
             // 'honeypot',
             // 'secureheaders',
+            // FILTRO PROPIO QUE INYECTA HSTS, NOSNIFF, REFERRER-POLICY,
+            // PERMISSIONS-POLICY Y X-FRAME-OPTIONS EN TODAS LAS RESPUESTAS
+            'securityheaders',
         ],
     ];
 
