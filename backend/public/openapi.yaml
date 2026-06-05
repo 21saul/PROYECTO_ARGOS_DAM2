@@ -1,0 +1,1112 @@
+openapi: 3.0.3
+
+info:
+  title: ARGOS API
+  version: 1.0.0
+  description: |
+    API REST Zero-Knowledge de la suite de ciberseguridad ARGOS.
+
+    Caracteristicas principales:
+      * Autenticacion zero-knowledge: el servidor recibe un auth_hash ya derivado
+        en cliente con Argon2id; nunca conoce la contrasena maestra.
+      * Tokens JWT firmados con el secreto de la aplicacion.
+      * Segundo factor TOTP RFC 6238 opcional por usuario.
+      * Boveda cifrada: el servidor persiste blobs binarios ya cifrados en cliente.
+      * Proxies de APIs externas (HIBP, Google Safe Browsing, PhishTank, VirusTotal)
+        para no exponer API keys al cliente y centralizar cache y rate limit.
+
+    Todas las respuestas siguen el envelope estandar { success, data, error }.
+  contact:
+    name: Equipo de desarrollo ARGOS
+    email: desarrollo@teconsite.com
+  license:
+    name: MIT
+
+servers:
+  - url: https://argos.ddev.site/api/v1
+    description: Entorno DDEV local
+  - url: https://argos.example.com/api/v1
+    description: Produccion (placeholder)
+
+tags:
+  - name: Auth
+    description: Registro, challenge y login zero-knowledge.
+  - name: TOTP
+    description: Ciclo de vida del segundo factor TOTP.
+  - name: Vault
+    description: CRUD de elementos cifrados de la boveda.
+  - name: Folders
+    description: CRUD de carpetas organizativas de la boveda.
+  - name: Auditor
+    description: Consulta HIBP k-anonymity y privacy score.
+  - name: Phishing
+    description: Proxies de deteccion de URLs maliciosas.
+  - name: News
+    description: Panel de noticias de ciberseguridad y CVE.
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Registrar un nuevo usuario zero-knowledge
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Usuario creado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+        '409':
+          description: Email ya registrado (EMAIL_TAKEN)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Faltan campos o email invalido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/challenge:
+    get:
+      tags: [Auth]
+      summary: Obtener kdf_salt y kdf_params para la derivacion en cliente
+      security: []
+      parameters:
+        - in: query
+          name: email
+          required: true
+          schema:
+            type: string
+            format: email
+      responses:
+        '200':
+          description: Parametros KDF del usuario (reales o dummy)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengeResponse'
+        '422':
+          description: Email invalido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login zero-knowledge que devuelve JWT y vault_blob
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login correcto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Credenciales incorrectas (INVALID_CREDENTIALS)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Faltan email o auth_hash
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /totp/setup:
+    post:
+      tags: [TOTP]
+      summary: Generar secreto TOTP y URI otpauth para el QR
+      responses:
+        '200':
+          description: Secreto y URI generados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TotpSetupResponse'
+        '401':
+          description: Usuario no autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /totp/verify:
+    post:
+      tags: [TOTP]
+      summary: Verificar el primer codigo y activar el 2FA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TotpCodeRequest'
+      responses:
+        '200':
+          description: 2FA activado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TotpStateResponse'
+        '400':
+          description: Codigo invalido o no se genero secreto previo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /totp/disable:
+    post:
+      tags: [TOTP]
+      summary: Desactivar el 2FA tras verificar un codigo valido
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TotpCodeRequest'
+      responses:
+        '200':
+          description: 2FA desactivado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TotpStateResponse'
+        '400':
+          description: Codigo invalido o no se ha verificado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /vault/items:
+    get:
+      tags: [Vault]
+      summary: Listar elementos cifrados del usuario
+      parameters:
+        - in: query
+          name: folder_id
+          schema:
+            type: integer
+            nullable: true
+          description: Filtrar por carpeta. Usar 0 o vacio para items sin carpeta.
+        - in: query
+          name: item_type
+          schema:
+            type: string
+            enum: [password, note, file]
+      responses:
+        '200':
+          description: Lista de items
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/VaultItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Vault]
+      summary: Crear un elemento cifrado en la boveda
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VaultItemCreateRequest'
+      responses:
+        '201':
+          description: Item creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VaultItemCreateResponse'
+        '403':
+          description: La carpeta destino no pertenece al usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: Blob mayor de 5 MB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validacion fallida o blob no base64
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /vault/items/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    get:
+      tags: [Vault]
+      summary: Obtener un elemento concreto del usuario
+      responses:
+        '200':
+          description: Item recuperado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/VaultItem'
+        '404':
+          description: Item no encontrado o no pertenece al usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags: [Vault]
+      summary: Actualizar un elemento existente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VaultItemUpdateRequest'
+      responses:
+        '200':
+          description: Item actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateConfirmation'
+        '400':
+          description: No hay campos para actualizar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: La carpeta destino no pertenece al usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Item no encontrado o no pertenece al usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: Blob mayor de 5 MB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Vault]
+      summary: Eliminar un elemento de la boveda
+      responses:
+        '200':
+          description: Item eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteConfirmation'
+        '404':
+          description: Item no encontrado o no pertenece al usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /vault/folders:
+    get:
+      tags: [Folders]
+      summary: Listar carpetas del usuario con contador de items
+      responses:
+        '200':
+          description: Lista de carpetas
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/VaultFolder'
+    post:
+      tags: [Folders]
+      summary: Crear una nueva carpeta
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VaultFolderCreateRequest'
+      responses:
+        '201':
+          description: Carpeta creada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/VaultFolder'
+        '422':
+          description: Validacion fallida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /vault/folders/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    get:
+      tags: [Folders]
+      summary: Obtener una carpeta concreta del usuario
+      responses:
+        '200':
+          description: Carpeta recuperada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/VaultFolder'
+        '404':
+          description: Carpeta no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags: [Folders]
+      summary: Actualizar metadatos de una carpeta
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VaultFolderUpdateRequest'
+      responses:
+        '200':
+          description: Carpeta actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateConfirmation'
+        '400':
+          description: No hay campos para actualizar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Carpeta no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validacion fallida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Folders]
+      summary: Eliminar una carpeta (items asociados quedan con folder_id null)
+      responses:
+        '200':
+          description: Carpeta eliminada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteConfirmation'
+        '404':
+          description: Carpeta no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auditor/hibp/{prefix}:
+    get:
+      tags: [Auditor]
+      summary: Consultar HIBP por prefijo de hash SHA-1 (k-anonymity)
+      parameters:
+        - in: path
+          name: prefix
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9A-Fa-f]{5}$'
+            example: '21BD1'
+      responses:
+        '200':
+          description: Lista de sufijos y conteos coincidentes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HibpResponse'
+        '422':
+          description: Prefijo invalido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: Error al consultar HIBP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auditor/score:
+    post:
+      tags: [Auditor]
+      summary: Guardar un nuevo Privacy Score del usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivacyScoreRequest'
+      responses:
+        '201':
+          description: Score guardado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacyScoreSaveResponse'
+        '422':
+          description: Faltan campos o validacion fallida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auditor/score/history:
+    get:
+      tags: [Auditor]
+      summary: Historial del Privacy Score del usuario
+      parameters:
+        - in: query
+          name: weeks
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 52
+            default: 8
+      responses:
+        '200':
+          description: Historico paginado por semanas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacyScoreHistoryResponse'
+
+  /auditor/score/latest:
+    get:
+      tags: [Auditor]
+      summary: Ultimo Privacy Score registrado del usuario
+      responses:
+        '200':
+          description: Ultimo registro o null si no hay
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacyScoreLatestResponse'
+
+  /phishing/safebrowsing:
+    post:
+      tags: [Phishing]
+      summary: Consultar una URL contra Google Safe Browsing
+      requestBody:
+        $ref: '#/components/requestBodies/UrlBody'
+      responses:
+        '200':
+          description: Veredicto de Google Safe Browsing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhishingResponse'
+        '422':
+          $ref: '#/components/responses/InvalidUrl'
+        '502':
+          $ref: '#/components/responses/UpstreamError'
+
+  /phishing/phishtank:
+    post:
+      tags: [Phishing]
+      summary: Consultar una URL contra PhishTank
+      requestBody:
+        $ref: '#/components/requestBodies/UrlBody'
+      responses:
+        '200':
+          description: Veredicto de PhishTank
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhishingResponse'
+        '422':
+          $ref: '#/components/responses/InvalidUrl'
+        '502':
+          $ref: '#/components/responses/UpstreamError'
+
+  /phishing/virustotal:
+    post:
+      tags: [Phishing]
+      summary: Consultar una URL contra VirusTotal
+      requestBody:
+        $ref: '#/components/requestBodies/UrlBody'
+      responses:
+        '200':
+          description: Veredicto de VirusTotal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhishingResponse'
+        '422':
+          $ref: '#/components/responses/InvalidUrl'
+        '429':
+          description: Limite de cuota alcanzado (RATE_LIMIT)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          $ref: '#/components/responses/UpstreamError'
+
+  /news:
+    get:
+      tags: [News]
+      summary: Listado paginado de noticias de ciberseguridad
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+            enum: [cve, phishing, breach, resource]
+        - in: query
+          name: severity
+          schema:
+            type: string
+            enum: [low, medium, high, critical]
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: Lista de noticias paginada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsListResponse'
+        '422':
+          description: Categoria o severidad invalida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /news/stats:
+    get:
+      tags: [News]
+      summary: Estadisticas diarias agregadas para el banner
+      responses:
+        '200':
+          description: Estadisticas agregadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsStatsResponse'
+
+  /news/breaking:
+    get:
+      tags: [News]
+      summary: Noticia critica mas reciente (hero card)
+      responses:
+        '200':
+          description: Noticia critica o null si no hay
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsBreakingResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Token JWT firmado por el backend que se obtiene en /auth/login o
+        /auth/register. Incluir como `Authorization: Bearer <token>`.
+
+  responses:
+    Unauthorized:
+      description: Token ausente, malformado o expirado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InvalidUrl:
+      description: URL ausente o con formato invalido (INVALID_URL)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UpstreamError:
+      description: Error en la API de terceros
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  requestBodies:
+    UrlBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [url]
+            properties:
+              url:
+                type: string
+                format: uri
+                example: 'https://ejemplo-sospechoso.com/login'
+
+  schemas:
+    SuccessEnvelope:
+      type: object
+      required: [success, error]
+      properties:
+        success:
+          type: boolean
+          example: true
+        error:
+          nullable: true
+          example: null
+
+    ErrorResponse:
+      type: object
+      required: [success, data, error]
+      properties:
+        success:
+          type: boolean
+          example: false
+        data:
+          nullable: true
+          example: null
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              example: VALIDATION_ERROR
+            message:
+              type: string
+              example: 'El email no tiene un formato valido'
+            details:
+              type: object
+              additionalProperties: true
+
+    RegisterRequest:
+      type: object
+      required: [email, auth_hash, kdf_salt, kdf_params]
+      properties:
+        email:
+          type: string
+          format: email
+        auth_hash:
+          type: string
+          description: Hash derivado en cliente con Argon2id
+        kdf_salt:
+          type: string
+          description: Salt hex usado por la KDF en cliente
+        kdf_params:
+          type: object
+          properties:
+            memory_cost: { type: integer, example: 65536 }
+            time_cost: { type: integer, example: 3 }
+            parallelism: { type: integer, example: 1 }
+        vault_blob:
+          type: string
+          format: byte
+          description: Blob inicial de la boveda cifrado en cliente (base64)
+
+    RegisterResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                user_id: { type: integer }
+                email: { type: string, format: email }
+                token: { type: string, description: JWT firmado }
+
+    ChallengeResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                kdf_salt: { type: string }
+                kdf_algorithm: { type: string, example: argon2id }
+                kdf_params:
+                  type: object
+                  properties:
+                    memory_cost: { type: integer }
+                    time_cost: { type: integer }
+                    parallelism: { type: integer }
+
+    LoginRequest:
+      type: object
+      required: [email, auth_hash]
+      properties:
+        email: { type: string, format: email }
+        auth_hash: { type: string }
+
+    LoginResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                user_id: { type: integer }
+                email: { type: string, format: email }
+                token: { type: string }
+                vault_blob:
+                  type: string
+                  nullable: true
+                  description: Boveda cifrada en base64 o null si vacia
+
+    TotpSetupResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                qr_uri:
+                  type: string
+                  example: 'otpauth://totp/ARGOS:user@example.com?secret=...&issuer=ARGOS'
+                secret:
+                  type: string
+                  description: Secreto base32 a respaldar por el usuario
+
+    TotpCodeRequest:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          pattern: '^\d{6}$'
+          example: '123456'
+
+    TotpStateResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                enabled: { type: boolean }
+
+    VaultItem:
+      type: object
+      properties:
+        id: { type: integer }
+        user_id: { type: integer }
+        folder_id: { type: integer, nullable: true }
+        item_type: { type: string, enum: [password, note, file] }
+        encrypted_blob: { type: string, format: byte, description: 'Blob cifrado (base64)' }
+        size_bytes: { type: integer }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    VaultItemCreateRequest:
+      type: object
+      required: [item_type, encrypted_blob]
+      properties:
+        item_type: { type: string, enum: [password, note, file] }
+        folder_id: { type: integer, nullable: true }
+        encrypted_blob:
+          type: string
+          format: byte
+          description: 'Blob cifrado en cliente (base64). Maximo 5 MB.'
+
+    VaultItemCreateResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                id: { type: integer }
+                item_type: { type: string }
+                folder_id: { type: integer, nullable: true }
+                size_bytes: { type: integer }
+
+    VaultItemUpdateRequest:
+      type: object
+      properties:
+        encrypted_blob:
+          type: string
+          format: byte
+          nullable: true
+        folder_id:
+          oneOf:
+            - { type: integer }
+            - { type: string, enum: ['0', ''] }
+          nullable: true
+
+    VaultFolder:
+      type: object
+      properties:
+        id: { type: integer }
+        user_id: { type: integer }
+        name: { type: string }
+        color: { type: string, example: '#7C3AED' }
+        icon: { type: string, example: 'folder' }
+        item_count: { type: integer }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    VaultFolderCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        color: { type: string, default: '#7C3AED' }
+        icon: { type: string, default: 'folder' }
+
+    VaultFolderUpdateRequest:
+      type: object
+      properties:
+        name: { type: string }
+        color: { type: string }
+        icon: { type: string }
+
+    UpdateConfirmation:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                id: { type: integer }
+                updated: { type: boolean, example: true }
+
+    DeleteConfirmation:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                id: { type: integer }
+                deleted: { type: boolean, example: true }
+
+    HibpResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                source: { type: string, enum: [cache, hibp] }
+                prefix: { type: string }
+                matches:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      suffix: { type: string }
+                      count: { type: integer }
+
+    PrivacyScoreRequest:
+      type: object
+      required: [score, identity_score, passwords_score, device_score]
+      properties:
+        score: { type: integer, minimum: 0, maximum: 100 }
+        identity_score: { type: integer, minimum: 0, maximum: 100 }
+        passwords_score: { type: integer, minimum: 0, maximum: 100 }
+        device_score: { type: integer, minimum: 0, maximum: 100 }
+
+    PrivacyScoreSaveResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                id: { type: integer }
+                recorded_at: { type: string, format: date-time }
+
+    PrivacyScoreHistoryResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                weeks: { type: integer }
+                history:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id: { type: integer }
+                      score: { type: integer }
+                      identity_score: { type: integer }
+                      passwords_score: { type: integer }
+                      device_score: { type: integer }
+                      recorded_at: { type: string, format: date-time }
+
+    PrivacyScoreLatestResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              nullable: true
+              properties:
+                id: { type: integer }
+                score: { type: integer }
+                identity_score: { type: integer }
+                passwords_score: { type: integer }
+                device_score: { type: integer }
+                recorded_at: { type: string, format: date-time }
+
+    PhishingResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              description: Estructura especifica de cada motor (safe/unsafe + detalles)
+              additionalProperties: true
+
+    NewsListResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: true
+                pagination:
+                  type: object
+                  properties:
+                    page: { type: integer }
+                    limit: { type: integer }
+                    total: { type: integer }
+                    pages: { type: integer }
+                filters:
+                  type: object
+                  properties:
+                    category: { type: string, nullable: true }
+                    severity: { type: string, nullable: true }
+
+    NewsStatsResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              additionalProperties: true
+
+    NewsBreakingResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              nullable: true
+              additionalProperties: true

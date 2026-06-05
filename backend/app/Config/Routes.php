@@ -7,6 +7,12 @@ use CodeIgniter\Router\RouteCollection;
  */
 $routes->get('/', 'Home::index');
 
+// RUTAS PUBLICAS DE LA DOCUMENTACION INTERACTIVA OPENAPI 3.0
+// /docs            SIRVE SWAGGER UI CARGADO DESDE CDN
+// /docs/openapi    SIRVE EL YAML DE LA ESPECIFICACION (Content-Type application/yaml)
+$routes->get('docs', 'DocsController::index');
+$routes->get('docs/openapi', 'DocsController::spec');
+
 service('auth')->routes($routes);
 
 // RUTA CATCH-ALL PARA PETICIONES OPTIONS DE PREFLIGHT CORS BAJO api/v1
