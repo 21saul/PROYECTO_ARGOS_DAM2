@@ -128,6 +128,10 @@ graph TB
 
 ---
 
+<img width="850" height="452" alt="image" src="https://github.com/user-attachments/assets/7aab795b-e7c0-4899-a91f-8c27880baf14" />
+<img width="851" height="452" alt="image" src="https://github.com/user-attachments/assets/9cd85d95-620f-4a32-9d73-1154c35794ec" />
+
+
 ---
 
 ## `📖 SWAGGER UI + OPENAPI 3.0 — DOCUMENTACIÓN DE LA API` ⭕
@@ -156,6 +160,9 @@ graph TB
 > ***PARA PROBAR ENDPOINTS PROTEGIDOS: HAZ LOGIN DESDE `POST /auth/login` EN EL PROPIO SWAGGER, COPIA EL JWT Y PÉGALO EN EL BOTÓN `Authorize` 🔒***
 
 ---
+
+<img width="953" height="460" alt="image" src="https://github.com/user-attachments/assets/af46f5d3-8f0c-4541-a6a6-4f9f07bb33b4" />
+
 
 ---
 
